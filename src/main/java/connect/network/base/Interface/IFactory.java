@@ -1,20 +1,20 @@
-package connect.network.nio.interfaces;
+package connect.network.base.Interface;
 
-public interface INioSelectorFactory<T> {
+public interface IFactory<T> {
 
     /**
      * 添加nio任务
      *
      * @param task
      */
-    void addNioTask(T task);
+    void addTask(T task);
 
     /**
      * 移除nio任务
      *
      * @param task
      */
-    void removeNioTask(T task);
+    void removeTask(T task);
 
     /**
      * 打开
@@ -25,5 +25,6 @@ public interface INioSelectorFactory<T> {
      * 关闭
      */
     void close();
+
 
 }

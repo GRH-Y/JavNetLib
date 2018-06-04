@@ -1,15 +1,8 @@
 package connect.network.nio;
 
 
-import connect.network.nio.interfaces.INioClientTask;
-import connect.network.nio.interfaces.INioFactorySetting;
-import connect.network.nio.interfaces.INioReceive;
-import connect.network.nio.interfaces.INioSender;
-
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.channels.SocketChannel;
-import java.nio.channels.spi.AbstractSelectableChannel;
 
 /**
  * nio客户端任务(创建连接服务端任务)
@@ -17,51 +10,69 @@ import java.nio.channels.spi.AbstractSelectableChannel;
  * @author yyz
  * @version 1.0
  */
-public class NioClientTask implements INioClientTask {
+public class NioClientTask {
 
-    protected SocketChannel channel = null;
-    protected InetSocketAddress address;
-    protected INioFactorySetting setting;
+    private InetSocketAddress mAddress;
 
+    private SocketChannel mChannel;
 
-    protected void setAddress(String ip, int port) {
-        address = new InetSocketAddress(ip, port);
+    private NioSender sender = null;
+
+    private NioReceive receive = null;
+
+    public NioClientTask() {
     }
 
-
-    @Override
-    public AbstractSelectableChannel getSocketChannel() {
-        return channel;
+    public NioClientTask(SocketChannel channel) {
+        mChannel = channel;
     }
 
-    protected SocketAddress getSocketAddress() {
-        return address;
+    //---------------------------- set ---------------------------------------
+
+    public void setSender(NioSender sender) {
+        this.sender = sender;
     }
 
-    @Override
-    public INioSender getSender() {
-        return null;
+    public void setReceive(NioReceive receive) {
+        this.receive = receive;
     }
 
-    @Override
-    public INioReceive getReceive() {
-        return null;
+    public void setChannel(SocketChannel channel) {
+        this.mChannel = channel;
     }
 
+    public void setAddress(String ip, int port) {
+        mAddress = new InetSocketAddress(ip, port);
+    }
 
+    //---------------------------- get ---------------------------------------
+
+    protected InetSocketAddress getSocketAddress() {
+        return mAddress;
+    }
+
+    protected SocketChannel getSocketChannel() {
+        return mChannel;
+    }
+
+    protected NioSender getSender() {
+        return sender;
+    }
+
+    protected NioReceive getReceive() {
+        return receive;
+    }
+
+    //---------------------------- on ---------------------------------------
     /**
      * 链接状态回调
      *
      * @param isConnect
      */
-    @Override
-    public void onConnect(boolean isConnect) {
-
+    protected void onConnect(boolean isConnect) {
     }
 
 
-    @Override
-    public void onClose() {
-
+    protected void onClose() {
     }
 }

@@ -1,8 +1,7 @@
 package connect.network.nio;
 
 
-import connect.network.nio.interfaces.INioNetTask;
-import connect.network.nio.interfaces.INioSelectorFactory;
+import connect.network.base.Interface.IFactory;
 import task.executor.BaseLoopTask;
 import task.executor.LoopTaskExecutor;
 import task.executor.TaskContainer;
@@ -10,78 +9,87 @@ import task.executor.TaskContainer;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.nio.channels.spi.AbstractSelectableChannel;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public abstract class AbstractNioFactory<T> implements INioSelectorFactory<T> {
+public abstract class AbstractNioFactory<T> implements IFactory<T> {
 
-    protected Queue<CoreTask> executorQueue;
-    protected Queue<T> connectCache;
-    protected Queue<INioNetTask> destroyCache;
+    protected volatile Queue<CoreTask> mExecutorQueue;
+    protected volatile Queue<T> mConnectCache;
+    protected volatile Queue<T> mDestroyCache;
 
-    private boolean isNeedDestroy = true;
-    private Selector selector;
+    private boolean mIsNeedDestroy = true;
+    private Selector mSelector;
 
-    private final static int TIME_OUT_SECOND = 2000000000;
+    private long mLoadTime = 2000000000;
 
     public AbstractNioFactory() throws IOException {
-        selector = Selector.open();
-        connectCache = new ConcurrentLinkedQueue<>();
-        executorQueue = new ConcurrentLinkedQueue<>();
-        destroyCache = new ConcurrentLinkedQueue<>();
+        mSelector = Selector.open();
+        mConnectCache = new ConcurrentLinkedQueue<>();
+        mExecutorQueue = new ConcurrentLinkedQueue<>();
+        mDestroyCache = new ConcurrentLinkedQueue<>();
     }
 
-    abstract protected void onHasTask(Selector selector, T task);
+    /**
+     * 设置处理线程负荷时间
+     *
+     * @param loadTime 毫秒
+     */
+    public void setmLoadTime(int loadTime) {
+        if (mLoadTime > 0) {
+            this.mLoadTime = loadTime * 1000000;
+        }
+    }
 
-    abstract protected void onSelector(Selector selector);
+    abstract protected void onConnectTask(Selector selector, T task);
+
+    abstract protected void onSelectorTask(Selector selector);
+
+    abstract protected void onDisconnectTask(T task);
 
 
     @Override
-    public void addNioTask(T task) {
-        if (task == null || executorQueue.size() == 0) {
+    public void addTask(T task) {
+        if (task == null || mExecutorQueue.size() == 0) {
             return;
         }
-
-        connectCache.add(task);
-        selector.wakeup();
+        mConnectCache.add(task);
+        mSelector.wakeup();
         wakeUpCoreTask();
     }
 
     @Override
-    public void removeNioTask(T task) {
-        if (task == null || executorQueue.size() == 0) {
+    public void removeTask(T task) {
+        if (task == null || mExecutorQueue.size() == 0) {
             return;
         }
-        destroyCache.add((INioNetTask) task);
-        selector.wakeup();
+        mDestroyCache.add(task);
+        mSelector.wakeup();
         wakeUpCoreTask();
     }
 
     @Override
     public void open() {
-        if (executorQueue != null && executorQueue.size() == 0) {
+        if (mExecutorQueue.size() == 0) {
             openCoreTask();
         }
     }
 
     @Override
     public void close() {
-        setNeedDestroy(false);
+        setIsNeedDestroy(true);
         destroyCoreTask();
     }
 
     /**
-     * 
      * @param status
      */
-    protected void setNeedDestroy(boolean status) {
-        isNeedDestroy = status;
+    protected void setIsNeedDestroy(boolean status) {
+        mIsNeedDestroy = status;
     }
 
     protected void wakeUpCoreTask() {
-        for (CoreTask coreTask : executorQueue) {
+        for (CoreTask coreTask : mExecutorQueue) {
             coreTask.getExecutor().resumeTask();
         }
     }
@@ -92,47 +100,34 @@ public abstract class AbstractNioFactory<T> implements INioSelectorFactory<T> {
     protected void openCoreTask() {
         CoreTask coreTask = new CoreTask();
         coreTask.getExecutor().startTask();
-        executorQueue.add(coreTask);
+        mExecutorQueue.add(coreTask);
     }
 
     protected void destroyCoreTask() {
-        while (executorQueue != null && !executorQueue.isEmpty()) {
-            CoreTask coreTask = executorQueue.remove();
-            if (coreTask != null) {
-                coreTask.getExecutor().stopTask();
-            }
+        while (!mExecutorQueue.isEmpty()) {
+            CoreTask coreTask = mExecutorQueue.remove();
+            coreTask.getExecutor().stopTask();
         }
-
-        if (connectCache != null) {
-            connectCache.clear();
-            connectCache = null;
-        }
-
-        if (selector != null) {
-            selector.wakeup();
-            try {
-                selector.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            selector = null;
+        mConnectCache.clear();
+        mSelector.wakeup();
+        try {
+            mSelector.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
 
     private void removeNeedDestroyNioTask() {
         //销毁链接
-        while (!destroyCache.isEmpty()) {
-            INioNetTask task = destroyCache.remove();
-            task.onClose();
-            AbstractSelectableChannel channel = task.getSocketChannel();
-            if (channel != null) {
-                try {
-                    channel.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
+        while (!mDestroyCache.isEmpty()) {
+            T target = mDestroyCache.remove();
+            for (SelectionKey selectionKey : mSelector.keys()) {
+                T task = (T) selectionKey.attachment();
+                if (task == target) {
+                    onDisconnectTask(target);
+                    selectionKey.cancel();
                 }
-                channel.keyFor(selector).cancel();
             }
         }
     }
@@ -154,61 +149,65 @@ public abstract class AbstractNioFactory<T> implements INioSelectorFactory<T> {
         @Override
         protected void onRunLoopTask() {
 
+            long startTime = 0;
+            if (mLoadTime != 0) {
+                startTime = System.nanoTime();
+            }
+
             //检测是否有新的任务添加
-            while (!connectCache.isEmpty()) {
-                T task = connectCache.remove();
-                if (task != null) {
-                    onHasTask(selector, task);
-                }
+            while (!mConnectCache.isEmpty()) {
+                T task = mConnectCache.remove();
+                onConnectTask(mSelector, task);
             }
 
             int count = 0;
             try {
 //                Logcat.d("==> AbstractNioFactory onRunLoopTask start select()");
-                count = selector.select();
+                count = mSelector.select();
             } catch (Exception e) {
                 e.printStackTrace();
             }
 
 //            Logcat.d("==> AbstractNioFactory onRunLoopTask end select()");
 
-            long startTime = System.nanoTime();
-
             if (count > 0) {
-                onSelector(selector);
+                onSelectorTask(mSelector);
+            }
+
+            //清除要结束的任务
+            removeNeedDestroyNioTask();
+
+            if (mLoadTime == 0) {
+                return;
             }
 
             long useTime = System.nanoTime() - startTime;
-            if (useTime > TIME_OUT_SECOND) {
+            if (useTime > mLoadTime) {
                 //执行速度过慢，则另外开启线程!
 //                Logcat.d("==> 执行速度过慢，则另外开启线程! " + useTime);
                 openCoreTask();
-            } else if (TIME_OUT_SECOND > useTime && useTime > 50000) {
+            } else if (mLoadTime > useTime && useTime > 50000) {
                 //任务压力不大执行速度过快，则另外关闭多余线程!
-                if (executorQueue.size() > 1) {
+                if (mExecutorQueue.size() > 1) {
 //                    Logcat.d("==> 任务压力不大执行速度过快，则另外关闭多余线程! " + useTime);
-                    setNeedDestroy(false);
+                    setIsNeedDestroy(false);
                     getExecutor().stopTask();
-                    executorQueue.remove(this);
+                    mExecutorQueue.remove(this);
                 }
             } else {
 //                Logcat.d("==> 任务压力不大执行速度过快,线程需要睡眠2000毫秒! " + useTime);
                 getExecutor().sleepTask(1000);
             }
-
-            //清除要结束的任务
-            removeNeedDestroyNioTask();
         }
 
         @Override
         protected void onDestroyTask() {
             //线程结束，是否要调用任务生命周期onClose方法
-            if (isNeedDestroy) {
-                Set<SelectionKey> keySet = selector.keys();
-                for (SelectionKey selectionKey : keySet) {
+            if (mIsNeedDestroy) {
+                for (SelectionKey selectionKey : mSelector.keys()) {
+                    T task = (T) selectionKey.attachment();
+                    onDisconnectTask(task);
                     selectionKey.cancel();
-                    INioNetTask task = (INioNetTask) selectionKey.attachment();
-                    task.onClose();
                 }
             }
         }

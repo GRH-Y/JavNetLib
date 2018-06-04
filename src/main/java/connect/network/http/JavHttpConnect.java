@@ -341,6 +341,11 @@ public class JavHttpConnect {
         private void onProcessData(NetTaskEntity data) {
             HttpURLConnection connection = init(data);
             if (connection == null) {
+                ConsumerTaskExecutor consumerTaskExecutor = container.getTaskExecutor();
+                if (callBack != null && consumerTaskExecutor.getLoopState()) {
+                    data.setResultData(null);
+                    callBack.notifyErrorMessage(data);
+                }
                 return;
             }
             try {

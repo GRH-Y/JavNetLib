@@ -1,8 +1,7 @@
 package connect.network.nio;
 
 
-import connect.network.nio.interfaces.INioFactorySetting;
-import connect.network.nio.interfaces.INioSender;
+import connect.network.base.Interface.ISender;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -10,25 +9,25 @@ import java.nio.channels.SocketChannel;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class NioSender implements INioSender {
+public class NioSender implements ISender {
 
     private Queue<ByteBuffer> cache;
-    private INioFactorySetting setting;
 
     public NioSender() {
         cache = new ConcurrentLinkedQueue<>();
     }
 
-    public void setSetting(INioFactorySetting setting) {
-        this.setting = setting;
-    }
-
+    @Override
     public void sendData(byte[] data) {
         cache.add(ByteBuffer.wrap(data));
     }
 
-    @Override
-    public void write(SocketChannel channel) {
+    /**
+     * 向输出流写数据
+     *
+     * @return 成功发送返回true
+     */
+    protected void onWrite(SocketChannel channel) {
         while (cache.size() > 0) {
             ByteBuffer buffer = cache.remove();
             try {
@@ -36,9 +35,6 @@ public class NioSender implements INioSender {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        }
-        if (setting != null) {
-            setting.disableWriteEvent();
         }
     }
 }
