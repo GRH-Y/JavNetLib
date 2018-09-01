@@ -3,6 +3,7 @@ package connect.network.udp;
 
 import task.executor.BaseConsumerTask;
 import task.executor.TaskContainer;
+import task.executor.interfaces.IConsumerAttribute;
 import task.executor.interfaces.IConsumerTaskExecutor;
 import task.executor.interfaces.ILoopTaskExecutor;
 import task.utils.Logcat;
@@ -48,7 +49,7 @@ public class JavUdpConnect {
     }
 
     public JavUdpConnect(boolean isBroadcast, String ip, int port) {
-        init(ip, port, isServer, false, null);
+        init(ip, port, isServer, isBroadcast, null);
     }
 
     public JavUdpConnect(String ip, int port, boolean isServer, boolean isBroadcast, LIVE_TIME ttl) {
@@ -88,8 +89,7 @@ public class JavUdpConnect {
     }
 
     public void putSendData(byte[] data, int length) {
-        IConsumerTaskExecutor executor = coreTask.getContainer().getTaskExecutor();
-        executor.pushToCache(new TaskEntity(data, length));
+        coreTask.getAttribute().pushToCache(new TaskEntity(data, length));
     }
 
     /**
@@ -134,8 +134,7 @@ public class JavUdpConnect {
     }
 
     public void setMaxCache(int count) {
-        IConsumerTaskExecutor executor = coreTask.getContainer().getTaskExecutor();
-        executor.setCacheMaxCount(count);
+        coreTask.getAttribute().setCacheMaxCount(count);
     }
 
     private class CoreTask extends BaseConsumerTask<TaskEntity> {
@@ -144,14 +143,20 @@ public class JavUdpConnect {
         private InetSocketAddress address = null;
         private TaskContainer container;
         private IConsumerTaskExecutor consumerTaskExecutor;
+        private IConsumerAttribute<TaskEntity> attribute;
 
         public CoreTask() {
             container = new TaskContainer(this);
             consumerTaskExecutor = container.getTaskExecutor();
+            attribute = container.getAttribute();
         }
 
         public TaskContainer getContainer() {
             return container;
+        }
+
+        public IConsumerAttribute<TaskEntity> getAttribute() {
+            return attribute;
         }
 
         public void refreshDestAddress() {
@@ -211,7 +216,7 @@ public class JavUdpConnect {
                 if (isShutdownReceive) {
                     consumerTaskExecutor.setIdleStateSleep(true);
                 } else {
-                    consumerTaskExecutor.startAsyncProcessData();
+                    attribute.startAsyncProcessData();
                 }
                 onConnectSuccess();
             } catch (Exception e) {
@@ -235,7 +240,7 @@ public class JavUdpConnect {
                 socket.receive(receive);
             } catch (Exception e) {
                 receive = null;
-                if (e instanceof SocketTimeoutException == false) {
+                if (!(e instanceof SocketTimeoutException)) {
                     e.printStackTrace();
                     container.getTaskExecutor().stopTask();
                 }
@@ -247,7 +252,7 @@ public class JavUdpConnect {
 
         @Override
         protected void onProcess() {
-            TaskEntity entity = (TaskEntity) consumerTaskExecutor.popCacheData();
+            TaskEntity entity = attribute.popCacheData();
             if (entity == null) {
                 return;
             }
@@ -282,8 +287,7 @@ public class JavUdpConnect {
 
     public void continueConnect(boolean isCleanCache) {
         if (isCleanCache) {
-            IConsumerTaskExecutor executor = coreTask.getContainer().getTaskExecutor();
-            executor.clearCacheData();
+            coreTask.getAttribute().clearCacheData();
         }
         coreTask.getContainer().getTaskExecutor().resumeTask();
     }

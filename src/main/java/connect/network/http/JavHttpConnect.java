@@ -1,24 +1,18 @@
 package connect.network.http;
 
 
-import connect.json.JsonUtils;
-import connect.network.base.Interface.ISessionCallBack;
-import connect.network.base.JavSessionCallBack;
-import connect.network.base.NetTaskEntity;
-import connect.network.http.Interface.ARequest;
-import connect.network.http.Interface.GET;
-import connect.network.http.Interface.INetEntity;
-import connect.network.http.Interface.POST;
-import task.executor.BaseConsumerTask;
-import task.executor.ConsumerTaskExecutor;
-import task.executor.TaskContainer;
-import task.utils.IoUtils;
+import connect.network.base.RequestEntity;
+import connect.network.http.joggle.*;
+import task.executor.TaskExecutorPoolManager;
+import task.executor.interfaces.IConsumerAttribute;
+import task.executor.interfaces.ILoopTaskExecutor;
+import task.executor.interfaces.ITaskContainer;
 import task.utils.Logcat;
 
-import java.io.*;
 import java.lang.reflect.Field;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Queue;
 
 /**
  * Http通信类
@@ -28,91 +22,39 @@ import java.net.URL;
  */
 public class JavHttpConnect {
 
-    private static ISessionCallBack callBack = null;
-    private static TaskContainer container = null;
-    private static JavHttpConnect connect = null;
-    private static String baseUrl = null;
+    private static JavHttpConnect sConnect = null;
 
-    public static String getBaseUrl() {
-        return baseUrl;
-    }
+    private HttpCoreTask mCoreTask;
+    private HttpTaskConfig mHttpTaskManage;
 
-    public static void setBaseUrl(String baseUrl) {
-        JavHttpConnect.baseUrl = baseUrl;
-    }
 
     /**
-     * 请求类型
+     * 默认的请求tag
      */
-    public enum ConnectType {
-        POST("POST"), GET("GET");
+    public static final int DEFAULT_TASK_TAG = 0;
 
-        private String type;
 
-        ConnectType(String type) {
-            this.type = type;
-        }
-
-        public String getType() {
-            return type;
-        }
-    }
-
-    private JavHttpConnect(ISessionCallBack callBack) {
-        JavHttpConnect.callBack = callBack;
-        init();
-    }
-
-    private JavHttpConnect() {
-        callBack = new JavSessionCallBack();
-        init();
-    }
-
-    private void init() {
-        CoreTask coreTask = new CoreTask();
-        container = new TaskContainer(coreTask);
-    }
-
-    public static synchronized JavHttpConnect getInstance(ISessionCallBack callBack) {
-        if (connect == null) {
-            synchronized (JavHttpConnect.class) {
-                if (connect == null) {
-                    connect = new JavHttpConnect(callBack);
-                }
-            }
-        } else {
-            if (JavHttpConnect.callBack != callBack) {
-                JavHttpConnect.callBack = callBack;
-            }
-        }
-        return connect;
-    }
-
-    public static synchronized JavHttpConnect getInstance(Object target) {
-        if (connect == null) {
-            synchronized (JavHttpConnect.class) {
-                if (connect == null) {
-                    connect = new JavHttpConnect();
-                }
-            }
-        }
-        JavHttpConnect.callBack.setCallBackTarget(target);
-        return connect;
+    protected JavHttpConnect() {
+        mHttpTaskManage = new HttpTaskConfig();
+        mCoreTask = new HttpCoreTask(mHttpTaskManage);
+        ITaskContainer container = TaskExecutorPoolManager.getInstance().createJThread(mCoreTask);
+        mHttpTaskManage.setExecutor(container.getTaskExecutor());
+        mHttpTaskManage.setAttribute(container.getAttribute());
     }
 
     public static synchronized JavHttpConnect getInstance() {
-        if (connect == null) {
+        if (sConnect == null) {
             synchronized (JavHttpConnect.class) {
-                if (connect == null) {
-                    connect = new JavHttpConnect();
+                if (sConnect == null) {
+                    sConnect = new JavHttpConnect();
                 }
             }
         }
-        return connect;
+        return sConnect;
     }
 
-    public static ISessionCallBack getCallBack() {
-        return callBack;
+    public IHttpTaskConfig getHttpTaskConfig() {
+        return mHttpTaskManage;
     }
 
 
@@ -129,12 +71,16 @@ public class JavHttpConnect {
      * @param viewTarget           可设置控件的类（一般是 activity fragment view windows）
      * @param isAutoSetDataForView 如果请求成功是否自己为控件设置值
      */
-    private void submit(String address, ConnectType type, byte[] sendData, String scbMethodName, String ecbMethodName, Object resultType, Object callBackTarget, Object viewTarget, boolean isAutoSetDataForView) {
+    private void submit(String address, ConnectType type, byte[] sendData, String scbMethodName, String ecbMethodName,
+                        Object resultType, Object callBackTarget, Object viewTarget, boolean isAutoSetDataForView) {
+        submit(DEFAULT_TASK_TAG, address, type, sendData, scbMethodName, ecbMethodName, resultType, callBackTarget, viewTarget, isAutoSetDataForView);
+    }
+
+    private void submit(int taskTag, String address, ConnectType type, byte[] sendData, String scbMethodName, String ecbMethodName, Object resultType, Object callBackTarget, Object viewTarget, boolean isAutoSetDataForView) {
         if (address != null && type != null) {
             if (ConnectType.GET == type || ConnectType.POST == type) {
-                ConsumerTaskExecutor consumerTaskExecutor = container.getTaskExecutor();
-                consumerTaskExecutor.startTask();
-                NetTaskEntity entity = new NetTaskEntity();
+                RequestEntity entity = new RequestEntity();
+                entity.setTaskTag(taskTag);
                 entity.setAddress(address);
                 entity.setRequestMethod(type.getType());
                 entity.setSendData(sendData);
@@ -144,12 +90,14 @@ public class JavHttpConnect {
                 entity.setCallBackTarget(callBackTarget);
                 entity.setViewTarget(viewTarget);
                 entity.setAutoSetDataForView(isAutoSetDataForView);
-                consumerTaskExecutor.pushToCache(entity);
+
+                startTaskAndPushToCache(entity);
             }
         }
     }
 
-    private void submitGet(NetTaskEntity entity) {
+
+    private void submitGet(RequestEntity entity) {
         if (entity == null) {
             return;
         }
@@ -157,7 +105,7 @@ public class JavHttpConnect {
     }
 
 
-    private void submitPost(NetTaskEntity entity) {
+    private void submitPost(RequestEntity entity) {
         if (entity == null) {
             return;
         }
@@ -166,13 +114,26 @@ public class JavHttpConnect {
     }
 
 
-    private void submit(NetTaskEntity entity) {
+    private void submit(RequestEntity entity) {
         if (entity == null) {
             return;
         }
-        ConsumerTaskExecutor consumerTaskExecutor = container.getTaskExecutor();
-        consumerTaskExecutor.startTask();
-        consumerTaskExecutor.pushToCache(entity);
+
+        startTaskAndPushToCache(entity);
+    }
+
+    private void startTaskAndPushToCache(RequestEntity entity) {
+        IConsumerAttribute attribute = mHttpTaskManage.getAttribute();
+        ILoopTaskExecutor executor = mHttpTaskManage.getExecutor();
+        if (!executor.getAliveState()) {
+            executor.startTask();
+        } else if (executor.isIdleState()) {
+            ITaskContainer container = TaskExecutorPoolManager.getInstance().runTask(mCoreTask);
+            attribute = container.getAttribute();
+            mHttpTaskManage.setAttribute(attribute);
+            mHttpTaskManage.setExecutor(container.getTaskExecutor());
+        }
+        attribute.pushToCache(entity);
     }
 
     /**
@@ -181,16 +142,20 @@ public class JavHttpConnect {
      * @param entity         发送数据实体
      * @param callBackTarget 请求回调接收者
      */
-    public void submitEntity(INetEntity entity, Object callBackTarget) {
-        submitEntity(entity, callBackTarget, null, false);
+    public void submitEntity(IRequestEntity entity, Object callBackTarget) {
+        submitEntity(entity, callBackTarget, null, false, DEFAULT_TASK_TAG);
     }
 
-    public void submitEntity(INetEntity entity, Object callBackTarget, Object viewTarget) {
-        submitEntity(entity, callBackTarget, viewTarget, false);
+    public void submitEntity(IRequestEntity entity, Object callBackTarget, Object viewTarget) {
+        submitEntity(entity, callBackTarget, viewTarget, false, DEFAULT_TASK_TAG);
     }
 
-    public void submitEntity(INetEntity entity, Object callBackTarget, boolean isAutoSetDataForView) {
-        submitEntity(entity, callBackTarget, null, isAutoSetDataForView);
+    public void submitEntity(IRequestEntity entity, Object callBackTarget, boolean isAutoSetDataForView) {
+        submitEntity(entity, callBackTarget, null, isAutoSetDataForView, DEFAULT_TASK_TAG);
+    }
+
+    public void submitEntity(IRequestEntity entity, Object callBackTarget, int taskTag) {
+        submitEntity(entity, callBackTarget, null, false, taskTag);
     }
 
     /**
@@ -201,15 +166,16 @@ public class JavHttpConnect {
      * @param viewTarget           可设置控件的类（一般是 activity fragment view windows）
      * @param isAutoSetDataForView 是否自动为控件设值
      */
-    public void submitEntity(INetEntity entity, Object callBackTarget, Object viewTarget, boolean isAutoSetDataForView) {
+    public void submitEntity(IRequestEntity entity, Object callBackTarget, Object viewTarget, boolean isAutoSetDataForView, int taskTag) {
         Class clx = entity.getClass();
         ARequest request = (ARequest) clx.getAnnotation(ARequest.class);
+        int atnTaskTag = taskTag != DEFAULT_TASK_TAG ? taskTag : request.taskTag();
         Class requestType = request.requestType();
         Object resultType = request.savePath() == null || request.savePath().length() == 0 ? request.resultType() : request.savePath();
-        String address = baseUrl == null ? request.url() : baseUrl + request.url();
+        String address = mHttpTaskManage.getBaseUrl() == null ? request.url() : mHttpTaskManage.getBaseUrl() + request.url();
 
-        NetTaskEntity netTaskEntity = new NetTaskEntity();
-        netTaskEntity.setAddress(address);
+        RequestEntity netTaskEntity = new RequestEntity();
+        netTaskEntity.setTaskTag(atnTaskTag);
         netTaskEntity.setScbMethodName(request.successMethod());
         netTaskEntity.setEcbMethodName(request.errorMethod());
         netTaskEntity.setCallBackTarget(callBackTarget);
@@ -218,9 +184,10 @@ public class JavHttpConnect {
         netTaskEntity.setAutoSetDataForView(isAutoSetDataForView);
 
         if (requestType == POST.class) {
-            Logcat.d("==>JavHttpConnect post submitEntity = " + new String(entity.postData()));
+            byte[] postData = entity.postData();
+            Logcat.d("==>JavHttpConnect post submitEntity = " + new String(postData));
             netTaskEntity.setAddress(address);
-            netTaskEntity.setSendData(entity.postData());
+            netTaskEntity.setSendData(postData);
             submitPost(netTaskEntity);
         } else if (requestType == GET.class) {
             StringBuilder builder = new StringBuilder();
@@ -244,7 +211,7 @@ public class JavHttpConnect {
     /**
      * get请求就是把实体内容封装成请求地址
      */
-    private void entityToStr(Class clx, StringBuilder builder, INetEntity entity) {
+    private void entityToStr(Class clx, StringBuilder builder, IRequestEntity entity) {
         Field[] files = clx.getDeclaredFields();
         for (Field field : files) {
             field.setAccessible(true);
@@ -259,180 +226,66 @@ public class JavHttpConnect {
             }
         }
         Class supperClx = clx.getSuperclass();
-        if (supperClx != INetEntity.class && supperClx != Object.class) {
+        if (supperClx != IRequestEntity.class && supperClx != Object.class) {
             entityToStr(supperClx, builder, entity);
         }
     }
 
     //    ---------------------------submitEntity----------------------------------
 
+    public void cancelSubmit(String url) {
+        if (url != null && url.length() > 0) {
+            Queue<RequestEntity> queue = mHttpTaskManage.getAttribute().getCache();
+            List<RequestEntity> record = new ArrayList<>();
+            for (RequestEntity entity : queue) {
+                if (url.equals(entity.getAddress())) {
+                    record.add(entity);
+                }
+            }
+            if (!record.isEmpty()) {
+                queue.removeAll(record);
+            }
+        }
+    }
+
+    public void cancelSubmit(IRequestEntity entity) {
+        if (entity != null) {
+            Queue<RequestEntity> queue = mHttpTaskManage.getAttribute().getCache();
+            Class cancelClx = entity.getClass();
+            ARequest cancelRequest = (ARequest) cancelClx.getAnnotation(ARequest.class);
+            List<RequestEntity> record = new ArrayList<>();
+            for (RequestEntity requestEntity : queue) {
+                if (cancelRequest.url().equals(requestEntity.getAddress())) {
+                    record.add(requestEntity);
+                }
+            }
+            if (!record.isEmpty()) {
+                queue.removeAll(record);
+            }
+        }
+    }
+
+    public void cancelSubmit(int taskTag) {
+        Queue<RequestEntity> queue = mHttpTaskManage.getAttribute().getCache();
+        List<RequestEntity> record = new ArrayList<>();
+        for (RequestEntity entity : queue) {
+            if (entity.getTaskTag() == taskTag) {
+                record.add(entity);
+            }
+        }
+        if (!record.isEmpty()) {
+            queue.removeAll(record);
+        }
+    }
+
     /**
      * 释放资源
      */
-    public synchronized static void recycle() {
-        if (container != null) {
-            ConsumerTaskExecutor consumerTaskExecutor = container.getTaskExecutor();
-            consumerTaskExecutor.stopTask();
+    public synchronized void recycle() {
+        if (mHttpTaskManage != null) {
+            mHttpTaskManage.recycle();
         }
-        if (connect != null && connect.callBack != null) {
-            connect.callBack.recycle();
-            connect = null;
-        }
-        container = null;
+        sConnect = null;
     }
 
-
-    private class CoreTask extends BaseConsumerTask<NetTaskEntity> {
-
-        private HttpURLConnection init(NetTaskEntity task) {
-            HttpURLConnection connection = null;
-            try {
-                URL url = new URL(task.getAddress());
-                connection = (HttpURLConnection) url.openConnection();
-                connection.setConnectTimeout(8000);
-                connection.setReadTimeout(8000);
-                connection.setRequestMethod(task.getRequestMethod());
-
-                connection.setDoOutput(true);
-                connection.setDoInput(true);
-                connection.setUseCaches(false);
-                connection.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
-                connection.setRequestProperty("Connection", "keep-alive");
-                connection.setRequestProperty("Accept-Charset", "utf-8");
-                connection.setRequestProperty("Accept-Encoding", "gzip");
-//                    connection.setRequestProperty("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT; DigExt)");
-                connection.setRequestProperty("User-Agent", "HttpURLConnection");
-//                    connection.setRequestProperty("Accept", "application/json");
-                //此处为暴力方法设置接受所有类型，以此来防范返回415;
-                connection.setRequestProperty("Accept", "*/*");
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            return connection;
-        }
-
-        @Override
-        public void onCreateData() {
-            ConsumerTaskExecutor consumerTaskExecutor = container.getTaskExecutor();
-            if (consumerTaskExecutor.getCacheDataSize() == 0) {
-                consumerTaskExecutor.waitTask(30000);
-                if (consumerTaskExecutor.getCacheDataSize() == 0) {
-                    consumerTaskExecutor.stopTask();
-                }
-            }
-        }
-
-        @Override
-        protected void onProcess() {
-            ConsumerTaskExecutor<NetTaskEntity> consumerTaskExecutor = container.getTaskExecutor();
-            onProcessData(consumerTaskExecutor.popCacheData());
-        }
-
-
-        /**
-         * 发送时转换编码，解决编码问题
-         * String sendData = URLEncoder.encode(String.valueOf(enCodeData.sendData), "utf-8");
-         * OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
-         * writer.write(sendData);
-         * writer.close();
-         */
-
-
-        private void onProcessData(NetTaskEntity data) {
-            HttpURLConnection connection = init(data);
-            if (connection == null) {
-                ConsumerTaskExecutor consumerTaskExecutor = container.getTaskExecutor();
-                if (callBack != null && consumerTaskExecutor.getLoopState()) {
-                    data.setResultData(null);
-                    callBack.notifyErrorMessage(data);
-                }
-                return;
-            }
-            try {
-                if (data.getSendData() != null) {
-                    OutputStream os = connection.getOutputStream();
-                    os.write(data.getSendData());
-                    os.flush();
-                }
-
-                int code = connection.getResponseCode();
-//                Logcat.d("Http Response Code = " + code);
-                if (code != HttpURLConnection.HTTP_OK) {
-                    Logcat.e("Http Response Code = " + code);
-                    throw new IOException();
-                }
-
-                if (data.getCallBackTarget() == null) {
-                    Logcat.w("http data.target = null return ....");
-                    return;
-                }
-
-                int length = connection.getContentLength();
-                InputStream is = connection.getInputStream();
-                int available = is.available();
-//                Logcat.d("http InputStream available = " + available + "  Content Length =" + length);
-                if (length <= 0 && available <= 0) {
-                    return;
-                }
-
-                Object result = data.getResultType();
-                if (String.class.getName().equals(result.getClass().getName())) {
-                    //结果保存成文件的
-                    String path = (String) data.getResultType();
-                    File file = new File(path);
-                    if (!file.exists()) {
-                        //文件没有存在
-                        File parentFile = file.getParentFile();
-                        if (!parentFile.exists()) {
-                            parentFile.mkdirs();
-                        }
-                    }
-                    FileOutputStream fos = new FileOutputStream(file);
-                    boolean state = IoUtils.pipReadWrite(is, fos, false);
-                    if (state) {
-                        if (callBack != null) {
-                            data.setResultData(path);
-                            callBack.notifySuccessMessage(data);
-                        }
-                    } else {
-                        throw new IOException();
-                    }
-                    fos.close();
-                } else {
-                    byte[] buffer = IoUtils.tryRead(is);
-                    if (byte[].class.getName().equals(((Class) result).getName()) || result == null) {
-                        if (callBack != null) {
-                            data.setResultData(buffer);
-                            callBack.notifySuccessMessage(data);
-                        }
-                    } else {
-                        String str = new String(buffer, "UTF-8");
-                        String className = data.getResultType().toString().replace("class ", "");
-                        Object entity = null;
-                        Logcat.d("==> Request address = " + data.getAddress());
-                        Logcat.d("==> Request to return the content = " + str);
-                        if (str.startsWith("<?xml")) {
-//                            entity = XmlParser.parserToEntity(str, className);
-                        } else {
-                            entity = JsonUtils.toEntity(className, str);
-                        }
-                        if (callBack != null) {
-                            data.setResultData(entity == null ? buffer : entity);
-                            callBack.notifySuccessMessage(data);
-                        }
-                    }
-                }
-
-            } catch (Throwable e) {
-                e.printStackTrace();
-                ConsumerTaskExecutor consumerTaskExecutor = container.getTaskExecutor();
-                if (callBack != null && consumerTaskExecutor.getLoopState()) {
-                    data.setResultData(null);
-                    callBack.notifyErrorMessage(data);
-                }
-            } finally {
-                connection.disconnect();
-            }
-        }
-    }
 }

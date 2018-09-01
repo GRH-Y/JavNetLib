@@ -1,17 +1,14 @@
 package connect.network.tcp;
 
 
-import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketException;
 
 public class TcpClientTask {
 
-    private Socket socket;
-    private InetSocketAddress address;
-    /**
-     * 超时(毫秒)
-     */
-    private int timeout;
+    private Socket mSocket;
+    private String mHost;
+    private int mPort;
 
     private TcpReceive receive = null;
     private TcpSender sender = null;
@@ -19,20 +16,12 @@ public class TcpClientTask {
     //---------------------------- set ---------------------------------------
 
     public void setSocket(Socket socket) {
-        this.socket = socket;
+        this.mSocket = socket;
     }
 
-    public void setAddress(String ip, int port) {
-        address = new InetSocketAddress(ip, port);
-    }
-
-    /**
-     * 设置连接超时和读取超时
-     *
-     * @param timeout 超时(毫秒)
-     */
-    public void setTimeout(int timeout) {
-        this.timeout = timeout;
+    public void setAddress(String host, int port) {
+        this.mHost = host;
+        this.mPort = port;
     }
 
     public void setReceive(TcpReceive receive) {
@@ -45,33 +34,41 @@ public class TcpClientTask {
 
     //---------------------------- get ---------------------------------------
 
-    protected int getTimeout() {
-        return timeout;
+    public int getPort() {
+        return mPort;
     }
 
-    protected Socket getSocket() {
-        return socket;
+    public String getHost() {
+        return mHost;
     }
 
-    protected InetSocketAddress getSocketAddress() {
-        return address;
+    public Socket getSocket() {
+        return mSocket;
     }
 
-    protected TcpSender getSender() {
+    public TcpSender getSender() {
         return sender;
     }
 
-    protected TcpReceive getReceive() {
+    public TcpReceive getReceive() {
         return receive;
     }
 
     //---------------------------- on ---------------------------------------
 
-    protected void onConnect(boolean isConnect) {
+    protected void onConfigSocket(Socket socket) throws SocketException {
 
     }
 
-    protected void onClose() {
+    /**
+     * 链接状态回调
+     *
+     * @param isConnect
+     */
+    protected void onConnectSocket(boolean isConnect) {
+    }
 
+
+    protected void onCloseSocket() {
     }
 }

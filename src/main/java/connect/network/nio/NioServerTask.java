@@ -1,7 +1,6 @@
 package connect.network.nio;
 
 
-import java.net.InetSocketAddress;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
@@ -13,13 +12,15 @@ import java.nio.channels.SocketChannel;
  */
 public class NioServerTask {
 
-    private ServerSocketChannel channel = null;
-    private InetSocketAddress address;
+    private String mHost;
+    private int mPort;
+    private ServerSocketChannel mChannel = null;
 
     //---------------------------- set ---------------------------------------
 
-    public void setAddress(String ip, int port) {
-        address = new InetSocketAddress(ip, port);
+    public void setAddress(String host, int port) {
+        this.mHost = host;
+        this.mPort = port;
     }
 
     /**
@@ -28,27 +29,32 @@ public class NioServerTask {
      * @param channel
      */
     public void setSocketChannel(ServerSocketChannel channel) {
-        this.channel = channel;
+        this.mChannel = channel;
     }
-    
+
     //---------------------------- get ---------------------------------------
 
-    protected ServerSocketChannel getSocketChannel() {
-        return channel;
+    public int getPort() {
+        return mPort;
     }
 
-    protected InetSocketAddress getSocketAddress() {
-        return address;
+    public String getHost() {
+        return mHost;
     }
+
+    public ServerSocketChannel getSocketChannel() {
+        return mChannel;
+    }
+
 
     //---------------------------- on ---------------------------------------
 
-    protected void onAccept(SocketChannel channel) {
+    protected void onAcceptServerChannel(SocketChannel channel) {
     }
 
-    protected void onOpenServer(boolean isSuccess) {
+    protected void onOpenServerChannel(boolean isSuccess) {
     }
 
-    protected void onCloseServer() {
+    protected void onCloseServerChannel() {
     }
 }

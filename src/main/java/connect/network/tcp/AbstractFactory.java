@@ -1,6 +1,6 @@
 package connect.network.tcp;
 
-import connect.network.base.Interface.IFactory;
+import connect.network.base.joggle.IFactory;
 import task.executor.BaseLoopTask;
 import task.executor.LoopTaskExecutor;
 import task.executor.TaskContainer;
@@ -28,15 +28,15 @@ public abstract class AbstractFactory<T> implements IFactory<T> {
      *
      * @param loadTime 毫秒
      */
-    public void setmLoadTime(int loadTime) {
-        if (mLoadTime > 0) {
-            this.mLoadTime = loadTime * 1000000;
+    public void setLoadTime(int loadTime) {
+        if (loadTime > 0) {
+            this.mLoadTime = loadTime * 1000000L;
         }
     }
 
     @Override
     public void addTask(T task) {
-        if (task == null || mExecutorQueue.size() == 0) {
+        if (task == null || mExecutorQueue.isEmpty()) {
             return;
         }
         mConnectCache.add(task);
@@ -45,7 +45,7 @@ public abstract class AbstractFactory<T> implements IFactory<T> {
 
     @Override
     public void removeTask(T task) {
-        if (task == null || mExecutorQueue.size() == 0) {
+        if (task == null || mExecutorQueue.isEmpty()) {
             return;
         }
         for (CoreTask coreTask : mExecutorQueue) {
@@ -56,7 +56,7 @@ public abstract class AbstractFactory<T> implements IFactory<T> {
 
     @Override
     public void open() {
-        if (mExecutorQueue.size() == 0) {
+        if (mExecutorQueue.isEmpty()) {
             openCoreTask();
         }
     }

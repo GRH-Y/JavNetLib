@@ -1,7 +1,7 @@
 package connect.network.base;
 
 
-import connect.network.base.Interface.ISessionCallBack;
+import connect.network.base.joggle.ISessionCallBack;
 import task.utils.ThreadAnnotation;
 
 /**
@@ -38,7 +38,7 @@ public class JavSessionCallBack implements ISessionCallBack {
      * @param entity 请求任务
      */
     @Override
-    public void notifySuccessMessage(NetTaskEntity entity) {
+    public void notifySuccessMessage(RequestEntity entity) {
         Object object = entity == null || entity.getCallBackTarget() == null ? target : entity.getCallBackTarget();
         ThreadAnnotation.disposeMessage(entity.getSuccessMethodName(), object, entity);
     }
@@ -50,7 +50,7 @@ public class JavSessionCallBack implements ISessionCallBack {
      * @param entity 请求任务
      */
     @Override
-    public void notifyErrorMessage(NetTaskEntity entity) {
+    public void notifyErrorMessage(RequestEntity entity) {
         Object object = entity == null || entity.getCallBackTarget() == null ? target : entity.getCallBackTarget();
         ThreadAnnotation.disposeMessage(entity.getErrorMethodName(), object, entity);
     }
@@ -58,11 +58,6 @@ public class JavSessionCallBack implements ISessionCallBack {
     @Override
     public void recycle() {
         target = null;
-        try {
-            finalize();
-        } catch (Throwable throwable) {
-            throwable.printStackTrace();
-        }
     }
 
 }

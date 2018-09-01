@@ -1,4 +1,4 @@
-package connect.network.base.Interface;
+package connect.network.base.joggle;
 
 public interface IFactory<T> {
 

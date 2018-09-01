@@ -1,7 +1,7 @@
 package connect.network.nio;
 
 
-import connect.network.base.Interface.IFactory;
+import connect.network.base.joggle.IFactory;
 import task.executor.BaseLoopTask;
 import task.executor.LoopTaskExecutor;
 import task.executor.TaskContainer;
@@ -9,6 +9,7 @@ import task.executor.TaskContainer;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -21,10 +22,9 @@ public abstract class AbstractNioFactory<T> implements IFactory<T> {
     private boolean mIsNeedDestroy = true;
     private Selector mSelector;
 
-    private long mLoadTime = 2000000000;
+    private long mLoadTime = 0;//2000000000
 
-    public AbstractNioFactory() throws IOException {
-        mSelector = Selector.open();
+    public AbstractNioFactory() {
         mConnectCache = new ConcurrentLinkedQueue<>();
         mExecutorQueue = new ConcurrentLinkedQueue<>();
         mDestroyCache = new ConcurrentLinkedQueue<>();
@@ -35,9 +35,9 @@ public abstract class AbstractNioFactory<T> implements IFactory<T> {
      *
      * @param loadTime 毫秒
      */
-    public void setmLoadTime(int loadTime) {
+    public void setLoadTime(int loadTime) {
         if (mLoadTime > 0) {
-            this.mLoadTime = loadTime * 1000000;
+            this.mLoadTime = loadTime * 1000000L;
         }
     }
 
@@ -50,27 +50,31 @@ public abstract class AbstractNioFactory<T> implements IFactory<T> {
 
     @Override
     public void addTask(T task) {
-        if (task == null || mExecutorQueue.size() == 0) {
-            return;
+        if (task != null && !mExecutorQueue.isEmpty() && !mConnectCache.contains(task)) {
+            for (SelectionKey selectionKey : mSelector.selectedKeys()) {
+                T hasTask = (T) selectionKey.attachment();
+                if (hasTask == task) {
+                    return;
+                }
+            }
+            mConnectCache.add(task);
+            mSelector.wakeup();
+            wakeUpCoreTask();
         }
-        mConnectCache.add(task);
-        mSelector.wakeup();
-        wakeUpCoreTask();
     }
 
     @Override
     public void removeTask(T task) {
-        if (task == null || mExecutorQueue.size() == 0) {
-            return;
+        if (task != null && !mExecutorQueue.isEmpty() && !mDestroyCache.contains(task)) {
+            mDestroyCache.add(task);
+            mSelector.wakeup();
+            wakeUpCoreTask();
         }
-        mDestroyCache.add(task);
-        mSelector.wakeup();
-        wakeUpCoreTask();
     }
 
     @Override
     public void open() {
-        if (mExecutorQueue.size() == 0) {
+        if (mExecutorQueue.isEmpty()) {
             openCoreTask();
         }
     }
@@ -98,16 +102,25 @@ public abstract class AbstractNioFactory<T> implements IFactory<T> {
      * 开启新的线程
      */
     protected void openCoreTask() {
+        if (mSelector == null) {
+            try {
+                mSelector = Selector.open();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
         CoreTask coreTask = new CoreTask();
         coreTask.getExecutor().startTask();
         mExecutorQueue.add(coreTask);
     }
 
     protected void destroyCoreTask() {
-        while (!mExecutorQueue.isEmpty()) {
-            CoreTask coreTask = mExecutorQueue.remove();
-            coreTask.getExecutor().stopTask();
-        }
+        mExecutorQueue.forEach(item -> item.getExecutor().stopTask());
+//        while (!mExecutorQueue.isEmpty()) {
+//            CoreTask coreTask = mExecutorQueue.remove();
+//            coreTask.getExecutor().stopTask();
+//        }
+        mExecutorQueue.clear();
         mConnectCache.clear();
         mSelector.wakeup();
         try {
@@ -117,20 +130,6 @@ public abstract class AbstractNioFactory<T> implements IFactory<T> {
         }
     }
 
-
-    private void removeNeedDestroyNioTask() {
-        //销毁链接
-        while (!mDestroyCache.isEmpty()) {
-            T target = mDestroyCache.remove();
-            for (SelectionKey selectionKey : mSelector.keys()) {
-                T task = (T) selectionKey.attachment();
-                if (task == target) {
-                    onDisconnectTask(target);
-                    selectionKey.cancel();
-                }
-            }
-        }
-    }
 
     protected class CoreTask extends BaseLoopTask {
 
@@ -144,6 +143,28 @@ public abstract class AbstractNioFactory<T> implements IFactory<T> {
 
         public LoopTaskExecutor getExecutor() {
             return executor;
+        }
+
+        private void removeNeedDestroyNioTask() {
+            //销毁链接
+            while (!mDestroyCache.isEmpty()) {
+                T target = mDestroyCache.remove();
+                onDisconnectTask(target);
+                Iterator<SelectionKey> iterator = mSelector.keys().iterator();
+                while (iterator.hasNext()) {
+                    SelectionKey selectionKey = iterator.next();
+                    T task = (T) selectionKey.attachment();
+                    if (task == target) {
+                        try {
+                            selectionKey.channel().close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        selectionKey.cancel();
+                        break;
+                    }
+                }
+            }
         }
 
         @Override
@@ -186,17 +207,11 @@ public abstract class AbstractNioFactory<T> implements IFactory<T> {
                 //执行速度过慢，则另外开启线程!
 //                Logcat.d("==> 执行速度过慢，则另外开启线程! " + useTime);
                 openCoreTask();
-            } else if (mLoadTime > useTime && useTime > 50000) {
-                //任务压力不大执行速度过快，则另外关闭多余线程!
-                if (mExecutorQueue.size() > 1) {
-//                    Logcat.d("==> 任务压力不大执行速度过快，则另外关闭多余线程! " + useTime);
-                    setIsNeedDestroy(false);
-                    getExecutor().stopTask();
-                    mExecutorQueue.remove(this);
-                }
-            } else {
-//                Logcat.d("==> 任务压力不大执行速度过快,线程需要睡眠2000毫秒! " + useTime);
-                getExecutor().sleepTask(1000);
+            } else if (useTime < 1000000 && mExecutorQueue.size() > 1) {
+                //少于1毫秒而且线程数据大于1，则另外关闭多余线程!
+                setIsNeedDestroy(false);
+                getExecutor().stopTask();
+                mExecutorQueue.remove(this);
             }
         }
 

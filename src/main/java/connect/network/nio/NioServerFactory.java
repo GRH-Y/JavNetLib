@@ -4,6 +4,7 @@ package connect.network.nio;
 import task.utils.Logcat;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -20,7 +21,7 @@ public class NioServerFactory extends AbstractNioFactory<NioServerTask> {
 
     private static NioServerFactory mFactory = null;
 
-    public static NioServerFactory getFactory() throws IOException {
+    public static synchronized NioServerFactory getFactory() {
         if (mFactory == null) {
             synchronized (NioClientFactory.class) {
                 if (mFactory == null) {
@@ -31,7 +32,11 @@ public class NioServerFactory extends AbstractNioFactory<NioServerTask> {
         return mFactory;
     }
 
-    private NioServerFactory() throws IOException {
+    public static void destroy() {
+        mFactory = null;
+    }
+
+    private NioServerFactory() {
         super();
     }
 
@@ -41,26 +46,25 @@ public class NioServerFactory extends AbstractNioFactory<NioServerTask> {
         Logcat.d("==##> NioServerFactory addTask mConnectCache.size = " + mConnectCache.size());
     }
 
-    @Override
-    public void close() {
-        super.close();
-        mFactory = null;
-    }
-
 
     @Override
     protected void onConnectTask(Selector selector, NioServerTask task) {
         //创建服务，并注册到selector，监听所有的事件
-        Logcat.d("==##> NioServerFactory onConnectTask NioServerTask = " + task.getSocketAddress().toString());
+        Logcat.d("==##> NioServerFactory onConnectTask NioServerTask = " + task.getHost() + ":" + task.getPort());
         ServerSocketChannel serverSocketChannel = task.getSocketChannel();
-        if (serverSocketChannel == null) {
+        if (serverSocketChannel == null && task.getHost() != null && task.getPort() > 0) {
             try {
                 serverSocketChannel = ServerSocketChannel.open();
-                serverSocketChannel.bind(task.getSocketAddress());
+                serverSocketChannel.bind(new InetSocketAddress(task.getHost(), task.getPort()));
                 task.setSocketChannel(serverSocketChannel);
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
+        if (serverSocketChannel == null) {
+            task.onOpenServerChannel(false);
+            mDestroyCache.add(task);
+            return;
         }
         try {
             if (serverSocketChannel.isBlocking()) {
@@ -68,11 +72,14 @@ public class NioServerFactory extends AbstractNioFactory<NioServerTask> {
             }
             serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
             serverSocketChannel.keyFor(selector).attach(task);
-            task.onOpenServer(true);
         } catch (Exception e) {
             e.printStackTrace();
-            task.onOpenServer(false);
-            mDestroyCache.add(task);
+        } finally {
+            boolean isOpen = serverSocketChannel.isOpen();
+            task.onOpenServerChannel(isOpen);
+            if (!isOpen) {
+                mDestroyCache.add(task);
+            }
         }
     }
 
@@ -92,7 +99,7 @@ public class NioServerFactory extends AbstractNioFactory<NioServerTask> {
                 Logcat.d("==##> selectionKey isAcceptable ");
                 try {
                     SocketChannel channel = serverSocketChannel.accept();
-                    task.onAccept(channel);
+                    task.onAcceptServerChannel(channel);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -103,6 +110,6 @@ public class NioServerFactory extends AbstractNioFactory<NioServerTask> {
 
     @Override
     protected void onDisconnectTask(NioServerTask task) {
-        task.onCloseServer();
+        task.onCloseServerChannel();
     }
 }

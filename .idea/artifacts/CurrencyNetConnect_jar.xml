@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="CurrencyNetConnect:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/CurrencyNetConnect_jar</output-path>
+    <root id="archive" name="CurrencyNetConnect.jar">
+      <element id="module-output" name="CurrencyNetConnect_main" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/../CurrencyThreadTask/out/artifacts/CurrencyThreadTask_main_jar/CurrencyThreadTask_main.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>

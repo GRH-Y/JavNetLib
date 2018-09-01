@@ -1,6 +1,6 @@
 package connect.network.tcp;
 
-import connect.network.base.Interface.IReceive;
+import connect.network.base.joggle.IReceive;
 import task.utils.IoUtils;
 import task.utils.ThreadAnnotation;
 

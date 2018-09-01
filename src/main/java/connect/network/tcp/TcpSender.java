@@ -1,6 +1,6 @@
 package connect.network.tcp;
 
-import connect.network.base.Interface.ISender;
+import connect.network.base.joggle.ISender;
 
 import java.io.IOException;
 import java.io.OutputStream;

@@ -52,7 +52,7 @@ public class JsonUtils implements IJson {
                     }
                 }
                 cls = cls.getSuperclass();
-                if (cls.getName().equals(Object.class.getName())) {
+                if (cls.isAssignableFrom(Object.class)) {
                     break;
                 } else {
                     fields = cls.getDeclaredFields();
@@ -217,7 +217,7 @@ public class JsonUtils implements IJson {
      * @param value      值
      */
     private static void setSuperValue(Class superClass, String name, Object entity, String value) {
-        if (superClass != null && !superClass.getName().equals(Object.class.getName())) {
+        if (superClass != null && !superClass.isAssignableFrom(Object.class)) {
             try {
                 Field field = superClass.getDeclaredField(name);
                 setValue(field, entity, value);
