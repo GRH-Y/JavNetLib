@@ -1,0 +1,6 @@
+
+hsquid:CommentedOutCodeLineÄ"<This block of commented-out lines of code should be removed.(Ý¨‰ßþÿÿÿÿ
+Fsquid:S1066P"/Merge this if statement with the enclosing one.(ºÚ¦ã
+@squid:S1148à"#Use a logger to log this exception.(€ÉÔ…ýÿÿÿÿ
+Tsquid:S00107I"<Method has 9 parameters, which is greater than 7 authorized.( ¦»Ð
+Zsquid:S00107N"=Method has 10 parameters, which is greater than 7 authorized.(‰±Œ‹úÿÿÿÿ

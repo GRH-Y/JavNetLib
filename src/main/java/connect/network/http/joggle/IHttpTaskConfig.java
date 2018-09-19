@@ -10,6 +10,8 @@ public interface IHttpTaskConfig {
 
     void setInterceptRequest(IInterceptRequest interceptRequest);
 
+    void setHttpSSLFactory(IHttpSSLFactory factory);
+
     void setFreeExit(long millisecond);
 
     void setBaseUrl(String baseUrl);

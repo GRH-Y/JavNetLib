@@ -7,7 +7,8 @@ import task.executor.TaskExecutorPoolManager;
 import task.executor.interfaces.IConsumerAttribute;
 import task.executor.interfaces.ILoopTaskExecutor;
 import task.executor.interfaces.ITaskContainer;
-import task.utils.Logcat;
+import util.Logcat;
+import util.StringUtils;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -37,9 +38,8 @@ public class JavHttpConnect {
     protected JavHttpConnect() {
         mHttpTaskManage = new HttpTaskConfig();
         mCoreTask = new HttpCoreTask(mHttpTaskManage);
-        ITaskContainer container = TaskExecutorPoolManager.getInstance().createJThread(mCoreTask);
-        mHttpTaskManage.setExecutor(container.getTaskExecutor());
-        mHttpTaskManage.setAttribute(container.getAttribute());
+        ITaskContainer container = TaskExecutorPoolManager.getInstance().runTask(mCoreTask, mHttpTaskManage.getAttribute());
+        mHttpTaskManage.setTaskContainer(container);
     }
 
     public static synchronized JavHttpConnect getInstance() {
@@ -118,7 +118,6 @@ public class JavHttpConnect {
         if (entity == null) {
             return;
         }
-
         startTaskAndPushToCache(entity);
     }
 
@@ -127,13 +126,14 @@ public class JavHttpConnect {
         ILoopTaskExecutor executor = mHttpTaskManage.getExecutor();
         if (!executor.getAliveState()) {
             executor.startTask();
-        } else if (executor.isIdleState()) {
-            ITaskContainer container = TaskExecutorPoolManager.getInstance().runTask(mCoreTask);
-            attribute = container.getAttribute();
-            mHttpTaskManage.setAttribute(attribute);
-            mHttpTaskManage.setExecutor(container.getTaskExecutor());
+        } else if (executor.isIdleState() && executor.getAliveState()) {
+            ITaskContainer container = TaskExecutorPoolManager.getInstance().runTask(mCoreTask, mHttpTaskManage.getAttribute());
+            container.setAttribute(attribute);
+            executor = container.getTaskExecutor();
+            mHttpTaskManage.setTaskContainer(container);
         }
         attribute.pushToCache(entity);
+        executor.resumeTask();
     }
 
     /**
@@ -182,6 +182,7 @@ public class JavHttpConnect {
         netTaskEntity.setViewTarget(viewTarget);
         netTaskEntity.setResultType(resultType);
         netTaskEntity.setAutoSetDataForView(isAutoSetDataForView);
+        netTaskEntity.setRequestMethod(requestType.getSimpleName());
 
         if (requestType == POST.class) {
             byte[] postData = entity.postData();
@@ -192,7 +193,6 @@ public class JavHttpConnect {
         } else if (requestType == GET.class) {
             StringBuilder builder = new StringBuilder();
             builder.append(address);
-            builder.append("?");
 
 //            Map<String, String> header = new HashMap<>(8);
 //            entity.getConnect(header);
@@ -202,7 +202,11 @@ public class JavHttpConnect {
 //                builder.append(header.get(key));
 //                builder.append("&");
 //            }
-            entityToStr(clx, builder, entity);
+            String ret = entityToStr(clx, entity);
+            if (!StringUtils.isEmpty(ret)) {
+                builder.append("?");
+                builder.append(ret);
+            }
             netTaskEntity.setAddress(builder.toString());
             submitGet(netTaskEntity);
         }
@@ -211,7 +215,8 @@ public class JavHttpConnect {
     /**
      * get请求就是把实体内容封装成请求地址
      */
-    private void entityToStr(Class clx, StringBuilder builder, IRequestEntity entity) {
+    private String entityToStr(Class clx, IRequestEntity entity) {
+        StringBuilder builder = new StringBuilder();
         Field[] files = clx.getDeclaredFields();
         for (Field field : files) {
             field.setAccessible(true);
@@ -227,8 +232,12 @@ public class JavHttpConnect {
         }
         Class supperClx = clx.getSuperclass();
         if (supperClx != IRequestEntity.class && supperClx != Object.class) {
-            entityToStr(supperClx, builder, entity);
+            String ret = entityToStr(supperClx, entity);
+            if (!StringUtils.isEmpty(ret)) {
+                builder.append(ret);
+            }
         }
+        return builder.toString();
     }
 
     //    ---------------------------submitEntity----------------------------------

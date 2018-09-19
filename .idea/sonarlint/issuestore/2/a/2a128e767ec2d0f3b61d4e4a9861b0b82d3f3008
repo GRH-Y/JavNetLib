@@ -1,0 +1,9 @@
+
+?squid:S1148V"#Use a logger to log this exception.(€ÉÔ…ıÿÿÿÿ
+?squid:S1148<"#Use a logger to log this exception.(€ÉÔ…ıÿÿÿÿ
+osquid:ModifiersOrderCheck"EReorder the modifiers to comply with the Java Language Specification.(Üóó±ıÿÿÿÿ
+?squid:S1148M"#Use a logger to log this exception.(€ÉÔ…ıÿÿÿÿ
+[squid:S2259>"DA "NullPointerException" could be thrown; "socket" is nullable here.(Íé´ÿ
+Fsquid:S1148c"#Use a logger to log this exception.(€ÉÔ…ıÿÿÿÿ8†šØ,
+`squid:S2095("DUse try-with-resources or close this "Socket" in a "finally" clause.(º‚ñÍûÿÿÿÿ
+Fsquid:S2093%"*Change this "try" to a try-with-resources.(¡»¢üùÿÿÿÿ

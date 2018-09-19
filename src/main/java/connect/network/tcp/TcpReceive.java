@@ -1,8 +1,9 @@
 package connect.network.tcp;
 
+
 import connect.network.base.joggle.IReceive;
-import task.utils.IoUtils;
-import task.utils.ThreadAnnotation;
+import task.message.ThreadAnnotation;
+import util.IoUtils;
 
 import java.io.InputStream;
 

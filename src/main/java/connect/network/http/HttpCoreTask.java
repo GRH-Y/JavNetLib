@@ -1,10 +1,12 @@
 package connect.network.http;
 
+
 import connect.network.base.RequestEntity;
 import task.executor.BaseConsumerTask;
-import task.utils.IoUtils;
-import task.utils.Logcat;
+import util.IoUtils;
+import util.Logcat;
 
+import javax.net.ssl.HttpsURLConnection;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -14,17 +16,26 @@ import java.net.URL;
 
 public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
 
-    private HttpTaskConfig mHttpTaskManage;
+    private HttpTaskConfig mConfig;
 
-    protected HttpCoreTask(HttpTaskConfig manage) {
-        mHttpTaskManage = manage;
+    protected HttpCoreTask(HttpTaskConfig config) {
+        mConfig = config;
     }
 
     private HttpURLConnection init(RequestEntity task) {
         HttpURLConnection connection = null;
         try {
-            URL url = new URL(task.getAddress());
-            connection = (HttpURLConnection) url.openConnection();
+            String address = task.getAddress();
+            URL url = new URL(address);
+            if (address.startsWith("https")) {
+                HttpsURLConnection httpsURLConnection = (HttpsURLConnection) url.openConnection();
+                httpsURLConnection.setHostnameVerifier(mConfig.getSslFactory().getHostnameVerifier());
+                httpsURLConnection.setSSLSocketFactory(mConfig.getSslFactory().getSSLSocketFactory());
+                connection = httpsURLConnection;
+            } else {
+                connection = (HttpURLConnection) url.openConnection();
+            }
+
             connection.setConnectTimeout(8000);
             connection.setReadTimeout(8000);
             connection.setRequestMethod(task.getRequestMethod());
@@ -49,12 +60,12 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
 
     @Override
     protected void onCreateData() {
-        mHttpTaskManage.onCheckIsIdle();
+        mConfig.onCheckIsIdle();
     }
 
     @Override
     protected void onProcess() {
-        requestData(mHttpTaskManage.popCacheData());
+        requestData(mConfig.popCacheData());
     }
 
 
@@ -69,7 +80,7 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
     private void requestData(RequestEntity submitEntity) {
         HttpURLConnection connection = init(submitEntity);
         if (connection == null) {
-            mHttpTaskManage.onCallBackError(submitEntity);
+            mConfig.onCallBackError(submitEntity);
             return;
         }
         try {
@@ -83,7 +94,7 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
 //                Logcat.d("Http Response Code = " + code);
             if (code != HttpURLConnection.HTTP_OK) {
                 Logcat.e("Http Response Code = " + code);
-                mHttpTaskManage.onCallBackError(submitEntity);
+                mConfig.onCallBackError(submitEntity);
                 return;
             }
 
@@ -96,12 +107,12 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
             InputStream is = connection.getInputStream();
             int available = is.available();
             if (length <= 0 && available <= 0) {
-                mHttpTaskManage.onCallBackError(submitEntity);
+                mConfig.onCallBackError(submitEntity);
                 return;
             }
 
             //拦截请求
-            if (mHttpTaskManage.intercept(submitEntity)) {
+            if (mConfig.intercept(submitEntity)) {
                 return;
             }
 
@@ -119,37 +130,38 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
                     }
                 }
                 FileOutputStream fos = new FileOutputStream(file);
+
                 boolean state = IoUtils.pipReadWrite(is, fos, false);
                 //拦截请求
-                if (mHttpTaskManage.interceptCallBack(submitEntity, path)) {
+                if (mConfig.interceptCallBack(submitEntity, path)) {
                     return;
                 }
                 if (state) {
-                    mHttpTaskManage.onCallBackSuccess(path, submitEntity);
+                    mConfig.onCallBackSuccess(path, submitEntity);
                 } else {
-                    mHttpTaskManage.onCallBackError(submitEntity);
+                    mConfig.onCallBackError(submitEntity);
                 }
                 fos.close();
             } else {
                 byte[] buffer = IoUtils.tryRead(is);
                 if (resultCls == null || resultCls.isAssignableFrom(byte[].class)) {
-                    mHttpTaskManage.onCallBackSuccess(buffer, submitEntity);
+                    mConfig.onCallBackSuccess(buffer, submitEntity);
                 } else {
                     String result = new String(buffer, "UTF-8");
                     Logcat.d("==> Request address = " + submitEntity.getAddress());
                     Logcat.d("==> Request to return the content = " + result);
-                    Object entity = mHttpTaskManage.onConvertResult(resultCls, result);
+                    Object entity = mConfig.onConvertResult(resultCls, result);
                     //拦截请求
-                    if (mHttpTaskManage.interceptCallBack(submitEntity, entity)) {
+                    if (mConfig.interceptCallBack(submitEntity, entity)) {
                         return;
                     }
-                    mHttpTaskManage.onCallBackSuccess(entity == null ? buffer : entity, submitEntity);
+                    mConfig.onCallBackSuccess(entity == null ? buffer : entity, submitEntity);
                 }
             }
 
         } catch (Throwable e) {
             e.printStackTrace();
-            mHttpTaskManage.onCallBackError(submitEntity);
+            mConfig.onCallBackError(submitEntity);
         } finally {
             connection.disconnect();
         }

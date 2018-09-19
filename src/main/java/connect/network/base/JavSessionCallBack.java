@@ -2,7 +2,7 @@ package connect.network.base;
 
 
 import connect.network.base.joggle.ISessionCallBack;
-import task.utils.ThreadAnnotation;
+import task.message.ThreadAnnotation;
 
 /**
  * 网络请求会话回调

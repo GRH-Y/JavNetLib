@@ -1,7 +1,7 @@
 package connect.network.udp;
 
 
-import task.utils.NetUtils;
+import util.NetUtils;
 
 import java.net.SocketException;
 

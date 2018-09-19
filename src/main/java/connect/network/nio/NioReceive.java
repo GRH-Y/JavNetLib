@@ -2,8 +2,8 @@ package connect.network.nio;
 
 
 import connect.network.base.joggle.IReceive;
-import task.utils.IoUtils;
-import task.utils.ThreadAnnotation;
+import task.message.ThreadAnnotation;
+import util.IoUtils;
 
 import java.io.IOException;
 import java.nio.channels.SocketChannel;

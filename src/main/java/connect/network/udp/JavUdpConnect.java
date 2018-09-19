@@ -2,11 +2,13 @@ package connect.network.udp;
 
 
 import task.executor.BaseConsumerTask;
+import task.executor.ConsumerQueueAttribute;
 import task.executor.TaskContainer;
 import task.executor.interfaces.IConsumerAttribute;
 import task.executor.interfaces.IConsumerTaskExecutor;
 import task.executor.interfaces.ILoopTaskExecutor;
-import task.utils.Logcat;
+import task.executor.interfaces.ITaskContainer;
+import util.Logcat;
 
 import java.net.*;
 
@@ -90,6 +92,14 @@ public class JavUdpConnect {
 
     public void putSendData(byte[] data, int length) {
         coreTask.getAttribute().pushToCache(new TaskEntity(data, length));
+        ITaskContainer container = coreTask.getContainer();
+        IConsumerTaskExecutor executor = container.getTaskExecutor();
+        ILoopTaskExecutor asyncExecutor = executor.getAsyncTaskExecutor();
+        if (asyncExecutor != null) {
+            asyncExecutor.resumeTask();
+        } else {
+            container.getTaskExecutor().resumeTask();
+        }
     }
 
     /**
@@ -148,7 +158,8 @@ public class JavUdpConnect {
         public CoreTask() {
             container = new TaskContainer(this);
             consumerTaskExecutor = container.getTaskExecutor();
-            attribute = container.getAttribute();
+            attribute = new ConsumerQueueAttribute<>();
+            container.setAttribute(attribute);
         }
 
         public TaskContainer getContainer() {
@@ -216,7 +227,7 @@ public class JavUdpConnect {
                 if (isShutdownReceive) {
                     consumerTaskExecutor.setIdleStateSleep(true);
                 } else {
-                    attribute.startAsyncProcessData();
+                    consumerTaskExecutor.startAsyncProcessData();
                 }
                 onConnectSuccess();
             } catch (Exception e) {

@@ -6,12 +6,15 @@ import connect.network.base.joggle.ISessionCallBack;
 import connect.network.http.joggle.IConvertResult;
 import connect.network.http.joggle.IHttpTaskConfig;
 import connect.network.http.joggle.IInterceptRequest;
+import connect.network.http.joggle.IHttpSSLFactory;
+import task.executor.ConsumerQueueAttribute;
 import task.executor.interfaces.IConsumerAttribute;
-import task.executor.interfaces.ILoopTaskExecutor;
+import task.executor.interfaces.ITaskContainer;
 
 public class HttpTaskConfig implements IHttpTaskConfig {
 
-    private ILoopTaskExecutor mExecutor;
+    private ITaskContainer mTaskContainer;
+    private IHttpSSLFactory mSslFactory;
     private ISessionCallBack mSessionCallBack;
     private IConsumerAttribute<RequestEntity> mAttribute;
     private IConvertResult mConvertResult;
@@ -20,20 +23,20 @@ public class HttpTaskConfig implements IHttpTaskConfig {
     private long mFreeExitTime = 30000;
     private String mBaseUrl = null;
 
-    protected void setAttribute(IConsumerAttribute<RequestEntity> attribute) {
-        this.mAttribute = attribute;
+    public HttpTaskConfig() {
+        mAttribute = new ConsumerQueueAttribute<>();
     }
 
-    protected void setExecutor(ILoopTaskExecutor executor) {
-        this.mExecutor = executor;
+    protected void setTaskContainer(ITaskContainer container) {
+        this.mTaskContainer = container;
     }
 
     protected IConsumerAttribute<RequestEntity> getAttribute() {
         return mAttribute;
     }
 
-    protected ILoopTaskExecutor getExecutor() {
-        return mExecutor;
+    protected <T> T getExecutor() {
+        return mTaskContainer.getTaskExecutor();
     }
 
     protected String getBaseUrl() {
@@ -61,6 +64,11 @@ public class HttpTaskConfig implements IHttpTaskConfig {
     }
 
     @Override
+    public void setHttpSSLFactory(IHttpSSLFactory factory) {
+        mSslFactory = factory;
+    }
+
+    @Override
     public void setFreeExit(long millisecond) {
         if (millisecond >= 0) {
             mFreeExitTime = millisecond;
@@ -69,11 +77,15 @@ public class HttpTaskConfig implements IHttpTaskConfig {
 
     protected void onCheckIsIdle() {
         if (mAttribute.getCacheDataSize() == 0) {
-            mExecutor.waitTask(mFreeExitTime);
+            mTaskContainer.getTaskExecutor().waitTask(mFreeExitTime);
             if (mAttribute.getCacheDataSize() == 0) {
-                mExecutor.stopTask();
+                mTaskContainer.getTaskExecutor().stopTask();
             }
         }
+    }
+
+    protected IHttpSSLFactory getSslFactory() {
+        return mSslFactory;
     }
 
     protected RequestEntity popCacheData() {
@@ -81,7 +93,7 @@ public class HttpTaskConfig implements IHttpTaskConfig {
     }
 
     protected void onCallBackError(RequestEntity submitEntity) {
-        if (mSessionCallBack != null && mExecutor.getLoopState()) {
+        if (mSessionCallBack != null && mTaskContainer.getTaskExecutor().getLoopState()) {
             submitEntity.setResultData(null);
             mSessionCallBack.notifyErrorMessage(submitEntity);
         }
@@ -131,9 +143,8 @@ public class HttpTaskConfig implements IHttpTaskConfig {
      * 释放资源
      */
     protected synchronized void recycle() {
-        if (mExecutor != null) {
-            mExecutor.destroyTask();
-            mExecutor = null;
+        if (mTaskContainer != null) {
+            mTaskContainer.getTaskExecutor().destroyTask();
         }
         if (mSessionCallBack != null) {
             mSessionCallBack.recycle();
