@@ -2,6 +2,7 @@ package connect.network.http;
 
 
 import connect.network.base.RequestEntity;
+import connect.network.http.joggle.POST;
 import task.executor.BaseConsumerTask;
 import util.IoUtils;
 import util.Logcat;
@@ -43,15 +44,20 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
             connection.setDoOutput(true);
             connection.setDoInput(true);
             connection.setUseCaches(false);
-            connection.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
-            connection.setRequestProperty("Connection", "keep-alive");
-            connection.setRequestProperty("Accept-Charset", "utf-8");
-            connection.setRequestProperty("Accept-Encoding", "gzip");
-//                    connection.setRequestProperty("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT; DigExt)");
+
+            connection.setRequestProperty("Charset", "utf-8");
             connection.setRequestProperty("User-Agent", "HttpURLConnection");
-//                    connection.setRequestProperty("Accept", "application/json");
             //此处为暴力方法设置接受所有类型，以此来防范返回415;
             connection.setRequestProperty("Accept", "*/*");
+
+            if (POST.class.getSimpleName().equals(task.getRequestMethod())) {
+//                connection.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+//                connection.setRequestProperty("Connection", "keep-alive");
+                connection.setRequestProperty("Accept-Charset", "utf-8");
+                connection.setRequestProperty("Accept-Encoding", "gzip");
+                connection.setRequestProperty("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT; DigExt)");
+//                    connection.setRequestProperty("Accept", "application/json");
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }

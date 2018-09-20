@@ -1,12 +1,12 @@
 
-squid:S1186…"€Add a nested comment explaining why this method is empty, throw an UnsupportedOperationException or complete the implementation.(İèıøÿÿÿÿ
-squid:S1186"€Add a nested comment explaining why this method is empty, throw an UnsupportedOperationException or complete the implementation.(Ğï‹Øÿÿÿÿÿ
-"squid:ClassVariableVisibilityCheckŠ"PMake data a static final constant or non-public and provide accessors if needed.(ğ æ¤
+@squid:S1148ÿ"#Use a logger to log this exception.(€ÉÔ…ıÿÿÿÿ
 €"squid:ClassVariableVisibilityCheck‰"RMake length a static final constant or non-public and provide accessors if needed.(ÇÈÕ[
+squid:S1186y"€Add a nested comment explaining why this method is empty, throw an UnsupportedOperationException or complete the implementation.(éå¡Ùüÿÿÿÿ
+@squid:S1148—"#Use a logger to log this exception.(€ÉÔ…ıÿÿÿÿ
+@squid:S1148ê"#Use a logger to log this exception.(€ÉÔ…ıÿÿÿÿ
+esquid:S2095Ê"MUse try-with-resources or close this "MulticastSocket" in a "finally" clause.(Ëêàı
 dsquid:S2095Í"MUse try-with-resources or close this "MulticastSocket" in a "finally" clause.(Ì»Áz
 _squid:S1193ş"@Replace the usage of the "instanceof" operator by a catch block.(¬ÿÒÀ8œ¦µØ,
-@squid:S1148ê"#Use a logger to log this exception.(€ÉÔ…ıÿÿÿÿ
-@squid:S1148ÿ"#Use a logger to log this exception.(€ÉÔ…ıÿÿÿÿ
-@squid:S1148—"#Use a logger to log this exception.(€ÉÔ…ıÿÿÿÿ
-squid:S1186y"€Add a nested comment explaining why this method is empty, throw an UnsupportedOperationException or complete the implementation.(éå¡Ùüÿÿÿÿ
-esquid:S2095Ê"MUse try-with-resources or close this "MulticastSocket" in a "finally" clause.(Ëêàı
+squid:S1186"€Add a nested comment explaining why this method is empty, throw an UnsupportedOperationException or complete the implementation.(Ğï‹Øÿÿÿÿÿ
+squid:S1186…"€Add a nested comment explaining why this method is empty, throw an UnsupportedOperationException or complete the implementation.(İèıøÿÿÿÿ
+"squid:ClassVariableVisibilityCheckŠ"PMake data a static final constant or non-public and provide accessors if needed.(ğ æ¤

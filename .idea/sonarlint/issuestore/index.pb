@@ -1,6 +1,6 @@
 
 U
-%src/main/java/connect/json/IJson.java,3\2\32dc6fdcd320db201d5b844db01980de4afef5d6
+%src/main/java/connect/json/IJson.java,3/2/32dc6fdcd320db201d5b844db01980de4afef5d6
 Y
 )src/main/java/connect/json/JsonUtils.java,3/c/3cef5e5badfed45286768df83454f9a4a54749a1
 `
@@ -42,19 +42,19 @@ f
 g
 7src/main/java/connect/network/nio/NioClientFactory.java,a/5/a5a7c5e2ac50a7c4a9a69e7b7d61636a7cd0be66
 f
-6src/main/java/connect/network/base/joggle/ISender.java,3\5\357e6f1d4cd008c61972ea1ed77f4191013f4f8d
+6src/main/java/connect/network/base/joggle/ISender.java,3/5/357e6f1d4cd008c61972ea1ed77f4191013f4f8d
 g
 7src/main/java/connect/network/base/joggle/IFactory.java,0\0\00cfaa07e9fedefe92dfd5d005502c26eed576c6
 g
-7src/main/java/connect/network/base/joggle/IReceive.java,0\b\0b2f93de09b91137344ac58398fa9b80258e9193
+7src/main/java/connect/network/base/joggle/IReceive.java,0/b/0b2f93de09b91137344ac58398fa9b80258e9193
 o
-?src/main/java/connect/network/base/joggle/ISessionCallBack.java,4\9\49be22db264703c29d2ca9ae9715e51e63a7061c
+?src/main/java/connect/network/base/joggle/ISessionCallBack.java,4/9/49be22db264703c29d2ca9ae9715e51e63a7061c
 b
-2src/main/java/connect/network/http/joggle/GET.java,a\2\a217a38c636a974b4fdc71c19607999e6184c9a7
+2src/main/java/connect/network/http/joggle/GET.java,a/2/a217a38c636a974b4fdc71c19607999e6184c9a7
 c
-3src/main/java/connect/network/http/joggle/POST.java,c\d\cd62fe6ae84985c0e2f1853dce7fbf488adae4ad
+3src/main/java/connect/network/http/joggle/POST.java,c/d/cd62fe6ae84985c0e2f1853dce7fbf488adae4ad
 g
-7src/main/java/connect/network/http/joggle/ARequest.java,9\1\9155032b3ec96f02ef4ecbeecd55c35acbc64ef6
+7src/main/java/connect/network/http/joggle/ARequest.java,9/1/9155032b3ec96f02ef4ecbeecd55c35acbc64ef6
 m
 =src/main/java/connect/network/http/joggle/IRequestEntity.java,7/6/762daedeed5baaebd657af8ecb0c0745b94bf2ab
 m
@@ -70,7 +70,7 @@ f
 p
 @src/main/java/connect/network/http/joggle/IInterceptRequest.java,b/a/ba66fb21d6ef468824185a8b0fa3ac935eeab81c
 Z
-*.idea/artifacts/CurrencyNetConnect_jar.xml,9\a\9a56df21db0098d52e5307e8a4ece3d909e02424
+*.idea/artifacts/CurrencyNetConnect_jar.xml,9/a/9a56df21db0098d52e5307e8a4ece3d909e02424
 T
 $.idea/codeStyles/codeStyleConfig.xml,d\d\dd7b3350c29c49497756c7f32c69a3bed18b1cba
 V
@@ -83,3 +83,15 @@ Y
 build.gradle,f\0\f07866736216be0ee2aba49e392191aeae700a35
 ?
 settings.gradle,0\5\05efc8b1657769a27696d478ded1e95f38737233
+S
+#.idea/sonarlint/issuestore/index.pb,9/f/9fe84ebb15faf917b7def6236dba604453cc61e0
+n
+>src/main/java/connect/network/http/joggle/IHttpSSLFactory.java,9/4/947eb5a47e0eb8bb0094100414b166ce62c8d756
+l
+<src/main/java/connect/network/http/joggle/KeepPrototype.java,d/1/d167237d8df255eb58f31d48ffb38793121a2d23
+f
+6src/main/java/connect/network/http/HttpSSLFactory.java,3/3/33868bde440e4e71eb95b3be81417d1a2ba923a4
+9
+	README.md,8/e/8ec9a00bfd09b3190ac6b22251dbb1aa95a0579d
+W
+'src/main/java/connect/HttpTestMain.java,8/e/8ec1e1a1413650afd85ead2ab222192da609cbe2

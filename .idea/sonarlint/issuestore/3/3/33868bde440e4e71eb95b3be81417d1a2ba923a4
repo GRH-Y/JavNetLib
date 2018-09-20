@@ -1,0 +1,12 @@
+
+isquid:CommentedOutCodeLine"<This block of commented-out lines of code should be removed.(Ó˜ŸÊ8øç’¦ß,
+nsquid:CommentedOutCodeLine "<This block of commented-out lines of code should be removed.(¸¸†Þûÿÿÿÿ8øç’¦ß,
+isquid:CommentedOutCodeLineY"<This block of commented-out lines of code should be removed.( óí8Ü¯Ö¥ß,
+Nsquid:S1068"0Remove this unused "mCertificate" private field.(¥ùšÁ8øç’¦ß,
+Ksquid:S1604)"(Make this anonymous inner class a lambda(™Ç©Ÿÿÿÿÿÿ8ÃÆÛ¥ß,
+¤squid:S1186;"€Add a nested comment explaining why this method is empty, throw an UnsupportedOperationException or complete the implementation.(€¿¼µùÿÿÿÿ8˜úà¥ß,
+nsquid:CommentedOutCodeLine"<This block of commented-out lines of code should be removed.(èêÞ©üÿÿÿÿ8øç’¦ß,
+Fsquid:S1148G"#Use a logger to log this exception.(€ÉÔ…ýÿÿÿÿ8˜úà¥ß,
+Psquid:S3510,"2Do not unconditionally return true in this method.(§¼Éç8ÁöÛ¥ß,
+Nsquid:S4424;"+Change this method so it throws exceptions.(€¿¼µùÿÿÿÿ8ãÃá¥ß,
+csquid:UnusedPrivateMethodS"7Remove this unused private "getX509Certificate" method.(¶Ü»·8øç’¦ß,

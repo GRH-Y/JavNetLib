@@ -76,7 +76,7 @@ public class HttpTaskConfig implements IHttpTaskConfig {
     }
 
     protected void onCheckIsIdle() {
-        if (mAttribute.getCacheDataSize() == 0) {
+        if (mAttribute.getCacheDataSize() == 0 && mTaskContainer != null) {
             mTaskContainer.getTaskExecutor().waitTask(mFreeExitTime);
             if (mAttribute.getCacheDataSize() == 0) {
                 mTaskContainer.getTaskExecutor().stopTask();

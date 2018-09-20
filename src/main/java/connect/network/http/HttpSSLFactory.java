@@ -8,10 +8,12 @@ import javax.net.ssl.SSLSocketFactory;
 
 public class HttpSSLFactory implements IHttpSSLFactory {
 
+
     @Override
     public SSLSocketFactory getSSLSocketFactory() {
         return (SSLSocketFactory) SSLSocketFactory.getDefault();
     }
+
 
     @Override
     public HostnameVerifier getHostnameVerifier() {
