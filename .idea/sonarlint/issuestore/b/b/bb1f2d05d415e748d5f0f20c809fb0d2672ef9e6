@@ -1,9 +1,10 @@
 
-Gsquid:S1148¥"#Use a logger to log this exception.(€ÉÔ…ýÿÿÿÿ8”¯©ñØ,
-nsquid:CommentedOutCodeLine`"<This block of commented-out lines of code should be removed.(à¥˜Ãùÿÿÿÿ8¬´·ïØ,
-Isquid:S1181¤"%Catch Exception instead of Throwable.(‡˜ÚÚøÿÿÿÿ8”¯©ñØ,
-isquid:CommentedOutCodeLine6"<This block of commented-out lines of code should be removed.(œä“8¬´·ïØ,
-usquid:S3776R"RRefactor this method to reduce its Cognitive Complexity from 31 to the 15 allowed.(ÝŠßÖüÿÿÿÿ8 ñ¦ñØ,
-Msquid:S2093X"*Change this "try" to a try-with-resources.(¡»¢üùÿÿÿÿ8¬´·ïØ,
-nsquid:CommentedOutCodeLine4"<This block of commented-out lines of code should be removed.( öï·ýÿÿÿÿ8¬´·ïØ,
-Fsquid:S1148:"#Use a logger to log this exception.(€ÉÔ…ýÿÿÿÿ8¬´·ïØ,
+isquid:CommentedOutCodeLine6"<This block of commented-out lines of code should be removed.(ðÙð·8™½Â±ß,
+Msquid:S2093\"*Change this "try" to a try-with-resources.(¡»¢üùÿÿÿÿ8¬´·ïØ,
+isquid:CommentedOutCodeLine;"<This block of commented-out lines of code should be removed.(œä“8™½Â±ß,
+nsquid:CommentedOutCodeLined"<This block of commented-out lines of code should be removed.(à¥˜Ãùÿÿÿÿ8¬´·ïØ,
+usquid:S3776V"RRefactor this method to reduce its Cognitive Complexity from 31 to the 15 allowed.(ÝŠßÖüÿÿÿÿ8 ñ¦ñØ,
+Isquid:S1181¨"%Catch Exception instead of Throwable.(‡˜ÚÚøÿÿÿÿ8”¯©ñØ,
+isquid:CommentedOutCodeLine2"<This block of commented-out lines of code should be removed.(ÇÎ½8ç‡³±ß,
+Fsquid:S1148>"#Use a logger to log this exception.(€ÉÔ…ýÿÿÿÿ8¬´·ïØ,
+Gsquid:S1148©"#Use a logger to log this exception.(€ÉÔ…ýÿÿÿÿ8”¯©ñØ,

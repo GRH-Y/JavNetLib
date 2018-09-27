@@ -1,16 +1,15 @@
 
-?squid:S1148}"#Use a logger to log this exception.(€ÉÔ…ýÿÿÿÿ
-gsquid:CommentedOutCodeLineu"<This block of commented-out lines of code should be removed.(Ç˜·æùÿÿÿÿ
-gsquid:S2095="KUse try-with-resources or close this "SocketChannel" in a "finally" clause.(½çšÏúÿÿÿÿ
-gsquid:CommentedOutCodeLine)"<This block of commented-out lines of code should be removed.(›ÎÝÊúÿÿÿÿ
-bsquid:CommentedOutCodeLineL"<This block of commented-out lines of code should be removed.(²¯î£
-@squid:S1148†"#Use a logger to log this exception.(€ÉÔ…ýÿÿÿÿ
-?squid:S1148d"#Use a logger to log this exception.(€ÉÔ…ýÿÿÿÿ
-@squid:S1148£"#Use a logger to log this exception.(€ÉÔ…ýÿÿÿÿ
-bsquid:CommentedOutCodeLinek"<This block of commented-out lines of code should be removed.(ü–©
-@squid:S1148•"#Use a logger to log this exception.(€ÉÔ…ýÿÿÿÿ
-?squid:S1148C"#Use a logger to log this exception.(€ÉÔ…ýÿÿÿÿ
-hsquid:CommentedOutCodeLine™"<This block of commented-out lines of code should be removed.(È¿¥˜ùÿÿÿÿ
-csquid:CommentedOutCodeLine‹"<This block of commented-out lines of code should be removed.(»ÂÛÆ
-hsquid:S3776i"RRefactor this method to reduce its Cognitive Complexity from 43 to the 15 allowed.(æ¶
-^squid:S00112."FDefine and throw a dedicated exception instead of using a generic one.(Ô½§Å
+hsquid:S3776d"RRefactor this method to reduce its Cognitive Complexity from 43 to the 15 allowed.(æ¶
+@squid:S1148ž"#Use a logger to log this exception.(€ÉÔ…ýÿÿÿÿ
+gsquid:S20958"KUse try-with-resources or close this "SocketChannel" in a "finally" clause.(½çšÏúÿÿÿÿ
+hsquid:CommentedOutCodeLine”"<This block of commented-out lines of code should be removed.(È¿¥˜ùÿÿÿÿ
+bsquid:CommentedOutCodeLinef"<This block of commented-out lines of code should be removed.(ü–©
+?squid:S1148_"#Use a logger to log this exception.(€ÉÔ…ýÿÿÿÿ
+gsquid:CommentedOutCodeLinep"<This block of commented-out lines of code should be removed.(Ç˜·æùÿÿÿÿ
+?squid:S1148x"#Use a logger to log this exception.(€ÉÔ…ýÿÿÿÿ
+@squid:S1148"#Use a logger to log this exception.(€ÉÔ…ýÿÿÿÿ
+@squid:S1148"#Use a logger to log this exception.(€ÉÔ…ýÿÿÿÿ
+csquid:CommentedOutCodeLine†"<This block of commented-out lines of code should be removed.(»ÂÛÆ
+bsquid:CommentedOutCodeLineG"<This block of commented-out lines of code should be removed.(²¯î£
+?squid:S1148>"#Use a logger to log this exception.(€ÉÔ…ýÿÿÿÿ
+^squid:S00112)"FDefine and throw a dedicated exception instead of using a generic one.(Ô½§Å

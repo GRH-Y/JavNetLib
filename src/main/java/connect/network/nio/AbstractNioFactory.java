@@ -115,14 +115,19 @@ public abstract class AbstractNioFactory<T> implements IFactory<T> {
     }
 
     protected void destroyCoreTask() {
-        mExecutorQueue.forEach(item -> item.getExecutor().stopTask());
+        mExecutorQueue.forEach(item -> {
+            item.getExecutor().stopTask();
+            mSelector.wakeup();
+            item.getExecutor().blockStopTask();
+        });
 //        while (!mExecutorQueue.isEmpty()) {
 //            CoreTask coreTask = mExecutorQueue.remove();
 //            coreTask.getExecutor().stopTask();
+//            mSelector.wakeup();
+//            coreTask.getExecutor().blockStopTask();
 //        }
         mExecutorQueue.clear();
         mConnectCache.clear();
-        mSelector.wakeup();
         try {
             mSelector.close();
         } catch (IOException e) {
@@ -183,13 +188,10 @@ public abstract class AbstractNioFactory<T> implements IFactory<T> {
 
             int count = 0;
             try {
-//                Logcat.d("==> AbstractNioFactory onRunLoopTask start select()");
                 count = mSelector.select();
             } catch (Exception e) {
                 e.printStackTrace();
             }
-
-//            Logcat.d("==> AbstractNioFactory onRunLoopTask end select()");
 
             if (count > 0) {
                 onSelectorTask(mSelector);

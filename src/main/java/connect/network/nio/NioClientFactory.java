@@ -37,11 +37,6 @@ public class NioClientFactory extends AbstractNioFactory<NioClientTask> {
         super();
     }
 
-//    @Override
-//    public void addTask(NioClientTask task) {
-//        super.addTask(task);
-//        Logcat.d("==> NioClientFactory addTask mConnectCache.size = " + mConnectCache.size());
-//    }
 
     private void registerChannel(NioClientTask task, Selector selector, SocketChannel channel) throws Exception {
         if (task.getReceive() != null && task.getSender() != null) {

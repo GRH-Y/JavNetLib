@@ -1,19 +1,19 @@
 
-jsquid:S3776“"RRefactor this method to reduce its Cognitive Complexity from 19 to the 15 allowed.(›…™Œ
-@squid:S1148"#Use a logger to log this exception.(€ÉÔ…ıÿÿÿÿ
-@squid:S1148›"#Use a logger to log this exception.(€ÉÔ…ıÿÿÿÿ
 csquid:S3027"FPut single-quotes around '$' to use the faster "indexOf(char)" method.(ªöµ©ÿÿÿÿÿ
+jsquid:S3776“"RRefactor this method to reduce its Cognitive Complexity from 19 to the 15 allowed.(›…™Œ
+Qsquid:S1118":Add a private constructor to hide the implicit public one.(òÈíÕ
+@squid:S1148›"#Use a logger to log this exception.(€ÉÔ…ıÿÿÿÿ
+osquid:ModifiersOrderCheck"EReorder the modifiers to comply with the Java Language Specification.(ö¯¶—üÿÿÿÿ
+bsquid:S3027O"FPut single-quotes around '<' to use the faster "indexOf(char)" method.(çùşıÿÿÿÿ
+_squid:S00112“"FDefine and throw a dedicated exception instead of using a generic one.(›…™Œ
+hsquid:S1149÷"PReplace the synchronized class "Stack" by an unsynchronized one such as "Deque".(‚›ı 
 gsquid:CommentedOutCodeLinev"<This block of commented-out lines of code should be removed.(Û¦’óúÿÿÿÿ
+nsquid:S3776"RRefactor this method to reduce its Cognitive Complexity from 21 to the 15 allowed.(Òí›üüÿÿÿÿ
 t
 squid:S135!"YReduce the total number of break and continue statements in this loop to use at most one.(‡š½’øÿÿÿÿ
-nsquid:S3776"RRefactor this method to reduce its Cognitive Complexity from 21 to the 15 allowed.(Òí›üüÿÿÿÿ
-gsquid:S1149j"PReplace the synchronized class "Stack" by an unsynchronized one such as "Deque".(Æ¸Ë
-hsquid:S1149÷"PReplace the synchronized class "Stack" by an unsynchronized one such as "Deque".(‚›ı 
-Qsquid:S1118":Add a private constructor to hide the implicit public one.(òÈíÕ
-jsquid:ModifiersOrderCheck"EReorder the modifiers to comply with the Java Language Specification.(©éì
 jsquid:S3776÷"RRefactor this method to reduce its Cognitive Complexity from 64 to the 15 allowed.(‚›ı 
-osquid:ModifiersOrderCheck"EReorder the modifiers to comply with the Java Language Specification.(ö¯¶—üÿÿÿÿ
+jsquid:ModifiersOrderCheck"EReorder the modifiers to comply with the Java Language Specification.(©éì
 msquid:S1149ø"PReplace the synchronized class "Stack" by an unsynchronized one such as "Deque".(âÁ­¬şÿÿÿÿ
+gsquid:S1149j"PReplace the synchronized class "Stack" by an unsynchronized one such as "Deque".(Æ¸Ë
 ?squid:S1148B"#Use a logger to log this exception.(€ÉÔ…ıÿÿÿÿ
-_squid:S00112“"FDefine and throw a dedicated exception instead of using a generic one.(›…™Œ
-bsquid:S3027O"FPut single-quotes around '<' to use the faster "indexOf(char)" method.(çùşıÿÿÿÿ
+@squid:S1148"#Use a logger to log this exception.(€ÉÔ…ıÿÿÿÿ
