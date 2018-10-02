@@ -1,6 +1,9 @@
 package connect.json;
 
 
+import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
+import util.SpeedReflex;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
@@ -19,90 +22,244 @@ public class JsonUtils implements IJson {
     private final static String NULL = "";
     private final static String CLASS = "class ";
 
-    public static String toNewJson(Object entity) {
-        String json = null;
+    public static String toJson(Object entity) {
+
         if (entity == null) {
-            return json;
+            return null;
         }
-        StringBuilder builder = new StringBuilder();
-        builder.append(objectSatTag);
-        Class<?> cls = entity.getClass();
+        Class cls = entity.getClass();
+        return builderJson(cls, entity);
+    }
+
+    private static String builderJson(Class cls, Object entity) {
+        StringBuilder jsonBuilder = new StringBuilder();
+        jsonBuilder.append(objectSatTag);
         Field[] fields = cls.getDeclaredFields();
-        try {
-            do {
-                for (int index = 0; index < fields.length; index++) {
-                    Field field = fields[index];
-                    field.setAccessible(true);
-                    String key = field.getName();
-                    if ("serialVersionUID".equals(key) || "$change".equals(key)) {
-                        continue;
-                    }
-                    Object object = field.get(entity);
-                    if (object == null) {
-                        continue;
-                    }
-                    Type type = field.getGenericType();
-                    String name = type.toString();
-                    boolean isList = name.contains("List");
-                    if (isList) {
-                        listToJsonStr(builder, key, object);
-                    } else {
-                        String className = getClassFieldTypeName(type);
-                        mapToJsonStr(builder, className, key, object);
-                    }
+
+        while (!cls.isAssignableFrom(Object.class)) {
+
+            for (int index = 0; index < fields.length; index++) {
+
+                Field field = fields[index];
+                field.setAccessible(true);
+
+                String key = field.getName();
+                if ("serialVersionUID".equals(key) || "$change".equals(key) || "this$0".equals(key)) {
+                    continue;
                 }
-                cls = cls.getSuperclass();
-                if (cls.isAssignableFrom(Object.class)) {
-                    break;
+
+                if (jsonBuilder.length() > 1) {
+                    jsonBuilder.append(COA_TAG);
+                }
+
+                Object object = null;
+                try {
+                    object = field.get(entity);
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+                if (object == null) {
+                    continue;
+                }
+
+                Class typeClx = field.getType();
+                if (isBasicDataType(typeClx)) {
+                    builderObjKvJson(jsonBuilder, key, object);
                 } else {
-                    fields = cls.getDeclaredFields();
+                    if (typeClx.isAssignableFrom(List.class)) {
+                        String layer = builderListJson(object);
+                        builderObjKvJson(jsonBuilder, key, layer);
+                    } else {
+                        String layer = builderJson(typeClx, object);
+                        builderObjKvJson(jsonBuilder, key, layer);
+                    }
                 }
-            } while (true);
-            if (builder.indexOf(COA_TAG, builder.length() - 1) != -1) {
-                builder.deleteCharAt(builder.length() - 1);
             }
-        } catch (Exception e) {
-            builder = null;
-            e.printStackTrace();
+
+            //递归格式化实体的参数
+            cls = cls.getSuperclass();
+            if (!cls.isAssignableFrom(Object.class)) {
+                fields = cls.getDeclaredFields();
+            }
         }
 
-        if (builder != null) {
-            builder.append(objectEndTag);
-            json = builder.toString();
-        }
-        return json;
+        jsonBuilder.append(objectEndTag);
+        return jsonBuilder.toString();
     }
 
-    private static String getClassFieldTypeName(Type type) {
-        String name = type.toString();
-        boolean isList = name.contains("List");
-        int start = name.indexOf("<");
-        int end = isList ? name.length() - 1 : name.length();
-        return name.substring(start + 1, end).replace(CLASS, NULL);
-    }
+    //====================================== toJson ===================================================
+
 
     public static <T> T toEntity(Class<T> cls, byte[] json) {
         if (json == null || cls == null) {
             return null;
         }
-        return toEntity(cls.getName(), new String(json));
-    }
-
-    public static <T> T toEntity(Class<T> cls, String json) {
-        if (json == null || cls == null) {
-            return null;
-        }
-        return toEntity(cls.getName(), json);
+        return toEntity(cls, new String(json));
     }
 
     public static <T> T toEntity(String className, String json) {
         if (className == null || json == null) {
             return null;
         }
+        try {
+            Class<T> clx = (Class<T>) Class.forName(className);
+            return toEntity(clx, json);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static <T> T toNewEntity(Class<T> cls, String json) {
+        if (json == null || cls == null) {
+            return null;
+        }
         T result = null;
         try {
-            Class<?> newClass = Class.forName(className);
-            Object entity = newClass.newInstance();
+            if (!json.startsWith(objectSatTag) || !json.endsWith(objectEndTag)) {
+                return null;
+            }
+
+            json = json.trim().replace(" ", NULL).replace("\n", NULL).replace(DQM_SLASH, NULL);
+            SpeedReflex reflex = SpeedReflex.getCache();
+            reflex.setClass(cls);
+            Constructor constructor = cls.getConstructor();
+            constructor.setAccessible(true);
+            result = (T) constructor.newInstance();
+
+            dismantleJson(cls, result, json);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+
+    private static boolean isList(char c) {
+        return arraySatTag.charAt(0) == c;
+    }
+
+    private static boolean isMap(char c) {
+        return objectSatTag.charAt(0) == c;
+    }
+
+    private static void dismantleJson(Class cls, Object object, String json) {
+        SpeedReflex reflex = SpeedReflex.getCache();
+        int baseIndex = 0;
+
+        while (!cls.isAssignableFrom(Object.class)) {
+            Field[] fields = reflex.getAllField(cls);
+
+            for (Field field : fields) {
+                String key = field.getName();
+                if ("serialVersionUID".equals(key) || "$change".equals(key) || "this$0".equals(key)) {
+                    continue;
+                }
+
+                field.setAccessible(true);
+                Class type = field.getType();
+                int startIndex = json.indexOf(key, baseIndex);
+                boolean isBasicType = isBasicDataType(type);
+
+                int valueIndex = key.length() + startIndex + 1;
+                if (isList(json.charAt(valueIndex)) && !isBasicType) {
+                    int endIndex = json.indexOf(arrayEndTag, valueIndex) + 1;
+                    String listJson = json.substring(valueIndex, endIndex);
+                    List itemList = new ArrayList<>();
+                    int listPoint = 0;
+                    do {
+                        int index = listJson.indexOf(objectSatTag, listPoint);
+                        if (index < 0) {
+                            break;
+                        }
+                        try {
+                            Type genericType = field.getGenericType();
+                            Constructor constructor = null;
+                            Class actualType = null;
+                            if (genericType instanceof ParameterizedTypeImpl) {
+                                ParameterizedTypeImpl parameterizedType = (ParameterizedTypeImpl) genericType;
+                                actualType = (Class) parameterizedType.getActualTypeArguments()[0];
+                                constructor = actualType.getDeclaredConstructor(cls);
+                            }
+                            if (constructor != null) {
+                                constructor.setAccessible(true);
+                                Object itemObj = constructor.newInstance(object);
+                                int itemEndIndex = listJson.indexOf(objectEndTag, index) + 1;
+                                String itemJson = listJson.substring(index, itemEndIndex);
+                                dismantleJson(actualType, itemObj, itemJson);
+                                itemList.add(itemObj);
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                        listPoint = endIndex;
+
+                    } while (true);
+
+                    try {
+                        field.set(object, itemList);
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                    }
+                    if (baseIndex == 0 && startIndex < 4) {
+                        baseIndex = endIndex;
+                    } else if (baseIndex + 6 <= startIndex) {
+                        baseIndex = endIndex;
+                    }
+                } else if (isMap(json.charAt(valueIndex)) && !isBasicType) {
+
+                    int endIndex = json.indexOf(objectEndTag, valueIndex) + 1;
+                    String itemJson = json.substring(valueIndex, endIndex);
+
+                    try {
+                        Constructor constructor = type.getDeclaredConstructor(cls);
+                        constructor.setAccessible(true);
+                        Object itemObj = constructor.newInstance(object);
+                        dismantleJson(type, itemObj, itemJson);
+                        field.set(object, itemObj);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
+                    if (baseIndex == 0 && startIndex < 4) {
+                        baseIndex = endIndex;
+                    } else if (baseIndex + 6 <= startIndex) {
+                        baseIndex = endIndex;
+                    }
+                } else if (isBasicType) {
+                    int endIndex = json.indexOf(COA_TAG, valueIndex);
+                    if (endIndex < 0) {
+                        endIndex = json.indexOf(objectEndTag, valueIndex);
+                    }
+                    String value = json.substring(valueIndex, endIndex);
+                    try {
+                        field.set(object, value);
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                    }
+
+                    if (baseIndex == 0 && startIndex < 4) {
+                        baseIndex = endIndex;
+                    } else if (baseIndex + 6 <= startIndex) {
+                        baseIndex = endIndex;
+                    }
+                }
+
+
+            }
+            cls = cls.getSuperclass();
+        }
+    }
+
+    public static <T> T toEntity(Class<T> cls, String json) {
+        if (json == null || cls == null) {
+            return null;
+        }
+        T result = null;
+        try {
+            Constructor constructor = cls.getConstructor();
+            constructor.setAccessible(true);
+            Object entity = constructor.newInstance();
             Stack<KeyValue> stack = analysisJson(json);
             if (stack == null) {
                 return null;
@@ -110,9 +267,9 @@ public class JsonUtils implements IJson {
             for (int index = stack.size() - 1; index >= 0; index--) {
                 KeyValue keyValue = stack.get(index);
                 if (!keyValue.isList && keyValue.key == null) {
-                    analysisMap(newClass, entity, keyValue.value);
+                    analysisMap(cls, entity, keyValue.value);
                 } else {
-                    Field keyField = newClass.getDeclaredField(keyValue.key);
+                    Field keyField = cls.getDeclaredField(keyValue.key);
                     keyField.setAccessible(true);
                     Type type = keyField.getGenericType();
 //                    String name = type.toString();
@@ -128,12 +285,12 @@ public class JsonUtils implements IJson {
                         analysisList(typeName, entity, list, keyValue.value);
                     } else {
                         //对象不是list，而是内部类
-                        Class insideClass = Class.forName(typeName);
-                        Constructor constructor = insideClass.getDeclaredConstructors()[0];
-                        constructor.setAccessible(true);
-                        Object newEntity = constructor.newInstance(entity);
-                        keyField.set(entity, newEntity);
-                        analysisMap(insideClass, newEntity, keyValue.value);
+//                        Class insideClass = Class.forName(typeName);
+//                        Constructor constructor = insideClass.getDeclaredConstructor();
+//                        constructor.setAccessible(true);
+//                        Object newEntity = constructor.newInstance(entity);
+                        keyField.set(entity, keyValue.value);
+//                        analysisMap(insideClass, newEntity, keyValue.value);
                     }
                 }
             }
@@ -143,6 +300,7 @@ public class JsonUtils implements IJson {
         }
         return result;
     }
+
 
     private static void analysisList(String className, Object entity, List list, String value) throws Exception {
         if (value != null) {
@@ -237,6 +395,7 @@ public class JsonUtils implements IJson {
         int start;
         int end;
     }
+
 
     /**
      * 分析json
@@ -334,6 +493,21 @@ public class JsonUtils implements IJson {
         return stack;
     }
 
+    private static String getClassFieldTypeName(Type type) {
+        String name = type.toString();
+        boolean isList = name.contains("List");
+        int start = name.indexOf("<");
+        int end = isList ? name.length() - 1 : name.length();
+        return name.substring(start + 1, end).replace(CLASS, NULL);
+    }
+
+    private static boolean isBasicDataType(Class clx) {
+        return clx == Integer.class || clx == int.class || clx == Long.class || clx == long.class
+                || clx == Double.class || clx == double.class || clx == Float.class || clx == float.class
+                || clx == Boolean.class || clx == boolean.class || clx == char.class || clx == Character.class
+                || clx == String.class;
+    }
+
     /**
      * 字符串转指定类型的数据
      *
@@ -377,68 +551,48 @@ public class JsonUtils implements IJson {
         return object;
     }
 
-    private static void listToJsonStr(StringBuilder builder, Object key, Object values) {
-        try {
-            if (values instanceof List) {
-                builder.append(DQM_SLASH);
-                builder.append(key);
-                builder.append(DQM_SLASH);
-                builder.append(DQM_TAG);
-                builder.append(arraySatTag);
-                List list = (List) values;
-                Object[] array = list.toArray();
-                for (Object object : array) {
-                    builder.append(objectSatTag);
-                    Class clx = object.getClass();
-                    Field[] fields = clx.getDeclaredFields();
-                    for (Field field : fields) {
-                        field.setAccessible(true);
-                        String fieldKey = field.getName();
-                        Object fieldValue = field.get(object);
-                        Type type = field.getGenericType();
-                        String className = getClassFieldTypeName(type);
-                        mapToJsonStr(builder, className, fieldKey, fieldValue);
-                    }
-                    builder.deleteCharAt(builder.length() - 1);
-                    builder.append(objectEndTag);
-                    builder.append(COA_TAG);
-                }
-                builder.deleteCharAt(builder.length() - 1);
-                builder.append(arrayEndTag);
-                builder.append(COA_TAG);
+    private static String builderListJson(Object values) {
+        StringBuilder jsonBuilder = new StringBuilder();
+        jsonBuilder.append(arraySatTag);
+
+        List list = (List) values;
+        Object[] array = list.toArray();
+        for (int index = 0; index < array.length; index++) {
+            Object object = array[index];
+            String json = builderJson(object.getClass(), object);
+            jsonBuilder.append(json);
+            if (index + 1 != array.length) {
+                jsonBuilder.append(COA_TAG);
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
+
+        jsonBuilder.append(arrayEndTag);
+        return jsonBuilder.toString();
     }
 
-
-    private static String classNameToJsonStr(String className, Object values) {
-        if (String.class.getName().equals(className)) {
+    private static String formatValues(Object values) {
+        if (values instanceof String) {
             StringBuilder builder = new StringBuilder();
-            String str = (String) values;
-            if (str == null) {
-                builder.append(NULL);
-            } else {
-                if (str.startsWith(arraySatTag) || str.startsWith(objectSatTag)) {
+            String content = (String) values;
+            if (content != null) {
+                if (content.startsWith(arraySatTag) || content.startsWith(objectSatTag)) {
                     builder.append(values);
                 } else {
                     builder.append(DQM_SLASH);
                     builder.append(values);
                     builder.append(DQM_SLASH);
                 }
-                return builder.toString();
             }
+            return builder.toString();
         }
         return String.valueOf(values);
     }
 
-    private static void mapToJsonStr(StringBuilder builder, String className, Object key, Object values) {
+    private static void builderObjKvJson(StringBuilder builder, String key, Object values) {
         builder.append(DQM_SLASH);
         builder.append(key);
         builder.append(DQM_SLASH);
         builder.append(DQM_TAG);
-        builder.append(classNameToJsonStr(className, values));
-        builder.append(COA_TAG);
+        builder.append(formatValues(values));
     }
 }

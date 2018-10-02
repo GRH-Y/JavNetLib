@@ -1,12 +1,11 @@
 package connect.network.http;
 
-import connect.json.JsonUtils;
 import connect.network.base.RequestEntity;
 import connect.network.base.joggle.ISessionCallBack;
-import connect.network.http.joggle.IConvertResult;
 import connect.network.http.joggle.IHttpSSLFactory;
 import connect.network.http.joggle.IHttpTaskConfig;
-import connect.network.http.joggle.IInterceptRequest;
+import connect.network.http.joggle.IRequestIntercept;
+import connect.network.http.joggle.IResponseConvert;
 import task.executor.ConsumerQueueAttribute;
 import task.executor.interfaces.IConsumerAttribute;
 import task.executor.interfaces.ITaskContainer;
@@ -17,8 +16,8 @@ public class HttpTaskConfig implements IHttpTaskConfig {
     private IHttpSSLFactory mSslFactory;
     private ISessionCallBack mSessionCallBack;
     private IConsumerAttribute<RequestEntity> mAttribute;
-    private IConvertResult mConvertResult;
-    private IInterceptRequest mInterceptRequest;
+    private IResponseConvert mConvertResult;
+    private IRequestIntercept mInterceptRequest;
 
     private long mFreeExitTime = 30000;
     private String mBaseUrl = null;
@@ -54,12 +53,12 @@ public class HttpTaskConfig implements IHttpTaskConfig {
     }
 
     @Override
-    public void setConvertResult(IConvertResult convertResult) {
+    public void setConvertResult(IResponseConvert convertResult) {
         this.mConvertResult = convertResult;
     }
 
     @Override
-    public void setInterceptRequest(IInterceptRequest interceptRequest) {
+    public void setInterceptRequest(IRequestIntercept interceptRequest) {
         this.mInterceptRequest = interceptRequest;
     }
 
@@ -75,13 +74,8 @@ public class HttpTaskConfig implements IHttpTaskConfig {
         }
     }
 
-    protected void onCheckIsIdle() {
-        if (mAttribute.getCacheDataSize() == 0 && mTaskContainer != null) {
-            mTaskContainer.getTaskExecutor().waitTask(mFreeExitTime);
-            if (mAttribute.getCacheDataSize() == 0) {
-                mTaskContainer.getTaskExecutor().stopTask();
-            }
-        }
+    protected long getFreeExitTime() {
+        return mFreeExitTime;
     }
 
     protected IHttpSSLFactory getSslFactory() {
@@ -90,6 +84,14 @@ public class HttpTaskConfig implements IHttpTaskConfig {
 
     protected RequestEntity popCacheData() {
         return mAttribute.popCacheData();
+    }
+
+    protected IRequestIntercept getInterceptRequest() {
+        return mInterceptRequest;
+    }
+
+    protected IResponseConvert getConvertResult() {
+        return mConvertResult;
     }
 
     protected void onCallBackError(RequestEntity submitEntity) {
@@ -104,38 +106,6 @@ public class HttpTaskConfig implements IHttpTaskConfig {
             submitEntity.setResultData(successData);
             mSessionCallBack.notifySuccessMessage(submitEntity);
         }
-    }
-
-    protected Object onConvertResult(Class resultCls, String result) {
-        if (mConvertResult != null) {
-            return mConvertResult.handlerEntity(resultCls, result);
-        } else {
-            return JsonUtils.toEntity(resultCls, result);
-        }
-    }
-
-    /**
-     * 拦截请求(已请求返回，但没有处理请求返回结果)
-     *
-     * @return 返回true则需要拦截
-     */
-    protected boolean intercept(RequestEntity submitEntity) {
-        if (mInterceptRequest != null) {
-            return mInterceptRequest.intercept(submitEntity);
-        }
-        return false;
-    }
-
-    /**
-     * 拦截请求回调结果(已处理返回结果，但没有回调返回结果)
-     *
-     * @return 返回true则需要拦截
-     */
-    protected boolean interceptCallBack(RequestEntity submitEntity, Object entity) {
-        if (mInterceptRequest != null) {
-            return mInterceptRequest.interceptCallBack(submitEntity, entity);
-        }
-        return false;
     }
 
 

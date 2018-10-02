@@ -1,19 +1,32 @@
 
-csquid:S3027"FPut single-quotes around '$' to use the faster "indexOf(char)" method.(ªöµ©ÿÿÿÿÿ
-jsquid:S3776“"RRefactor this method to reduce its Cognitive Complexity from 19 to the 15 allowed.(›…™Œ
-Qsquid:S1118":Add a private constructor to hide the implicit public one.(òÈíÕ
-@squid:S1148›"#Use a logger to log this exception.(€ÉÔ…ıÿÿÿÿ
-osquid:ModifiersOrderCheck"EReorder the modifiers to comply with the Java Language Specification.(ö¯¶—üÿÿÿÿ
-bsquid:S3027O"FPut single-quotes around '<' to use the faster "indexOf(char)" method.(çùşıÿÿÿÿ
-_squid:S00112“"FDefine and throw a dedicated exception instead of using a generic one.(›…™Œ
-hsquid:S1149÷"PReplace the synchronized class "Stack" by an unsynchronized one such as "Deque".(‚›ı 
-gsquid:CommentedOutCodeLinev"<This block of commented-out lines of code should be removed.(Û¦’óúÿÿÿÿ
-nsquid:S3776"RRefactor this method to reduce its Cognitive Complexity from 21 to the 15 allowed.(Òí›üüÿÿÿÿ
-t
-squid:S135!"YReduce the total number of break and continue statements in this loop to use at most one.(‡š½’øÿÿÿÿ
-jsquid:S3776÷"RRefactor this method to reduce its Cognitive Complexity from 64 to the 15 allowed.(‚›ı 
-jsquid:ModifiersOrderCheck"EReorder the modifiers to comply with the Java Language Specification.(©éì
-msquid:S1149ø"PReplace the synchronized class "Stack" by an unsynchronized one such as "Deque".(âÁ­¬şÿÿÿÿ
-gsquid:S1149j"PReplace the synchronized class "Stack" by an unsynchronized one such as "Deque".(Æ¸Ë
-?squid:S1148B"#Use a logger to log this exception.(€ÉÔ…ıÿÿÿÿ
-@squid:S1148"#Use a logger to log this exception.(€ÉÔ…ıÿÿÿÿ
+jsquid:CommentedOutCodeLine˜"<This block of commented-out lines of code should be removed.(ŠĞÿû8¡Ê“Ğâ,
+qsquid:S1871ë"MThis branch's code block is the same as the block for the branch on line 233.(Ä–úôøÿÿÿÿ8¡Ê“Ğâ,
+Fsquid:S1148k"#Use a logger to log this exception.(€ÉÔ…ıÿÿÿÿ8Œøí®â,
+jsquid:S3027ò"FPut single-quotes around '<' to use the faster "indexOf(char)" method.(çùşıÿÿÿÿ8¡Ê“Ğâ,
+Gsquid:S1148¾"#Use a logger to log this exception.(€ÉÔ…ıÿÿÿÿ8¡Ê“Ğâ,
+psquid:S3776‘"RRefactor this method to reduce its Cognitive Complexity from 67 to the 15 allowed.(”€ß[8¡Ê“Ğâ,
+Fsquid:S1148:"#Use a logger to log this exception.(€ÉÔ…ıÿÿÿÿ8Ü¢¥â,
+qsquid:S3776•"RRefactor this method to reduce its Cognitive Complexity from 64 to the 15 allowed.(‚›ı 8¡Ê“Ğâ,
+qsquid:S3776©"RRefactor this method to reduce its Cognitive Complexity from 19 to the 15 allowed.(›…™Œ8¡Ê“Ğâ,
+osquid:CommentedOutCodeLine‹"<This block of commented-out lines of code should be removed.(Û¦’óúÿÿÿÿ8¡Ê“Ğâ,
+osquid:S1149•"PReplace the synchronized class "Stack" by an unsynchronized one such as "Deque".(‚›ı 8¡Ê“Ğâ,
+Gsquid:S1148æ"#Use a logger to log this exception.(€ÉÔ…ıÿÿÿÿ8¡Ê“Ğâ,
+Gsquid:S1148Õ"#Use a logger to log this exception.(€ÉÔ…ıÿÿÿÿ8¡Ê“Ğâ,
+Gsquid:S1148£"#Use a logger to log this exception.(€ÉÔ…ıÿÿÿÿ8¡Ê“Ğâ,
+jsquid:S3027³"FPut single-quotes around '$' to use the faster "indexOf(char)" method.(ªöµ©ÿÿÿÿÿ8¡Ê“Ğâ,
+usquid:S3776!"RRefactor this method to reduce its Cognitive Complexity from 27 to the 15 allowed.(ÔŸïƒÿÿÿÿÿ8Ü¢¥â,
+jsquid:ModifiersOrderCheck"EReorder the modifiers to comply with the Java Language Specification.(©éì
+osquid:ModifiersOrderCheck"EReorder the modifiers to comply with the Java Language Specification.(ö¯¶—üÿÿÿÿ
+Qsquid:S1118":Add a private constructor to hide the implicit public one.(òÈíÕ
+Gsquid:S1148µ"#Use a logger to log this exception.(€ÉÔ…ıÿÿÿÿ8¡Ê“Ğâ,
+tsquid:S1149–"PReplace the synchronized class "Stack" by an unsynchronized one such as "Deque".(âÁ­¬şÿÿÿÿ8¡Ê“Ğâ,
+Vsquid:S2589À"7Remove this expression which always evaluates to "true"(¶áóÚ8¡Ê“Ğâ,
+osquid:S1149ÿ"PReplace the synchronized class "Stack" by an unsynchronized one such as "Deque".(Æ¸Ë8¡Ê“Ğâ,
+Gsquid:S1148„"#Use a logger to log this exception.(€ÉÔ…ıÿÿÿÿ8ºÅôÊâ,
+Isquid:S3985‡"*Remove this unused private "Region" class.(¸ú‘Û8¡Ê“Ğâ,
+jsquid:CommentedOutCodeLine"<This block of commented-out lines of code should be removed.(íü˜Ç8¡Ê“Ğâ,
+{
+squid:S135("YReduce the total number of break and continue statements in this loop to use at most one.(‡š½’øÿÿÿÿ8Ü¢¥â,
+fsquid:S00112©"FDefine and throw a dedicated exception instead of using a generic one.(›…™Œ8¡Ê“Ğâ,
+qsquid:S1871Â"MThis branch's code block is the same as the block for the branch on line 192.(Ä–úôøÿÿÿÿ8¡Ê“Ğâ,
+qsquid:S1871Ú"MThis branch's code block is the same as the block for the branch on line 216.(Ä–úôøÿÿÿÿ8¡Ê“Ğâ,

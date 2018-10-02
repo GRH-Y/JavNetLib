@@ -6,9 +6,9 @@ public interface IHttpTaskConfig {
 
     void setSessionCallBack(ISessionCallBack sessionCallBack);
 
-    void setConvertResult(IConvertResult convertResult);
+    void setConvertResult(IResponseConvert convertResult);
 
-    void setInterceptRequest(IInterceptRequest interceptRequest);
+    void setInterceptRequest(IRequestIntercept interceptRequest);
 
     void setHttpSSLFactory(IHttpSSLFactory factory);
 

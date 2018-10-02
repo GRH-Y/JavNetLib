@@ -2,7 +2,7 @@ package connect.network.http.joggle;
 
 import connect.network.base.RequestEntity;
 
-public interface IInterceptRequest {
+public interface IRequestIntercept {
     /**
      * 拦截请求(已请求返回，但没有处理请求返回结果)
      *

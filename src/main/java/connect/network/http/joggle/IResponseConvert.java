@@ -1,6 +1,6 @@
 package connect.network.http.joggle;
 
-public interface IConvertResult {
+public interface IResponseConvert {
 
     /**
      * 处理请求返回的数据

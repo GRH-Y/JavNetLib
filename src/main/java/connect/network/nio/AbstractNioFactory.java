@@ -5,6 +5,7 @@ import connect.network.base.joggle.IFactory;
 import task.executor.BaseLoopTask;
 import task.executor.LoopTaskExecutor;
 import task.executor.TaskContainer;
+import util.JdkVersion;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
@@ -115,17 +116,20 @@ public abstract class AbstractNioFactory<T> implements IFactory<T> {
     }
 
     protected void destroyCoreTask() {
-        mExecutorQueue.forEach(item -> {
-            item.getExecutor().stopTask();
-            mSelector.wakeup();
-            item.getExecutor().blockStopTask();
-        });
-//        while (!mExecutorQueue.isEmpty()) {
-//            CoreTask coreTask = mExecutorQueue.remove();
-//            coreTask.getExecutor().stopTask();
-//            mSelector.wakeup();
-//            coreTask.getExecutor().blockStopTask();
-//        }
+        if (JdkVersion.isJava8()) {
+            mExecutorQueue.forEach(item -> {
+                item.getExecutor().stopTask();
+                mSelector.wakeup();
+                item.getExecutor().blockStopTask();
+            });
+        } else {
+            while (!mExecutorQueue.isEmpty()) {
+                CoreTask coreTask = mExecutorQueue.remove();
+                coreTask.getExecutor().stopTask();
+                mSelector.wakeup();
+                coreTask.getExecutor().blockStopTask();
+            }
+        }
         mExecutorQueue.clear();
         mConnectCache.clear();
         try {

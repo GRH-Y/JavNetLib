@@ -1,9 +1,13 @@
 package connect.network.http;
 
 
+import connect.json.JsonUtils;
 import connect.network.base.RequestEntity;
+import connect.network.http.joggle.IResponseConvert;
+import connect.network.http.joggle.IRequestIntercept;
 import connect.network.http.joggle.POST;
 import task.executor.BaseConsumerTask;
+import task.executor.interfaces.ILoopTaskExecutor;
 import util.IoUtils;
 import util.Logcat;
 
@@ -66,7 +70,13 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
 
     @Override
     protected void onCreateData() {
-        mConfig.onCheckIsIdle();
+        ILoopTaskExecutor executor = mConfig.getExecutor();
+        if (mConfig.getAttribute().getCacheDataSize() == 0) {
+            executor.waitTask(mConfig.getFreeExitTime());
+            if (mConfig.getAttribute().getCacheDataSize() == 0) {
+                executor.stopTask();
+            }
+        }
     }
 
     @Override
@@ -118,7 +128,8 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
             }
 
             //拦截请求
-            if (mConfig.intercept(submitEntity)) {
+            IRequestIntercept intercept = mConfig.getInterceptRequest();
+            if (intercept != null && intercept.intercept(submitEntity)) {
                 return;
             }
 
@@ -139,7 +150,7 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
 
                 boolean state = IoUtils.pipReadWrite(is, fos, false);
                 //拦截请求
-                if (mConfig.interceptCallBack(submitEntity, path)) {
+                if (intercept != null && intercept.interceptCallBack(submitEntity, path)) {
                     return;
                 }
                 if (state) {
@@ -156,9 +167,16 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
                     String result = new String(buffer, "UTF-8");
                     Logcat.d("==> Request address = " + submitEntity.getAddress());
                     Logcat.d("==> Request to return the content = " + result);
-                    Object entity = mConfig.onConvertResult(resultCls, result);
+                    //转换响应数据
+                    IResponseConvert convert = mConfig.getConvertResult();
+                    Object entity;
+                    if (convert != null) {
+                        entity = convert.handlerEntity(resultCls, result);
+                    } else {
+                        entity = JsonUtils.toEntity(resultCls, result);
+                    }
                     //拦截请求
-                    if (mConfig.interceptCallBack(submitEntity, entity)) {
+                    if (intercept != null && intercept.interceptCallBack(submitEntity, entity)) {
                         return;
                     }
                     mConfig.onCallBackSuccess(entity == null ? buffer : entity, submitEntity);

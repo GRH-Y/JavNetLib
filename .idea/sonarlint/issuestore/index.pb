@@ -57,8 +57,6 @@ g
 7src/main/java/connect/network/http/joggle/ARequest.java,9/1/9155032b3ec96f02ef4ecbeecd55c35acbc64ef6
 m
 =src/main/java/connect/network/http/joggle/IRequestEntity.java,7/6/762daedeed5baaebd657af8ecb0c0745b94bf2ab
-m
-=src/main/java/connect/network/http/joggle/IConvertResult.java,0/2/02e53a72f061d93f35537dc60bde0a0a849b7e06
 c
 3src/main/java/connect/network/http/ConnectType.java,7/2/728f1887ed8d6615de1a422fb7c671a215b163b6
 d
@@ -67,8 +65,6 @@ n
 >src/main/java/connect/network/http/joggle/IHttpTaskConfig.java,a/0/a09d3d14d7886ddc2e0c7a2c5c9590c138fc4df8
 f
 6src/main/java/connect/network/http/HttpTaskConfig.java,8/b/8b7c3ae3eaf8e2475fdcdfc3b1d73ffceeee474d
-p
-@src/main/java/connect/network/http/joggle/IInterceptRequest.java,b/a/ba66fb21d6ef468824185a8b0fa3ac935eeab81c
 Z
 *.idea/artifacts/CurrencyNetConnect_jar.xml,9/a/9a56df21db0098d52e5307e8a4ece3d909e02424
 T
@@ -107,3 +103,7 @@ d
 4src/main/java/connect/network/http/joggle/TRACE.java,4/b/4b48655032e6f369bcc1523f34bb1c76e1c474f2
 q
 Asrc/main/java/connect/network/http/HttpCertificateSSLFactory.java,a/2/a23efbe378a9440c946279ab2d11bcbeab332993
+O
+src/main/java/HttpTestMain.java,3/d/3dc3ead1616290ec6888000bc1ed83162e40e458
+p
+@src/main/java/connect/network/http/joggle/IRequestIntercept.java,1\7\17161f6b9c94872fa19e4bf1044c0ac67b53b1d0
