@@ -3,8 +3,6 @@ package connect.network.udp;
 
 import util.NetUtils;
 
-import java.net.SocketException;
-
 /**
  * udp服务端（适用于java平台）
  * Created by dell on 8/22/2017.
@@ -13,11 +11,11 @@ import java.net.SocketException;
  */
 public class JavUdpServer extends JavUdpConnect {
 
-    public JavUdpServer(String netType, int port) throws SocketException {
+    public JavUdpServer(String netType, int port) {
         super(NetUtils.getLocalIp(netType), port, true);
     }
 
-    public JavUdpServer(int port) throws SocketException {
+    public JavUdpServer(int port) {
         super(NetUtils.getLocalIp(null), port, true);
     }
 }

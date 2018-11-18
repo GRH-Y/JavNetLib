@@ -34,11 +34,10 @@ public class NioReceive implements IReceive {
      * @return 如果返回false则会关闭该链接
      */
     protected boolean onRead(SocketChannel channel) throws IOException {
-        boolean ret = true;
         byte[] data = IoUtils.tryRead(channel);
         if (data != null) {
             ThreadAnnotation.disposeMessage(mReceiveMethodName, mReceive, data);
         }
-        return ret;
+        return true;
     }
 }

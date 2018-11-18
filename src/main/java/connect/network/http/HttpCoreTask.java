@@ -3,13 +3,14 @@ package connect.network.http;
 
 import connect.json.JsonUtils;
 import connect.network.base.RequestEntity;
-import connect.network.http.joggle.IResponseConvert;
+import connect.network.base.joggle.ISessionCallBack;
 import connect.network.http.joggle.IRequestIntercept;
+import connect.network.http.joggle.IResponseConvert;
 import connect.network.http.joggle.POST;
 import task.executor.BaseConsumerTask;
-import task.executor.interfaces.ILoopTaskExecutor;
+import task.executor.joggle.ILoopTaskExecutor;
 import util.IoUtils;
-import util.Logcat;
+import util.LogDog;
 
 import javax.net.ssl.HttpsURLConnection;
 import java.io.File;
@@ -34,8 +35,14 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
             URL url = new URL(address);
             if (address.startsWith("https")) {
                 HttpsURLConnection httpsURLConnection = (HttpsURLConnection) url.openConnection();
-                httpsURLConnection.setHostnameVerifier(mConfig.getSslFactory().getHostnameVerifier());
-                httpsURLConnection.setSSLSocketFactory(mConfig.getSslFactory().getSSLSocketFactory());
+                if (mConfig.getSslFactory() != null) {
+                    if (mConfig.getSslFactory().getHostnameVerifier() != null) {
+                        httpsURLConnection.setHostnameVerifier(mConfig.getSslFactory().getHostnameVerifier());
+                    }
+                    if (mConfig.getSslFactory().getSSLSocketFactory() != null) {
+                        httpsURLConnection.setSSLSocketFactory(mConfig.getSslFactory().getSSLSocketFactory());
+                    }
+                }
                 connection = httpsURLConnection;
             } else {
                 connection = (HttpURLConnection) url.openConnection();
@@ -84,6 +91,15 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
         requestData(mConfig.popCacheData());
     }
 
+    protected void onResultCallBack(RequestEntity submitEntity) {
+        ILoopTaskExecutor executor = mConfig.getExecutor();
+        ISessionCallBack callBack = mConfig.getSessionCallBack();
+        if (callBack != null && executor.getLoopState()) {
+            submitEntity.setResultData(null);
+            callBack.notifyErrorMessage(submitEntity);
+        }
+    }
+
 
     /**
      * 发送时转换编码，解决编码问题
@@ -96,7 +112,7 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
     private void requestData(RequestEntity submitEntity) {
         HttpURLConnection connection = init(submitEntity);
         if (connection == null) {
-            mConfig.onCallBackError(submitEntity);
+            onResultCallBack(submitEntity);
             return;
         }
         try {
@@ -109,13 +125,13 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
             int code = connection.getResponseCode();
 //                Logcat.d("Http Response Code = " + code);
             if (code != HttpURLConnection.HTTP_OK) {
-                Logcat.e("Http Response Code = " + code);
-                mConfig.onCallBackError(submitEntity);
+                LogDog.e("Http Response Code = " + code);
+                onResultCallBack(submitEntity);
                 return;
             }
 
             if (submitEntity.getCallBackTarget() == null) {
-                Logcat.w("http data.target = null return ....");
+                LogDog.w("http data.target = null return ....");
                 return;
             }
 
@@ -123,7 +139,7 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
             InputStream is = connection.getInputStream();
             int available = is.available();
             if (length <= 0 && available <= 0) {
-                mConfig.onCallBackError(submitEntity);
+                onResultCallBack(submitEntity);
                 return;
             }
 
@@ -154,19 +170,21 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
                     return;
                 }
                 if (state) {
-                    mConfig.onCallBackSuccess(path, submitEntity);
+                    submitEntity.setResultData(path);
+                    onResultCallBack(submitEntity);
                 } else {
-                    mConfig.onCallBackError(submitEntity);
+                    onResultCallBack(submitEntity);
                 }
                 fos.close();
             } else {
                 byte[] buffer = IoUtils.tryRead(is);
                 if (resultCls == null || resultCls.isAssignableFrom(byte[].class)) {
-                    mConfig.onCallBackSuccess(buffer, submitEntity);
+                    submitEntity.setResultData(buffer);
+                    onResultCallBack(submitEntity);
                 } else {
-                    String result = new String(buffer, "UTF-8");
-                    Logcat.d("==> Request address = " + submitEntity.getAddress());
-                    Logcat.d("==> Request to return the content = " + result);
+                    String result = new String(buffer);
+                    LogDog.d("==> Request address = " + submitEntity.getAddress());
+                    LogDog.d("==> Request to return the content = " + result);
                     //转换响应数据
                     IResponseConvert convert = mConfig.getConvertResult();
                     Object entity;
@@ -179,13 +197,14 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
                     if (intercept != null && intercept.interceptCallBack(submitEntity, entity)) {
                         return;
                     }
-                    mConfig.onCallBackSuccess(entity == null ? buffer : entity, submitEntity);
+                    submitEntity.setResultData(entity == null ? buffer : entity);
+                    onResultCallBack(submitEntity);
                 }
             }
 
         } catch (Throwable e) {
             e.printStackTrace();
-            mConfig.onCallBackError(submitEntity);
+            onResultCallBack(submitEntity);
         } finally {
             connection.disconnect();
         }

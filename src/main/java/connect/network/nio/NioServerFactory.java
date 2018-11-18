@@ -1,7 +1,7 @@
 package connect.network.nio;
 
 
-import util.Logcat;
+import util.LogDog;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -43,14 +43,14 @@ public class NioServerFactory extends AbstractNioFactory<NioServerTask> {
     @Override
     public void addTask(NioServerTask task) {
         super.addTask(task);
-        Logcat.d("==##> NioServerFactory addTask mConnectCache.size = " + mConnectCache.size());
+        LogDog.d("==##> NioServerFactory addTask mConnectCache.size = " + mConnectCache.size());
     }
 
 
     @Override
     protected void onConnectTask(Selector selector, NioServerTask task) {
         //创建服务，并注册到selector，监听所有的事件
-        Logcat.d("==##> NioServerFactory onConnectTask NioServerTask = " + task.getHost() + ":" + task.getPort());
+        LogDog.d("==##> NioServerFactory onConnectTask NioServerTask = " + task.getHost() + ":" + task.getPort());
         ServerSocketChannel serverSocketChannel = task.getSocketChannel();
         if (serverSocketChannel == null && task.getHost() != null && task.getPort() > 0) {
             try {
@@ -87,7 +87,7 @@ public class NioServerFactory extends AbstractNioFactory<NioServerTask> {
     @Override
     protected void onSelectorTask(Selector selector) {
 
-        Logcat.d("==##> NioServerFactory onSelectorTask");
+        LogDog.d("==##> NioServerFactory onSelectorTask");
 
         Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
         while (iterator.hasNext()) {
@@ -96,7 +96,7 @@ public class NioServerFactory extends AbstractNioFactory<NioServerTask> {
             NioServerTask task = (NioServerTask) selectionKey.attachment();
 
             if (selectionKey.isValid() && selectionKey.isAcceptable()) {
-                Logcat.d("==##> selectionKey isAcceptable ");
+                LogDog.d("==##> selectionKey isAcceptable ");
                 try {
                     SocketChannel channel = serverSocketChannel.accept();
                     task.onAcceptServerChannel(channel);

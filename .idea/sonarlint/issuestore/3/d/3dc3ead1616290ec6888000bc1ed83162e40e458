@@ -1,11 +1,0 @@
-
-=squid:S1168+"&Return an empty array instead of null.(•πÔç
-1squid:S1220""Move this file to a named package.
-_squid:S1854"<Remove this useless assignment to local variable "newLogin".(§ƒøè˘ˇˇˇˇ8ÎÂ≠‚,
-á"squid:ClassVariableVisibilityCheckL"RMake mobile a static final constant or non-public and provide accessors if needed.(ﬂÑÿó8üΩêÆ‚,
-ssquid:S2068M"U'password' detected in this expression, review this potentially hardcoded credential.(∂¶”⁄8üΩêÆ‚,
-Ysquid:UnusedPrivateMethod2"4Remove this unused private "successCallBack" method.(˘‹≈©
-â"squid:ClassVariableVisibilityCheckM"TMake password a static final constant or non-public and provide accessors if needed.(∂¶”⁄8üΩêÆ‚,
-nsquid:CommentedOutCodeLine"<This block of commented-out lines of code should be removed.(Ò•˘ö¯ˇˇˇˇ8´≠ÜÆ‚,
-Ysquid:UnusedPrivateMethod""4Remove this unused private "successCallBack" method.(˘‹≈©
-Psquid:S1481"-Remove this unused "newLogin" local variable.(§ƒøè˘ˇˇˇˇ8ÎÂ≠‚,

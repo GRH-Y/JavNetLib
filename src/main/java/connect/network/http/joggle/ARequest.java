@@ -14,7 +14,6 @@ import java.lang.annotation.Target;
 
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@KeepPrototype
 public @interface ARequest {
 
     /**
@@ -22,7 +21,7 @@ public @interface ARequest {
      *
      * @return
      */
-    Class requestType();
+    Class requestMethod();
 
     /**
      * 请求的地址

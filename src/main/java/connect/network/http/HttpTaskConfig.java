@@ -1,5 +1,6 @@
 package connect.network.http;
 
+
 import connect.network.base.RequestEntity;
 import connect.network.base.joggle.ISessionCallBack;
 import connect.network.http.joggle.IHttpSSLFactory;
@@ -7,8 +8,8 @@ import connect.network.http.joggle.IHttpTaskConfig;
 import connect.network.http.joggle.IRequestIntercept;
 import connect.network.http.joggle.IResponseConvert;
 import task.executor.ConsumerQueueAttribute;
-import task.executor.interfaces.IConsumerAttribute;
-import task.executor.interfaces.ITaskContainer;
+import task.executor.joggle.IConsumerAttribute;
+import task.executor.joggle.ITaskContainer;
 
 public class HttpTaskConfig implements IHttpTaskConfig {
 
@@ -26,21 +27,6 @@ public class HttpTaskConfig implements IHttpTaskConfig {
         mAttribute = new ConsumerQueueAttribute<>();
     }
 
-    protected void setTaskContainer(ITaskContainer container) {
-        this.mTaskContainer = container;
-    }
-
-    protected IConsumerAttribute<RequestEntity> getAttribute() {
-        return mAttribute;
-    }
-
-    protected <T> T getExecutor() {
-        return mTaskContainer.getTaskExecutor();
-    }
-
-    protected String getBaseUrl() {
-        return mBaseUrl;
-    }
 
     @Override
     public void setBaseUrl(String baseUrl) {
@@ -74,6 +60,22 @@ public class HttpTaskConfig implements IHttpTaskConfig {
         }
     }
 
+    protected void setTaskContainer(ITaskContainer container) {
+        this.mTaskContainer = container;
+    }
+
+    protected IConsumerAttribute<RequestEntity> getAttribute() {
+        return mAttribute;
+    }
+
+    protected <T> T getExecutor() {
+        return mTaskContainer.getTaskExecutor();
+    }
+
+    protected String getBaseUrl() {
+        return mBaseUrl;
+    }
+
     protected long getFreeExitTime() {
         return mFreeExitTime;
     }
@@ -94,18 +96,8 @@ public class HttpTaskConfig implements IHttpTaskConfig {
         return mConvertResult;
     }
 
-    protected void onCallBackError(RequestEntity submitEntity) {
-        if (mSessionCallBack != null && mTaskContainer.getTaskExecutor().getLoopState()) {
-            submitEntity.setResultData(null);
-            mSessionCallBack.notifyErrorMessage(submitEntity);
-        }
-    }
-
-    protected void onCallBackSuccess(Object successData, RequestEntity submitEntity) {
-        if (mSessionCallBack != null) {
-            submitEntity.setResultData(successData);
-            mSessionCallBack.notifySuccessMessage(submitEntity);
-        }
+    protected ISessionCallBack getSessionCallBack() {
+        return mSessionCallBack;
     }
 
 

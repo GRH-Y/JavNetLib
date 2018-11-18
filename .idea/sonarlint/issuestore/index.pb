@@ -32,7 +32,7 @@ g
 c
 3src/main/java/connect/network/udp/JavUdpServer.java,e/3/e38aa11293379ff233932d07563c27f037947884
 d
-4src/main/java/connect/network/udp/JavUdpConnect.java,4/c/4c9ea9a33d6199d6163970a7d9e49cc1ba0fc722
+4src/main/java/connect/network/udp/JavUdpConnect.java,4\c\4c9ea9a33d6199d6163970a7d9e49cc1ba0fc722
 e
 5src/main/java/connect/network/base/RequestEntity.java,9/7/97bdc9875726ea106bd974a29e4c67cdffb00e35
 j
@@ -64,13 +64,11 @@ d
 n
 >src/main/java/connect/network/http/joggle/IHttpTaskConfig.java,a/0/a09d3d14d7886ddc2e0c7a2c5c9590c138fc4df8
 f
-6src/main/java/connect/network/http/HttpTaskConfig.java,8/b/8b7c3ae3eaf8e2475fdcdfc3b1d73ffceeee474d
+6src/main/java/connect/network/http/HttpTaskConfig.java,8\b\8b7c3ae3eaf8e2475fdcdfc3b1d73ffceeee474d
 Z
 *.idea/artifacts/CurrencyNetConnect_jar.xml,9/a/9a56df21db0098d52e5307e8a4ece3d909e02424
 T
 $.idea/codeStyles/codeStyleConfig.xml,d\d\dd7b3350c29c49497756c7f32c69a3bed18b1cba
-V
-&.idea/libraries/CurrencyThreadTask.xml,7\5\754d7f968b0e16ac45285ee5ce18c5dbc86bc43b
 Y
 ).idea/modules/CurrencyNetConnect_main.iml,e\8\e8175e384240b2c8eb057a11379224c5f150e2e1
 Y
@@ -83,10 +81,8 @@ S
 #.idea/sonarlint/issuestore/index.pb,9/f/9fe84ebb15faf917b7def6236dba604453cc61e0
 n
 >src/main/java/connect/network/http/joggle/IHttpSSLFactory.java,9/4/947eb5a47e0eb8bb0094100414b166ce62c8d756
-l
-<src/main/java/connect/network/http/joggle/KeepPrototype.java,d/1/d167237d8df255eb58f31d48ffb38793121a2d23
 f
-6src/main/java/connect/network/http/HttpSSLFactory.java,3/3/33868bde440e4e71eb95b3be81417d1a2ba923a4
+6src/main/java/connect/network/http/HttpSSLFactory.java,3\3\33868bde440e4e71eb95b3be81417d1a2ba923a4
 9
 	README.md,8/e/8ec9a00bfd09b3190ac6b22251dbb1aa95a0579d
 f
@@ -103,7 +99,7 @@ d
 4src/main/java/connect/network/http/joggle/TRACE.java,4/b/4b48655032e6f369bcc1523f34bb1c76e1c474f2
 q
 Asrc/main/java/connect/network/http/HttpCertificateSSLFactory.java,a/2/a23efbe378a9440c946279ab2d11bcbeab332993
-O
-src/main/java/HttpTestMain.java,3/d/3dc3ead1616290ec6888000bc1ed83162e40e458
 p
 @src/main/java/connect/network/http/joggle/IRequestIntercept.java,1\7\17161f6b9c94872fa19e4bf1044c0ac67b53b1d0
+o
+?src/main/java/connect/network/http/joggle/IResponseConvert.java,5/8/58e6f1a12eb310d9fd965cd2659a3858e27a65e1

@@ -18,6 +18,8 @@ public abstract class AbstractFactory<T> implements IFactory<T> {
 
     private long mLoadTime = 2000000000;
 
+    private long mWaiteTime = 500;
+
     public AbstractFactory() {
         mConnectCache = new ConcurrentLinkedQueue<>();
         mExecutorQueue = new ConcurrentLinkedQueue<>();
@@ -32,6 +34,14 @@ public abstract class AbstractFactory<T> implements IFactory<T> {
         if (loadTime > 0) {
             this.mLoadTime = loadTime * 1000000L;
         }
+    }
+
+    /**
+     * 设置线程低压状态睡眠时间
+     * @param waiteTime
+     */
+    public void setFreeWaiteTime(long waiteTime) {
+        this.mWaiteTime = waiteTime;
     }
 
     @Override
@@ -174,7 +184,7 @@ public abstract class AbstractFactory<T> implements IFactory<T> {
                 getExecutor().stopTask();
                 mExecutorQueue.remove(this);
             } else {
-                getExecutor().sleepTask(1000);
+                getExecutor().sleepTask(mWaiteTime);
             }
 
         }

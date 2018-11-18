@@ -4,10 +4,10 @@ package connect.network.http;
 import connect.network.base.RequestEntity;
 import connect.network.http.joggle.*;
 import task.executor.TaskExecutorPoolManager;
-import task.executor.interfaces.IConsumerAttribute;
-import task.executor.interfaces.ILoopTaskExecutor;
-import task.executor.interfaces.ITaskContainer;
-import util.Logcat;
+import task.executor.joggle.IConsumerAttribute;
+import task.executor.joggle.ILoopTaskExecutor;
+import task.executor.joggle.ITaskContainer;
+import util.LogDog;
 import util.StringUtils;
 
 import java.lang.reflect.Field;
@@ -170,7 +170,7 @@ public class JavHttpConnect {
         Class clx = entity.getClass();
         ARequest request = (ARequest) clx.getAnnotation(ARequest.class);
         int atnTaskTag = taskTag != DEFAULT_TASK_TAG ? taskTag : request.taskTag();
-        Class requestType = request.requestType();
+        Class requestMethod = request.requestMethod();
         Object resultType = request.savePath() == null || request.savePath().length() == 0 ? request.resultType() : request.savePath();
         String address = mHttpTaskManage.getBaseUrl() == null ? request.url() : mHttpTaskManage.getBaseUrl() + request.url();
 
@@ -182,15 +182,17 @@ public class JavHttpConnect {
         netTaskEntity.setViewTarget(viewTarget);
         netTaskEntity.setResultType(resultType);
         netTaskEntity.setAutoSetDataForView(isAutoSetDataForView);
-        netTaskEntity.setRequestMethod(requestType.getSimpleName());
+        netTaskEntity.setRequestMethod(requestMethod.getSimpleName());
 
-        if (requestType == POST.class) {
+        if (requestMethod == POST.class) {
             byte[] postData = entity.postData();
-            Logcat.d("==>JavHttpConnect post submitEntity = " + new String(postData));
+            if (postData != null) {
+                LogDog.d("==>JavHttpConnect post submitEntity = " + new String(postData));
+            }
             netTaskEntity.setAddress(address);
             netTaskEntity.setSendData(postData);
             submitPost(netTaskEntity);
-        } else if (requestType == GET.class) {
+        } else if (requestMethod == GET.class) {
             StringBuilder builder = new StringBuilder();
             builder.append(address);
 
@@ -219,10 +221,14 @@ public class JavHttpConnect {
         StringBuilder builder = new StringBuilder();
         Field[] files = clx.getDeclaredFields();
         for (Field field : files) {
+            String name = field.getName();
+            if ("shadow$_monitor_".equals(name)) {
+                continue;
+            }
             field.setAccessible(true);
             try {
                 Object object = field.get(entity);
-                builder.append(field.getName());
+                builder.append(name);
                 builder.append("=");
                 builder.append(object);
                 builder.append("&");

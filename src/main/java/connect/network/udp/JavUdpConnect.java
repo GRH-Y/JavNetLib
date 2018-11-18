@@ -4,11 +4,11 @@ package connect.network.udp;
 import task.executor.BaseConsumerTask;
 import task.executor.ConsumerQueueAttribute;
 import task.executor.TaskContainer;
-import task.executor.interfaces.IConsumerAttribute;
-import task.executor.interfaces.IConsumerTaskExecutor;
-import task.executor.interfaces.ILoopTaskExecutor;
-import task.executor.interfaces.ITaskContainer;
-import util.Logcat;
+import task.executor.joggle.IConsumerAttribute;
+import task.executor.joggle.IConsumerTaskExecutor;
+import task.executor.joggle.ILoopTaskExecutor;
+import task.executor.joggle.ITaskContainer;
+import util.LogDog;
 
 import java.net.*;
 
@@ -112,7 +112,7 @@ public class JavUdpConnect {
     }
 
     protected void onReceiveData(DatagramPacket packet) {
-        Logcat.i("==> onReceiveData = packet.getLength()" + packet.getLength());
+        LogDog.i("==> onReceiveData = packet.getLength()" + packet.getLength());
     }
 
     /**
