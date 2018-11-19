@@ -58,7 +58,7 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
             connection.setUseCaches(false);
 
             connection.setRequestProperty("Charset", "utf-8");
-            connection.setRequestProperty("User-Agent", "HttpURLConnection");
+            connection.setRequestProperty("User-Agent", "ydz-http-1.0");
             //此处为暴力方法设置接受所有类型，以此来防范返回415;
             connection.setRequestProperty("Accept", "*/*");
 
@@ -67,16 +67,14 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
 //                connection.setRequestProperty("Connection", "keep-alive");
                 connection.setRequestProperty("Accept-Charset", "utf-8");
                 connection.setRequestProperty("Accept-Encoding", "gzip");
-                connection.setRequestProperty("User-Agent", "ydz-http-1.0");
 //                    connection.setRequestProperty("Accept", "application/json");
+            }
 
-                Map<String, String> property = mConfig.getRequestProperty();
-                if (property != null) {
-                    for (String key : property.keySet()) {
-                        connection.setRequestProperty(key, property.get(key));
-                    }
+            Map<String, String> property = mConfig.getRequestProperty();
+            if (property != null) {
+                for (String key : property.keySet()) {
+                    connection.setRequestProperty(key, property.get(key));
                 }
-
             }
         } catch (Exception e) {
             e.printStackTrace();
