@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Map;
 
 public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
 
@@ -48,8 +49,8 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
                 connection = (HttpURLConnection) url.openConnection();
             }
 
-            connection.setConnectTimeout(8000);
-            connection.setReadTimeout(8000);
+            connection.setConnectTimeout(mConfig.getTimeout());
+            connection.setReadTimeout(mConfig.getTimeout());
             connection.setRequestMethod(task.getRequestMethod());
 
             connection.setDoOutput(true);
@@ -66,8 +67,16 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
 //                connection.setRequestProperty("Connection", "keep-alive");
                 connection.setRequestProperty("Accept-Charset", "utf-8");
                 connection.setRequestProperty("Accept-Encoding", "gzip");
-                connection.setRequestProperty("User-Agent", "Mozilla/4.0 (compatible; MSIE 5.0; Windows NT; DigExt)");
+                connection.setRequestProperty("User-Agent", "ydz-http-1.0");
 //                    connection.setRequestProperty("Accept", "application/json");
+
+                Map<String, String> property = mConfig.getRequestProperty();
+                if (property != null) {
+                    for (String key : property.keySet()) {
+                        connection.setRequestProperty(key, property.get(key));
+                    }
+                }
+
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -96,7 +105,11 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
         ISessionCallBack callBack = mConfig.getSessionCallBack();
         if (callBack != null && executor.getLoopState()) {
             submitEntity.setResultData(null);
-            callBack.notifyErrorMessage(submitEntity);
+            if (submitEntity.getResultData() == null) {
+                callBack.notifyErrorMessage(submitEntity);
+            } else {
+                callBack.notifySuccessMessage(submitEntity);
+            }
         }
     }
 

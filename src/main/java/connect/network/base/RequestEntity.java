@@ -23,10 +23,6 @@ public class RequestEntity {
     private String ecbMethodName = null;
     private boolean isAutoSetDataForView = false;
     /**
-     * 如果true则调用成功回调接口
-     */
-    private boolean isResultStatus = true;
-    /**
      * 接口回调类
      */
     private Object callBackTarget = null;
@@ -126,14 +122,6 @@ public class RequestEntity {
 
     public void setResultType(Object resultType) {
         this.resultType = resultType;
-    }
-
-    public boolean isResultStatus() {
-        return isResultStatus;
-    }
-
-    public void setResultStatus(boolean resultStatus) {
-        isResultStatus = resultStatus;
     }
 
     public Object getViewTarget() {

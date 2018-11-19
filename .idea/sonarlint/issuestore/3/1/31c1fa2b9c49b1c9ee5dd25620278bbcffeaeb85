@@ -1,9 +1,0 @@
-
-isquid:ModifiersOrderCheck-"EReorder the modifiers to comply with the Java Language Specification.(ùý±q
-@squid:S1148Å"#Use a logger to log this exception.(€ÉÔ…ýÿÿÿÿ
-jsquid:ModifiersOrderCheck/"EReorder the modifiers to comply with the Java Language Specification.(óãÐ¡
-@squid:S1148Š"#Use a logger to log this exception.(€ÉÔ…ýÿÿÿÿ
-hsquid:CommentedOutCodeLineÖ"<This block of commented-out lines of code should be removed.(ÞŽôºùÿÿÿÿ
-jsquid:ModifiersOrderCheck1"EReorder the modifiers to comply with the Java Language Specification.(ñØ‰
-Fsquid:S1148n"#Use a logger to log this exception.(€ÉÔ…ýÿÿÿÿ8è Þ¡Ø,
-Gsquid:S1148ª"#Use a logger to log this exception.(€ÉÔ…ýÿÿÿÿ8ªÒ¥›Ø,

@@ -97,7 +97,7 @@ public class JavHttpConnect {
     }
 
 
-    private void submitGet(RequestEntity entity) {
+    public void submitGet(RequestEntity entity) {
         if (entity == null) {
             return;
         }
@@ -105,7 +105,7 @@ public class JavHttpConnect {
     }
 
 
-    private void submitPost(RequestEntity entity) {
+    public void submitPost(RequestEntity entity) {
         if (entity == null) {
             return;
         }

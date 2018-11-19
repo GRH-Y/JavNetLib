@@ -11,6 +11,8 @@ import task.executor.ConsumerQueueAttribute;
 import task.executor.joggle.IConsumerAttribute;
 import task.executor.joggle.ITaskContainer;
 
+import java.util.Map;
+
 public class HttpTaskConfig implements IHttpTaskConfig {
 
     private ITaskContainer mTaskContainer;
@@ -21,12 +23,24 @@ public class HttpTaskConfig implements IHttpTaskConfig {
     private IRequestIntercept mInterceptRequest;
 
     private long mFreeExitTime = 30000;
+    private int mTimeout = 8000;
     private String mBaseUrl = null;
+    private Map<String, String> mRequestProperty = null;
 
     public HttpTaskConfig() {
         mAttribute = new ConsumerQueueAttribute<>();
     }
 
+
+    @Override
+    public void setTimeout(int timeout) {
+        this.mTimeout = timeout;
+    }
+
+    @Override
+    public void setRequestProperty(Map<String, String> property) {
+        this.mRequestProperty = property;
+    }
 
     @Override
     public void setBaseUrl(String baseUrl) {
@@ -100,6 +114,13 @@ public class HttpTaskConfig implements IHttpTaskConfig {
         return mSessionCallBack;
     }
 
+    protected int getTimeout() {
+        return mTimeout;
+    }
+
+    protected Map<String, String> getRequestProperty() {
+        return mRequestProperty;
+    }
 
     /**
      * 释放资源

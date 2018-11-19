@@ -1,10 +1,0 @@
-
-Gsquid:S1148Ξ"#Use a logger to log this exception.(€ΙΤ…ύÿÿÿÿ8 ½Ϋτμ,
-isquid:CommentedOutCodeLineA"<This block of commented-out lines of code should be removed.(πΩπ·8 ½Ϋτμ,
-Isquid:S1181Ν"%Catch Exception instead of Throwable.(‡ΪΪψÿÿÿÿ8 ½Ϋτμ,
-Fsquid:S1148I"#Use a logger to log this exception.(€ΙΤ…ύÿÿÿÿ8 ½Ϋτμ,
-nsquid:CommentedOutCodeLine~"<This block of commented-out lines of code should be removed.(ΰ¥Γωÿÿÿÿ8 ½Ϋτμ,
-Msquid:S2093v"*Change this "try" to a try-with-resources.(΅»Άόωÿÿÿÿ8 ½Ϋτμ,
-usquid:S3776p"RRefactor this method to reduce its Cognitive Complexity from 38 to the 15 allowed.(έίΦόÿÿÿÿ8 ½Ϋτμ,
-isquid:CommentedOutCodeLine="<This block of commented-out lines of code should be removed.(ΗΞ½8 ½Ϋτμ,
-isquid:CommentedOutCodeLineF"<This block of commented-out lines of code should be removed.(δ“8 ½Ϋτμ,
