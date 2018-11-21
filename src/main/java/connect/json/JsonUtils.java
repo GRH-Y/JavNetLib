@@ -111,10 +111,6 @@ public class JsonUtils implements IJson {
                     continue;
                 }
 
-                if (jsonBuilder.length() > 1) {
-                    jsonBuilder.append(COA_TAG);
-                }
-
                 Object object = null;
                 try {
                     object = field.get(entity);
@@ -123,6 +119,10 @@ public class JsonUtils implements IJson {
                 }
                 if (object == null) {
                     continue;
+                }
+
+                if (jsonBuilder.length() > 1) {
+                    jsonBuilder.append(COA_TAG);
                 }
 
                 Class typeClx = field.getType();
