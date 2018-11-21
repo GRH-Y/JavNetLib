@@ -38,26 +38,10 @@ public class JavSessionCallBack implements ISessionCallBack {
      * @param entity 请求任务
      */
     @Override
-    public void notifySuccessMessage(RequestEntity entity) {
-        Object object = entity == null || entity.getCallBackTarget() == null ? target : entity.getCallBackTarget();
-        ThreadAnnotation.disposeMessage(entity.getSuccessMethodName(), object, entity);
-    }
-
-
-    /**
-     * 网络请求失败回调
-     *
-     * @param entity 请求任务
-     */
-    @Override
-    public void notifyErrorMessage(RequestEntity entity) {
-        Object object = entity == null || entity.getCallBackTarget() == null ? target : entity.getCallBackTarget();
-        ThreadAnnotation.disposeMessage(entity.getErrorMethodName(), object, entity);
-    }
-
-    @Override
-    public void recycle() {
-        target = null;
+    public void notifyMessage(RequestEntity entity) {
+        Object object = entity.getCallBackTarget() == null ? target : entity.getCallBackTarget();
+        String methodName = entity.getResultData() != null ? entity.getSuccessMethodName() : entity.getErrorMethodName();
+        ThreadAnnotation.disposeMessage(methodName, object, entity);
     }
 
 }

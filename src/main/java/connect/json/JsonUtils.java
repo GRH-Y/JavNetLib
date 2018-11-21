@@ -32,6 +32,68 @@ public class JsonUtils implements IJson {
         return builderJson(cls, entity);
     }
 
+    public static String toFormStr(Object entity) {
+        if (entity == null) {
+            return null;
+        }
+        Class cls = entity.getClass();
+        return builderFormStr(cls, entity);
+    }
+
+    public static String toFormStr(String json) {
+        if (json == null) {
+            return null;
+        }
+        String result = json.replace(objectSatTag, NULL);
+        result = result.replace(objectEndTag, NULL);
+        result = result.replace(DQM_SLASH, NULL);
+        result = result.replace(DQM_TAG, "=");
+        result = result.replace(COA_TAG, "&");
+        return result;
+    }
+
+    private static String builderFormStr(Class cls, Object entity) {
+        StringBuilder jsonBuilder = new StringBuilder();
+        Field[] fields = cls.getDeclaredFields();
+
+        if (!cls.isAssignableFrom(Object.class)) {
+
+            for (int index = 0; index < fields.length; index++) {
+
+                Field field = fields[index];
+                field.setAccessible(true);
+
+                String key = field.getName();
+                if ("serialVersionUID".equals(key) || "$change".equals(key) || "this$0".equals(key)) {
+                    continue;
+                }
+
+                Object object = null;
+                try {
+                    object = field.get(entity);
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+                if (object == null) {
+                    continue;
+                }
+
+                if (jsonBuilder.length() > 1) {
+                    jsonBuilder.append("&");
+                }
+                
+                Class typeClx = field.getType();
+                if (isBasicDataType(typeClx)) {
+                    jsonBuilder.append(key);
+                    jsonBuilder.append("=");
+                    jsonBuilder.append(String.valueOf(object));
+                }
+            }
+        }
+
+        return jsonBuilder.toString();
+    }
+
     private static String builderJson(Class cls, Object entity) {
         StringBuilder jsonBuilder = new StringBuilder();
         jsonBuilder.append(objectSatTag);
@@ -136,6 +198,7 @@ public class JsonUtils implements IJson {
         return result;
     }
 
+
     private static boolean isList(char c) {
         return arraySatTag.charAt(0) == c;
     }
@@ -160,6 +223,10 @@ public class JsonUtils implements IJson {
                 field.setAccessible(true);
                 Class type = field.getType();
                 int startIndex = json.indexOf(key, baseIndex);
+                if (startIndex == -1) {
+                    baseIndex = 0;
+                    startIndex = json.indexOf(key, baseIndex);
+                }
                 boolean isBasicType = isBasicDataType(type);
 
                 int valueIndex = key.length() + startIndex + 1;
@@ -234,7 +301,8 @@ public class JsonUtils implements IJson {
                     }
                     String value = json.substring(valueIndex, endIndex);
                     try {
-                        field.set(object, value);
+                        Object tmp = classNameToClassValue(type.getName(), value);
+                        field.set(object, tmp);
                     } catch (IllegalAccessException e) {
                         e.printStackTrace();
                     }

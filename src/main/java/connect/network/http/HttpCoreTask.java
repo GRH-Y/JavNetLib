@@ -61,13 +61,11 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
             connection.setRequestProperty("User-Agent", "ydz-http-1.0");
             //此处为暴力方法设置接受所有类型，以此来防范返回415;
             connection.setRequestProperty("Accept", "*/*");
+            connection.setRequestProperty("Accept-Charset", "utf-8");
+            connection.setRequestProperty("Accept-Encoding", "gzip");
 
             if (POST.class.getSimpleName().equals(task.getRequestMethod())) {
-//                connection.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
-//                connection.setRequestProperty("Connection", "keep-alive");
-                connection.setRequestProperty("Accept-Charset", "utf-8");
-                connection.setRequestProperty("Accept-Encoding", "gzip");
-//                    connection.setRequestProperty("Accept", "application/json");
+                connection.setRequestProperty("Content-Type", "application/json");
             }
 
             Map<String, String> property = mConfig.getRequestProperty();
@@ -102,12 +100,7 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
         ILoopTaskExecutor executor = mConfig.getExecutor();
         ISessionCallBack callBack = mConfig.getSessionCallBack();
         if (callBack != null && executor.getLoopState()) {
-            submitEntity.setResultData(null);
-            if (submitEntity.getResultData() == null) {
-                callBack.notifyErrorMessage(submitEntity);
-            } else {
-                callBack.notifySuccessMessage(submitEntity);
-            }
+            callBack.notifyMessage(submitEntity);
         }
     }
 
@@ -149,9 +142,13 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
             int length = connection.getContentLength();
             InputStream is = connection.getInputStream();
             int available = is.available();
+            byte[] tryData = null;
             if (length <= 0 && available <= 0) {
-                onResultCallBack(submitEntity);
-                return;
+                tryData = IoUtils.tryRead(is);
+                if (tryData == null) {
+                    onResultCallBack(submitEntity);
+                    return;
+                }
             }
 
             //拦截请求
@@ -163,6 +160,7 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
             Class resultCls = (Class) submitEntity.getResultType();
 
             if (resultCls != null && resultCls.isAssignableFrom(String.class)) {
+
                 //结果保存成文件的
                 String path = (String) submitEntity.getResultType();
                 File file = new File(path);
@@ -173,44 +171,52 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
                         parentFile.mkdirs();
                     }
                 }
-                FileOutputStream fos = new FileOutputStream(file);
-
-                boolean state = IoUtils.pipReadWrite(is, fos, false);
                 //拦截请求
                 if (intercept != null && intercept.interceptCallBack(submitEntity, path)) {
                     return;
                 }
+                boolean state;
+                FileOutputStream fos = new FileOutputStream(file);
+                if (tryData != null) {
+                    state = IoUtils.writeToFull(fos, tryData, false);
+                } else {
+                    state = IoUtils.pipReadWrite(is, fos, false);
+                }
                 if (state) {
                     submitEntity.setResultData(path);
-                    onResultCallBack(submitEntity);
-                } else {
-                    onResultCallBack(submitEntity);
                 }
+                onResultCallBack(submitEntity);
                 fos.close();
             } else {
-                byte[] buffer = IoUtils.tryRead(is);
+                byte[] buffer;
+                if (tryData == null) {
+                    buffer = IoUtils.tryRead(is);
+                } else {
+                    buffer = tryData;
+                }
                 if (resultCls == null || resultCls.isAssignableFrom(byte[].class)) {
                     submitEntity.setResultData(buffer);
-                    onResultCallBack(submitEntity);
                 } else {
-                    String result = new String(buffer);
-                    LogDog.d("==> Request address = " + submitEntity.getAddress());
-                    LogDog.d("==> Request to return the content = " + result);
-                    //转换响应数据
-                    IResponseConvert convert = mConfig.getConvertResult();
-                    Object entity;
-                    if (convert != null) {
-                        entity = convert.handlerEntity(resultCls, result);
-                    } else {
-                        entity = JsonUtils.toEntity(resultCls, result);
+                    if (buffer != null) {
+                        String result = new String(buffer);
+                        LogDog.d("==> Request address = " + submitEntity.getAddress());
+                        LogDog.d("==> Request to return the content = " + result);
+                        //转换响应数据
+                        IResponseConvert convert = mConfig.getConvertResult();
+                        Object entity;
+                        if (convert != null) {
+                            entity = convert.handlerEntity(resultCls, result);
+                        } else {
+                            entity = JsonUtils.toEntity(resultCls, result);
+                        }
+                        //拦截请求
+                        if (intercept != null && intercept.interceptCallBack(submitEntity, entity)) {
+                            return;
+                        }
+                        submitEntity.setResultData(entity == null ? buffer : entity);
                     }
-                    //拦截请求
-                    if (intercept != null && intercept.interceptCallBack(submitEntity, entity)) {
-                        return;
-                    }
-                    submitEntity.setResultData(entity == null ? buffer : entity);
-                    onResultCallBack(submitEntity);
                 }
+                onResultCallBack(submitEntity);
             }
 
         } catch (Throwable e) {

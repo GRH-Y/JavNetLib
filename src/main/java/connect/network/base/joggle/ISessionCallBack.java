@@ -32,19 +32,7 @@ public interface ISessionCallBack {
      *
      * @param entity
      */
-    void notifySuccessMessage(RequestEntity entity);
+    void notifyMessage(RequestEntity entity);
 
-
-    /**
-     * 错误通知
-     *
-     * @param entity
-     */
-    void notifyErrorMessage(RequestEntity entity);
-
-    /**
-     * 回收资源
-     */
-    void recycle();
 
 }

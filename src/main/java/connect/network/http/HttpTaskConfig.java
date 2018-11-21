@@ -129,10 +129,7 @@ public class HttpTaskConfig implements IHttpTaskConfig {
         if (mTaskContainer != null) {
             mTaskContainer.getTaskExecutor().destroyTask();
         }
-        if (mSessionCallBack != null) {
-            mSessionCallBack.recycle();
-            mSessionCallBack = null;
-        }
+        mAttribute.clearCacheData();
         mAttribute = null;
     }
 
