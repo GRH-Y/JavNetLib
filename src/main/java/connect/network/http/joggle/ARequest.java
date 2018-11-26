@@ -60,10 +60,4 @@ public @interface ARequest {
      */
     Class resultType();
 
-    /**
-     * 如果 resultType 是String.class ,则savePath 注解字段是解析成结果保存为文件
-     *
-     * @return
-     */
-    String savePath() default "";
 }

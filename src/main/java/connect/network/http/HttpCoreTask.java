@@ -1,20 +1,18 @@
 package connect.network.http;
 
 
-import connect.json.JsonUtils;
 import connect.network.base.RequestEntity;
 import connect.network.base.joggle.ISessionCallBack;
 import connect.network.http.joggle.IRequestIntercept;
 import connect.network.http.joggle.IResponseConvert;
 import connect.network.http.joggle.POST;
+import json.JsonUtils;
 import task.executor.BaseConsumerTask;
 import task.executor.joggle.ILoopTaskExecutor;
 import util.IoUtils;
 import util.LogDog;
 
 import javax.net.ssl.HttpsURLConnection;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -52,32 +50,41 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
             connection.setConnectTimeout(mConfig.getTimeout());
             connection.setReadTimeout(mConfig.getTimeout());
             connection.setRequestMethod(task.getRequestMethod());
-
-            connection.setDoOutput(true);
-            connection.setDoInput(true);
             connection.setUseCaches(false);
 
             connection.setRequestProperty("Charset", "utf-8");
-            connection.setRequestProperty("User-Agent", "ydz-http-1.0");
+            connection.setRequestProperty("User-Agent", "JavHttpConnect-1.0");
             //此处为暴力方法设置接受所有类型，以此来防范返回415;
             connection.setRequestProperty("Accept", "*/*");
             connection.setRequestProperty("Accept-Charset", "utf-8");
             connection.setRequestProperty("Accept-Encoding", "gzip");
 
             if (POST.class.getSimpleName().equals(task.getRequestMethod())) {
+                connection.setDoOutput(true);
                 connection.setRequestProperty("Content-Type", "application/json");
             }
 
-            Map<String, String> property = mConfig.getRequestProperty();
-            if (property != null) {
-                for (String key : property.keySet()) {
-                    connection.setRequestProperty(key, property.get(key));
-                }
-            }
+            setRequestProperty(connection, mConfig.getRequestProperty());
+            setRequestProperty(connection, task.getProperty());
+
         } catch (Exception e) {
             e.printStackTrace();
         }
         return connection;
+    }
+
+    /**
+     * 设置协议头
+     *
+     * @param connection
+     * @param property
+     */
+    private void setRequestProperty(HttpURLConnection connection, Map<String, String> property) {
+        if (property != null) {
+            for (String key : property.keySet()) {
+                connection.setRequestProperty(key, property.get(key));
+            }
+        }
     }
 
     @Override
@@ -142,13 +149,15 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
             int length = connection.getContentLength();
             InputStream is = connection.getInputStream();
             int available = is.available();
-            byte[] tryData = null;
+            byte[] buffer;
             if (length <= 0 && available <= 0) {
-                tryData = IoUtils.tryRead(is);
-                if (tryData == null) {
-                    onResultCallBack(submitEntity);
-                    return;
-                }
+                buffer = IoUtils.tryRead(is);
+            } else {
+                buffer = IoUtils.tryRead(is);
+            }
+            if (buffer == null) {
+                onResultCallBack(submitEntity);
+                return;
             }
 
             //拦截请求
@@ -159,65 +168,31 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
 
             Class resultCls = (Class) submitEntity.getResultType();
 
-            if (resultCls != null && resultCls.isAssignableFrom(String.class)) {
-
-                //结果保存成文件的
-                String path = (String) submitEntity.getResultType();
-                File file = new File(path);
-                if (!file.exists()) {
-                    //文件没有存在
-                    File parentFile = file.getParentFile();
-                    if (!parentFile.exists()) {
-                        parentFile.mkdirs();
-                    }
-                }
+            if (resultCls == null || resultCls.isAssignableFrom(byte[].class)) {
                 //拦截请求
-                if (intercept != null && intercept.interceptCallBack(submitEntity, path)) {
+                if (intercept != null && intercept.interceptCallBack(submitEntity, buffer)) {
                     return;
                 }
-                boolean state;
-                FileOutputStream fos = new FileOutputStream(file);
-                if (tryData != null) {
-                    state = IoUtils.writeToFull(fos, tryData, false);
-                } else {
-                    state = IoUtils.pipReadWrite(is, fos, false);
-                }
-                if (state) {
-                    submitEntity.setResultData(path);
-                }
-                onResultCallBack(submitEntity);
-                fos.close();
+                submitEntity.setResultData(buffer);
             } else {
-                byte[] buffer;
-                if (tryData == null) {
-                    buffer = IoUtils.tryRead(is);
+                String result = new String(buffer);
+                LogDog.d("==> Request address = " + submitEntity.getAddress());
+                LogDog.d("==> Request to return the content = " + result);
+                //转换响应数据
+                IResponseConvert convert = mConfig.getConvertResult();
+                Object entity;
+                if (convert != null) {
+                    entity = convert.handlerEntity(resultCls, result);
                 } else {
-                    buffer = tryData;
+                    entity = JsonUtils.toEntity(resultCls, result);
                 }
-                if (resultCls == null || resultCls.isAssignableFrom(byte[].class)) {
-                    submitEntity.setResultData(buffer);
-                } else {
-                    if (buffer != null) {
-                        String result = new String(buffer);
-                        LogDog.d("==> Request address = " + submitEntity.getAddress());
-                        LogDog.d("==> Request to return the content = " + result);
-                        //转换响应数据
-                        IResponseConvert convert = mConfig.getConvertResult();
-                        Object entity;
-                        if (convert != null) {
-                            entity = convert.handlerEntity(resultCls, result);
-                        } else {
-                            entity = JsonUtils.toEntity(resultCls, result);
-                        }
-                        //拦截请求
-                        if (intercept != null && intercept.interceptCallBack(submitEntity, entity)) {
-                            return;
-                        }
-                        submitEntity.setResultData(entity == null ? buffer : entity);
-                    }
+                //拦截请求
+                if (intercept != null && intercept.interceptCallBack(submitEntity, entity)) {
+                    return;
                 }
-                onResultCallBack(submitEntity);
+                submitEntity.setResultData(entity == null ? buffer : entity);
             }
+            onResultCallBack(submitEntity);
 
         } catch (Throwable e) {
             e.printStackTrace();

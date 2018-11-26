@@ -15,6 +15,11 @@ import java.util.Map;
 
 public class HttpTaskConfig implements IHttpTaskConfig {
 
+    public static String CONTENT_TYPE_FORM = "application/x-www-form-urlencoded";
+    public static String CONTENT_TYPE_MULTI = "multipart/form-data";
+    public static String CONTENT_TYPE_JSON = "application/json";
+    public static String CONTENT_TYPE_XML = "text/xml";
+
     private ITaskContainer mTaskContainer;
     private IHttpSSLFactory mSslFactory;
     private ISessionCallBack mSessionCallBack;

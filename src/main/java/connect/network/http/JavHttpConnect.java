@@ -8,11 +8,10 @@ import task.executor.joggle.IConsumerAttribute;
 import task.executor.joggle.ILoopTaskExecutor;
 import task.executor.joggle.ITaskContainer;
 import util.LogDog;
-import util.StringUtils;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 
 /**
@@ -161,17 +160,16 @@ public class JavHttpConnect {
     /**
      * 网络请求
      *
-     * @param entity               请求体ARequest
+     * @param requestEntity        请求体ARequest
      * @param callBackTarget       回调接收类
      * @param viewTarget           可设置控件的类（一般是 activity fragment view windows）
      * @param isAutoSetDataForView 是否自动为控件设值
      */
-    public void submitEntity(IRequestEntity entity, Object callBackTarget, Object viewTarget, boolean isAutoSetDataForView, int taskTag) {
-        Class clx = entity.getClass();
+    public void submitEntity(IRequestEntity requestEntity, Object callBackTarget, Object viewTarget, boolean isAutoSetDataForView, int taskTag) {
+        Class clx = requestEntity.getClass();
         ARequest request = (ARequest) clx.getAnnotation(ARequest.class);
         int atnTaskTag = taskTag != DEFAULT_TASK_TAG ? taskTag : request.taskTag();
         Class requestMethod = request.requestMethod();
-        Object resultType = request.savePath() == null || request.savePath().length() == 0 ? request.resultType() : request.savePath();
         String address = mHttpTaskManage.getBaseUrl() == null ? request.url() : mHttpTaskManage.getBaseUrl() + request.url();
 
         RequestEntity netTaskEntity = new RequestEntity();
@@ -180,71 +178,35 @@ public class JavHttpConnect {
         netTaskEntity.setEcbMethodName(request.errorMethod());
         netTaskEntity.setCallBackTarget(callBackTarget);
         netTaskEntity.setViewTarget(viewTarget);
-        netTaskEntity.setResultType(resultType);
+        netTaskEntity.setResultType(request.resultType());
         netTaskEntity.setAutoSetDataForView(isAutoSetDataForView);
         netTaskEntity.setRequestMethod(requestMethod.getSimpleName());
 
+        Map<String, String> property = requestEntity.getRequestProperty();
+        netTaskEntity.setProperty(property);
+        byte[] data = requestEntity.getSendData();
+
         if (requestMethod == POST.class) {
-            byte[] postData = entity.postData();
-            if (postData != null) {
-                LogDog.d("==>JavHttpConnect post submitEntity = " + new String(postData));
-            }
             netTaskEntity.setAddress(address);
-            netTaskEntity.setSendData(postData);
+            netTaskEntity.setSendData(data);
             submitPost(netTaskEntity);
+            if (data != null) {
+                LogDog.d("==>JavHttpConnect post submitEntity = " + new String(data));
+            }
         } else if (requestMethod == GET.class) {
             StringBuilder builder = new StringBuilder();
             builder.append(address);
-
-//            Map<String, String> header = new HashMap<>(8);
-//            entity.getConnect(header);
-//            for (String key : header.keySet()) {
-//                builder.append(key);
-//                builder.append("=");
-//                builder.append(header.get(key));
-//                builder.append("&");
-//            }
-            String ret = entityToStr(clx, entity);
-            if (!StringUtils.isEmpty(ret)) {
+            if (data != null) {
                 builder.append("?");
-                builder.append(ret);
+                builder.append(new String(data));
             }
-            netTaskEntity.setAddress(builder.toString());
+            String url = builder.toString();
+            netTaskEntity.setAddress(url);
             submitGet(netTaskEntity);
+            LogDog.d("==>JavHttpConnect get submitEntity = " + url);
         }
     }
 
-    /**
-     * get请求就是把实体内容封装成请求地址
-     */
-    private String entityToStr(Class clx, IRequestEntity entity) {
-        StringBuilder builder = new StringBuilder();
-        Field[] files = clx.getDeclaredFields();
-        for (Field field : files) {
-            String name = field.getName();
-            if ("shadow$_monitor_".equals(name)) {
-                continue;
-            }
-            field.setAccessible(true);
-            try {
-                Object object = field.get(entity);
-                builder.append(name);
-                builder.append("=");
-                builder.append(object);
-                builder.append("&");
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            }
-        }
-        Class supperClx = clx.getSuperclass();
-        if (supperClx != IRequestEntity.class && supperClx != Object.class) {
-            String ret = entityToStr(supperClx, entity);
-            if (!StringUtils.isEmpty(ret)) {
-                builder.append(ret);
-            }
-        }
-        return builder.toString();
-    }
 
     //    ---------------------------submitEntity----------------------------------
 
@@ -263,15 +225,15 @@ public class JavHttpConnect {
         }
     }
 
-    public void cancelSubmit(IRequestEntity entity) {
-        if (entity != null) {
+    public void cancelSubmit(Object requestEntity) {
+        if (requestEntity != null) {
             Queue<RequestEntity> queue = mHttpTaskManage.getAttribute().getCache();
-            Class cancelClx = entity.getClass();
+            Class cancelClx = requestEntity.getClass();
             ARequest cancelRequest = (ARequest) cancelClx.getAnnotation(ARequest.class);
             List<RequestEntity> record = new ArrayList<>();
-            for (RequestEntity requestEntity : queue) {
-                if (cancelRequest.url().equals(requestEntity.getAddress())) {
-                    record.add(requestEntity);
+            for (RequestEntity entity : queue) {
+                if (cancelRequest.url().equals(entity.getAddress())) {
+                    record.add(entity);
                 }
             }
             if (!record.isEmpty()) {

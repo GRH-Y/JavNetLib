@@ -1,6 +1,9 @@
 package connect.network.base;
 
+
 import connect.network.http.JavHttpConnect;
+
+import java.util.Map;
 
 /**
  * 请求网络任务实体
@@ -31,12 +34,22 @@ public class RequestEntity {
      */
     private Object viewTarget = null;
 
+    private Map<String, String> property = null;
+
     public int getTaskTag() {
         return taskTag;
     }
 
     public void setTaskTag(int taskTag) {
         this.taskTag = taskTag;
+    }
+
+    public void setProperty(Map<String, String> property) {
+        this.property = property;
+    }
+
+    public Map<String, String> getProperty() {
+        return property;
     }
 
     /**
