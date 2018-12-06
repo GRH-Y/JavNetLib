@@ -2,7 +2,7 @@ package connect.network.base;
 
 
 import connect.network.base.joggle.ISessionCallBack;
-import task.message.ThreadAnnotation;
+import util.ThreadAnnotation;
 
 /**
  * 网络请求会话回调
@@ -39,9 +39,17 @@ public class JavSessionCallBack implements ISessionCallBack {
      */
     @Override
     public void notifyMessage(RequestEntity entity) {
-        Object object = entity.getCallBackTarget() == null ? target : entity.getCallBackTarget();
-        String methodName = entity.getResultData() != null ? entity.getSuccessMethodName() : entity.getErrorMethodName();
-        ThreadAnnotation.disposeMessage(methodName, object, entity);
+
+        String methodName;
+        Object resultData;
+        if (entity.getResultData() == null) {
+            methodName = entity.getErrorMethodName();
+            resultData = entity;
+        } else {
+            methodName = entity.getSuccessMethodName();
+            resultData = entity.getResultData();
+        }
+        ThreadAnnotation.disposeMessage(methodName, entity.getCallBackTarget(), resultData);
     }
 
 }

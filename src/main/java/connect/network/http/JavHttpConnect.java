@@ -255,6 +255,10 @@ public class JavHttpConnect {
         }
     }
 
+    public void cancelAllSubmit() {
+        mHttpTaskManage.getAttribute().clearCacheData();
+    }
+
     /**
      * 释放资源
      */
