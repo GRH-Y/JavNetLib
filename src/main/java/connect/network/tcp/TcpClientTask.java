@@ -1,12 +1,15 @@
 package connect.network.tcp;
 
 
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.Socket;
-import java.net.SocketException;
 
 public class TcpClientTask {
 
     private Socket mSocket;
+    private OutputStream mOutputStream;
+    private InputStream mInputStream;
     private String mHost;
     private int mPort;
 
@@ -32,6 +35,14 @@ public class TcpClientTask {
         this.sender = sender;
     }
 
+    protected void setOutputStream(OutputStream stream) {
+        this.mOutputStream = stream;
+    }
+
+    protected void setInputStream(InputStream stream) {
+        this.mInputStream = stream;
+    }
+
     //---------------------------- get ---------------------------------------
 
     public int getPort() {
@@ -54,10 +65,17 @@ public class TcpClientTask {
         return receive;
     }
 
+    public InputStream getInputStream() {
+        return mInputStream;
+    }
+
+    public OutputStream getOutputStream() {
+        return mOutputStream;
+    }
+
     //---------------------------- on ---------------------------------------
 
-    protected void onConfigSocket(Socket socket) throws SocketException {
-
+    protected void onConfigSocket(Socket socket) {
     }
 
     /**

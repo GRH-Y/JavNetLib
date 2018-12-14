@@ -2,6 +2,7 @@ package connect.network.nio;
 
 
 import connect.network.base.joggle.IFactory;
+import connect.network.base.joggle.ISSLFactory;
 import task.executor.BaseLoopTask;
 import task.executor.LoopTaskExecutor;
 import task.executor.TaskContainer;
@@ -25,6 +26,8 @@ public abstract class AbstractNioFactory<T> implements IFactory<T> {
 
     private long mLoadTime = 0;//2000000000
 
+    protected ISSLFactory mSslFactory = null;
+
     public AbstractNioFactory() {
         mConnectCache = new ConcurrentLinkedQueue<>();
         mExecutorQueue = new ConcurrentLinkedQueue<>();
@@ -42,6 +45,11 @@ public abstract class AbstractNioFactory<T> implements IFactory<T> {
         }
     }
 
+    @Override
+    public void setSslFactory(ISSLFactory sslFactory) {
+        this.mSslFactory = sslFactory;
+    }
+
     abstract protected void onConnectTask(Selector selector, T task);
 
     abstract protected void onSelectorTask(Selector selector);
@@ -52,7 +60,9 @@ public abstract class AbstractNioFactory<T> implements IFactory<T> {
     @Override
     public void addTask(T task) {
         if (task != null && !mExecutorQueue.isEmpty() && !mConnectCache.contains(task)) {
-            for (SelectionKey selectionKey : mSelector.selectedKeys()) {
+            Iterator<SelectionKey> iterator = mSelector.keys().iterator();
+            while (iterator.hasNext()) {
+                SelectionKey selectionKey = iterator.next();
                 T hasTask = (T) selectionKey.attachment();
                 if (hasTask == task) {
                     return;

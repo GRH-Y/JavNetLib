@@ -1,37 +1,61 @@
 package connect.network.http;
 
 
-import connect.network.http.joggle.IHttpSSLFactory;
+import connect.network.base.joggle.ISSLFactory;
+import sun.security.x509.X509CertImpl;
 
 import javax.net.ssl.*;
 import java.io.InputStream;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 
-public class HttpCertificateSSLFactory implements IHttpSSLFactory {
+public class CustomHttpSSLFactory implements ISSLFactory {
 
-    private InputStream mCertificate;
+    private SSLContext sslcontext = null;
 
-    public HttpCertificateSSLFactory(InputStream certificate) {
-        mCertificate = certificate;
+    public CustomHttpSSLFactory(String protocol, InputStream certificate) throws Exception {
+
+//        sslcontext = SSLContext.getInstance(protocol);
+//        sslcontext.init(null, new TrustManager[]{new MyX509TrustManager()}, new SecureRandom());
+
+        sslcontext = SSLContext.getInstance(protocol);
+        //get certificate
+        X509Certificate x509Certificate = getX509Certificate(certificate);
+        //check certificate
+        CheckCertificate checkCertificate = new CheckCertificate(x509Certificate);
+        TrustManager[] trustManagers = {checkCertificate};
+        sslcontext.init(null, trustManagers, new SecureRandom());
     }
 
 
     @Override
-    public SSLSocketFactory getSSLSocketFactory() throws CertificateException, NoSuchAlgorithmException, KeyManagementException {
-        SSLContext tls = SSLContext.getInstance("TLS");
-        //get certificate
-        X509Certificate x509Certificate = getX509Certificate(mCertificate);
-        //check certificate
-        CheckCertificate checkCertificate = new CheckCertificate(x509Certificate);
-        TrustManager[] trustManagers = {checkCertificate};
-        tls.init(null, trustManagers, new SecureRandom());
-        return tls.getSocketFactory();
+    public SSLSocketFactory getSSLSocketFactory() {
+        return sslcontext.getSocketFactory();
     }
+
+    @Override
+    public SSLServerSocketFactory getSSLServerSocketFactory() {
+        return null;
+    }
+
+
+//    public class MyX509TrustManager implements X509TrustManager {
+//
+//        @Override
+//        public void checkClientTrusted(X509Certificate certificates[], String authType) {
+//        }
+//
+//        @Override
+//        public void checkServerTrusted(X509Certificate[] ax509certificate, String s) {
+//        }
+//
+//        @Override
+//        public X509Certificate[] getAcceptedIssuers() {
+//            return null;
+//        }
+//    }
 
 
     public class CheckCertificate implements X509TrustManager {
@@ -63,7 +87,7 @@ public class HttpCertificateSSLFactory implements IHttpSSLFactory {
 
         @Override
         public X509Certificate[] getAcceptedIssuers() {
-            return new X509Certificate[0];
+            return new X509CertImpl[0];
         }
     }
 

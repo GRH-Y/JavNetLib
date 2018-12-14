@@ -1,6 +1,9 @@
 package connect.network.nio;
 
 
+import sun.security.ssl.SSLSocketImpl;
+
+import javax.net.ssl.SSLSocketFactory;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -56,6 +59,7 @@ public class NioClientFactory extends AbstractNioFactory<NioClientTask> {
                 channel = SocketChannel.open();
                 channel.configureBlocking(false);// 设置为非阻塞
                 channel.connect(new InetSocketAddress(task.getHost(), task.getPort()));
+                configSSL(task, channel);
                 task.setChannel(channel);
             } catch (Exception e) {
                 channel = null;
@@ -96,6 +100,32 @@ public class NioClientFactory extends AbstractNioFactory<NioClientTask> {
         }
     }
 
+    private void configSSL(NioClientTask task, SocketChannel channel) {
+        try {
+            if (task.getPort() == 443 && mSslFactory != null) {
+//                while (!channel.finishConnect()) {
+//                    // 完成连接
+//                }
+//                SSLSocketFactory socketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+//                SSLSocketImpl socket = (SSLSocketImpl) socketFactory.createSocket(channel.socket(), task.getHost(), task.getPort(), true);
+//                socket.setUseClientMode(true);
+//                socket.setEnableSessionCreation(false);
+//                socket.setNeedClientAuth(false);
+//                socket.setWantClientAuth(false);
+//                channel.configureBlocking(false);
+//                socket.startHandshake();
+                SSLSocketFactory sslSocketFactory = mSslFactory.getSSLSocketFactory();
+                SSLSocketImpl sslSocketImpl = (SSLSocketImpl) sslSocketFactory.createSocket(task.getHost(), task.getPort());
+                sslSocketImpl.setSoTimeout(3000);
+                sslSocketImpl.setUseClientMode(true);
+                sslSocketImpl.startHandshake();
+                sslSocketImpl.close();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override
     protected void onSelectorTask(Selector selector) {
 
@@ -121,6 +151,7 @@ public class NioClientFactory extends AbstractNioFactory<NioClientTask> {
                 } finally {
                     task.onConnectSocketChannel(isOpen);
                     if (isOpen) {
+//                        configSSL(task, channel);
                         try {
                             registerChannel(task, selector, channel);
                             channel.keyFor(selector).attach(task);

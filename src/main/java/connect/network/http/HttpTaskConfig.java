@@ -3,7 +3,7 @@ package connect.network.http;
 
 import connect.network.base.RequestEntity;
 import connect.network.base.joggle.ISessionCallBack;
-import connect.network.http.joggle.IHttpSSLFactory;
+import connect.network.base.joggle.ISSLFactory;
 import connect.network.http.joggle.IHttpTaskConfig;
 import connect.network.http.joggle.IRequestIntercept;
 import connect.network.http.joggle.IResponseConvert;
@@ -21,7 +21,7 @@ public class HttpTaskConfig implements IHttpTaskConfig {
     public static String CONTENT_TYPE_XML = "text/xml";
 
     private ITaskContainer mTaskContainer;
-    private IHttpSSLFactory mSslFactory;
+    private ISSLFactory mSslFactory;
     private ISessionCallBack mSessionCallBack;
     private IConsumerAttribute<RequestEntity> mAttribute;
     private IResponseConvert mConvertResult;
@@ -68,7 +68,7 @@ public class HttpTaskConfig implements IHttpTaskConfig {
     }
 
     @Override
-    public void setHttpSSLFactory(IHttpSSLFactory factory) {
+    public void setHttpSSLFactory(ISSLFactory factory) {
         mSslFactory = factory;
     }
 
@@ -99,7 +99,7 @@ public class HttpTaskConfig implements IHttpTaskConfig {
         return mFreeExitTime;
     }
 
-    protected IHttpSSLFactory getSslFactory() {
+    protected ISSLFactory getSslFactory() {
         return mSslFactory;
     }
 

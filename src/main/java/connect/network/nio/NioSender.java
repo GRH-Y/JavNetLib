@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class NioSender implements ISender {
 
-    private Queue<ByteBuffer> cache;
+    protected Queue<ByteBuffer> cache;
 
     public NioSender() {
         cache = new ConcurrentLinkedQueue<>();

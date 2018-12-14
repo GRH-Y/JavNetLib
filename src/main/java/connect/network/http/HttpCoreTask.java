@@ -6,7 +6,6 @@ import connect.network.base.joggle.ISessionCallBack;
 import connect.network.http.joggle.IRequestIntercept;
 import connect.network.http.joggle.IResponseConvert;
 import connect.network.http.joggle.POST;
-import json.JsonUtils;
 import task.executor.BaseConsumerTask;
 import task.executor.joggle.ILoopTaskExecutor;
 import util.IoUtils;
@@ -32,6 +31,7 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
         try {
             String address = task.getAddress();
             URL url = new URL(address);
+
             if (address.startsWith("https")) {
                 HttpsURLConnection httpsURLConnection = (HttpsURLConnection) url.openConnection();
                 if (mConfig.getSslFactory() != null) {
@@ -43,6 +43,7 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
                     }
                 }
                 connection = httpsURLConnection;
+                connection.setInstanceFollowRedirects(false);
             } else {
                 connection = (HttpURLConnection) url.openConnection();
             }
@@ -82,7 +83,11 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
     private void setRequestProperty(HttpURLConnection connection, Map<String, String> property) {
         if (property != null) {
             for (String key : property.keySet()) {
-                connection.setRequestProperty(key, property.get(key));
+                try {
+                    connection.setRequestProperty(key, property.get(key));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
@@ -135,6 +140,7 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
 
             int code = connection.getResponseCode();
 //                Logcat.d("Http Response Code = " + code);
+            LogDog.d("==> Request address = " + submitEntity.getAddress());
             if (code != HttpURLConnection.HTTP_OK) {
                 LogDog.e("Http Response Code = " + code);
                 onResultCallBack(submitEntity);
@@ -168,30 +174,18 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
 
             Class resultCls = (Class) submitEntity.getResultType();
 
-            if (resultCls == null || resultCls.isAssignableFrom(byte[].class)) {
-                //拦截请求
-                if (intercept != null && intercept.interceptCallBack(submitEntity, buffer)) {
-                    return;
-                }
-                submitEntity.setResultData(buffer);
-            } else {
-                String result = new String(buffer);
-                LogDog.d("==> Request address = " + submitEntity.getAddress());
-                LogDog.d("==> Request to return the content = " + result);
-                //转换响应数据
-                IResponseConvert convert = mConfig.getConvertResult();
-                Object entity;
-                if (convert != null) {
-                    entity = convert.handlerEntity(resultCls, result);
-                } else {
-                    entity = JsonUtils.toEntity(resultCls, result);
-                }
-                //拦截请求
-                if (intercept != null && intercept.interceptCallBack(submitEntity, entity)) {
-                    return;
-                }
-                submitEntity.setResultData(entity == null ? buffer : entity);
+            //转换响应数据
+            Object entity = buffer;
+            IResponseConvert convert = mConfig.getConvertResult();
+            if (convert != null) {
+                entity = convert.handlerEntity(resultCls, buffer);
             }
+
+            //拦截请求
+            if (intercept != null && intercept.interceptCallBack(submitEntity, entity)) {
+                return;
+            }
+            submitEntity.setResultData(entity == null ? buffer : entity);
             onResultCallBack(submitEntity);
 
         } catch (Throwable e) {

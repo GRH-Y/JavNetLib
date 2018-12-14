@@ -17,6 +17,12 @@ public interface IFactory<T> {
     void removeTask(T task);
 
     /**
+     * 设置ssl
+     * @param sslFactory
+     */
+    void setSslFactory(ISSLFactory sslFactory);
+
+    /**
      * 打开
      */
     void open();

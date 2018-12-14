@@ -1,6 +1,7 @@
 package connect.network.base;
 
 
+import connect.network.http.ConnectType;
 import connect.network.http.JavHttpConnect;
 
 import java.util.Map;
@@ -17,7 +18,7 @@ public class RequestEntity {
      */
     private int taskTag = JavHttpConnect.DEFAULT_TASK_TAG;
     private String address = null;
-    private String requestMethod = null;
+    private String requestMethod = ConnectType.GET.getType();
 
     private byte[] sendData = null;
     private Object resultData = null;
@@ -81,10 +82,6 @@ public class RequestEntity {
         return resultType;
     }
 
-    public boolean isAutoSetDataForView() {
-        return isAutoSetDataForView;
-    }
-
     public String getSuccessMethodName() {
         return scbMethodName;
     }
@@ -131,6 +128,10 @@ public class RequestEntity {
 
     public void setAutoSetDataForView(boolean autoSetDataForView) {
         isAutoSetDataForView = autoSetDataForView;
+    }
+
+    public boolean isAutoSetDataForView() {
+        return isAutoSetDataForView;
     }
 
     public void setResultType(Object resultType) {

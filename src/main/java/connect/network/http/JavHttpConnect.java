@@ -1,6 +1,7 @@
 package connect.network.http;
 
 
+import connect.network.base.JavConvertResult;
 import connect.network.base.RequestEntity;
 import connect.network.http.joggle.*;
 import task.executor.TaskExecutorPoolManager;
@@ -36,6 +37,7 @@ public class JavHttpConnect {
 
     protected JavHttpConnect() {
         mHttpTaskManage = new HttpTaskConfig();
+        mHttpTaskManage.setConvertResult(new JavConvertResult());
         mCoreTask = new HttpCoreTask(mHttpTaskManage);
         ITaskContainer container = TaskExecutorPoolManager.getInstance().runTask(mCoreTask, mHttpTaskManage.getAttribute());
         mHttpTaskManage.setTaskContainer(container);

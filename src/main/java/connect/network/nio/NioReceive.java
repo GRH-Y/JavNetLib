@@ -10,8 +10,8 @@ import java.nio.channels.SocketChannel;
 
 public class NioReceive implements IReceive {
 
-    private Object mReceive;
-    private String mReceiveMethodName;
+    protected Object mReceive;
+    protected String mReceiveMethodName;
 
     public NioReceive() {
     }

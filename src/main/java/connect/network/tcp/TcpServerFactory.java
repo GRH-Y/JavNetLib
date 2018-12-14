@@ -1,5 +1,7 @@
 package connect.network.tcp;
 
+import javax.net.ServerSocketFactory;
+import javax.net.ssl.SSLServerSocket;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -30,26 +32,32 @@ public class TcpServerFactory extends AbstractFactory<TcpServerTask> {
 
     @Override
     protected boolean onConnectTask(TcpServerTask task) {
-        boolean isOpenServer = false;
+        boolean isOpenServer;
         ServerSocket serverSocket = task.getServerSocket();
         try {
             if (serverSocket == null && task.getHost() != null && task.getPort() > 0) {
                 InetSocketAddress address = new InetSocketAddress(task.getHost(), task.getPort());
-                serverSocket = new ServerSocket();
-                serverSocket.bind(address, task.getConnectNum());
+                if (task.getPort() == 443) {
+                    ServerSocketFactory sslServerSocketFactory = mSslFactory.getSSLServerSocketFactory();
+                    SSLServerSocket sslServerSocket = (SSLServerSocket) sslServerSocketFactory.createServerSocket();
+                    sslServerSocket.bind(address);
+                    sslServerSocket.setUseClientMode(false);
+                    serverSocket = sslServerSocket;
+                } else {
+                    serverSocket = new ServerSocket();
+                    serverSocket.bind(address, task.getConnectNum());
+                }
             }
-            if (serverSocket == null) {
-                task.onOpenServer(isOpenServer);
-                return isOpenServer;
+            if (serverSocket != null) {
+                serverSocket.setReuseAddress(true);
+                serverSocket.setSoTimeout(500);
+                serverSocket.setPerformancePreferences(0, 1, 2);
+                task.onConfigServer(serverSocket);
             }
-            serverSocket.setReuseAddress(true);
-            serverSocket.setSoTimeout(500);
-            serverSocket.setPerformancePreferences(0, 1, 2);
-            task.onConfigServer(serverSocket);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             e.printStackTrace();
         } finally {
-            isOpenServer = !serverSocket.isClosed();
+            isOpenServer = serverSocket.isBound();
             task.onOpenServer(isOpenServer);
         }
         return isOpenServer;

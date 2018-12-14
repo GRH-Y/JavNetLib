@@ -1,6 +1,7 @@
 package connect.network.tcp;
 
 import connect.network.base.joggle.IFactory;
+import connect.network.base.joggle.ISSLFactory;
 import task.executor.BaseLoopTask;
 import task.executor.LoopTaskExecutor;
 import task.executor.TaskContainer;
@@ -16,9 +17,11 @@ public abstract class AbstractFactory<T> implements IFactory<T> {
 
     private boolean mIsNeedDestroy = false;
 
-    private long mLoadTime = 2000000000;
+    private long mLoadTime = 0;//2000000000
 
     private long mWaiteTime = 500;
+
+    protected ISSLFactory mSslFactory = null;
 
     public AbstractFactory() {
         mConnectCache = new ConcurrentLinkedQueue<>();
@@ -36,8 +39,14 @@ public abstract class AbstractFactory<T> implements IFactory<T> {
         }
     }
 
+    @Override
+    public void setSslFactory(ISSLFactory sslFactory) {
+        this.mSslFactory = sslFactory;
+    }
+
     /**
      * 设置线程低压状态睡眠时间
+     *
      * @param waiteTime
      */
     public void setFreeWaiteTime(long waiteTime) {
@@ -149,7 +158,7 @@ public abstract class AbstractFactory<T> implements IFactory<T> {
         @Override
         protected void onRunLoopTask() {
             long startTime = 0;
-            if (mLoadTime != 0) {
+            if (mLoadTime > 0) {
                 startTime = System.nanoTime();
             }
 
@@ -165,7 +174,11 @@ public abstract class AbstractFactory<T> implements IFactory<T> {
             }
 
             for (T task : mRunCache) {
-                onExecTask(task);
+                if (executor.getLoopState()) {
+                    onExecTask(task);
+                } else {
+                    break;
+                }
             }
 
             //清除要结束的任务
@@ -175,18 +188,18 @@ public abstract class AbstractFactory<T> implements IFactory<T> {
                 return;
             }
 
-            long useTime = System.nanoTime() - startTime;
-            if (useTime > mLoadTime) {
-                openCoreTask();
-            } else if (mLoadTime > useTime && useTime > 50000 && mExecutorQueue.size() > 1) {
-                //Logcat.d("==> 任务压力不大执行速度过快，则另外关闭多余线程! " + useTime);
-                setNeedDestroy(false);
-                getExecutor().stopTask();
-                mExecutorQueue.remove(this);
-            } else {
-                getExecutor().sleepTask(mWaiteTime);
+            if (mLoadTime > 0) {
+                long useTime = System.nanoTime() - startTime;
+                if (useTime > mLoadTime) {
+                    //执行速度过慢，则另外开启线程!
+                    openCoreTask();
+                } else if (useTime < 1000000 && mExecutorQueue.size() > 1) {
+                    //少于1毫秒而且线程数据大于1，则另外关闭多余线程!
+                    setNeedDestroy(false);
+                    executor.stopTask();
+                    mExecutorQueue.remove(this);
+                }
             }
-
         }
 
         @Override

@@ -9,5 +9,5 @@ public interface IResponseConvert {
      * @param result    请求返回的数据
      * @return
      */
-    Object handlerEntity(Class resultCls, String result);
+    Object handlerEntity(Class resultCls, byte[] result);
 }
