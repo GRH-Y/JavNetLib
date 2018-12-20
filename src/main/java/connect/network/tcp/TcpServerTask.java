@@ -16,11 +16,11 @@ public class TcpServerTask {
         return mServerSocket;
     }
 
-    public int getPort() {
+    public int getServerPort() {
         return mPort;
     }
 
-    public String getHost() {
+    public String getServerHost() {
         return mHost;
     }
 
@@ -54,7 +54,7 @@ public class TcpServerTask {
     protected void onAcceptTimeoutServer() {
     }
 
-    protected void onOpenServer(boolean isSuccess) {
+    protected void onBindServer(boolean isSuccess) {
     }
 
     protected void onCloseServer() {

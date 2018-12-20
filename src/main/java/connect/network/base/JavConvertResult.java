@@ -8,6 +8,9 @@ public class JavConvertResult implements IResponseConvert {
 
     @Override
     public Object handlerEntity(Class resultCls, byte[] result) {
+        if (resultCls == null || result == null) {
+            return null;
+        }
         String jsonStr = new String(result);
         LogDog.d("==> Request to return the content = " + jsonStr);
 

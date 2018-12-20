@@ -35,9 +35,9 @@ public class TcpServerFactory extends AbstractFactory<TcpServerTask> {
         boolean isOpenServer;
         ServerSocket serverSocket = task.getServerSocket();
         try {
-            if (serverSocket == null && task.getHost() != null && task.getPort() > 0) {
-                InetSocketAddress address = new InetSocketAddress(task.getHost(), task.getPort());
-                if (task.getPort() == 443) {
+            if (serverSocket == null && task.getServerHost() != null && task.getServerPort() > 0) {
+                InetSocketAddress address = new InetSocketAddress(task.getServerHost(), task.getServerPort());
+                if (task.getServerPort() == 443) {
                     ServerSocketFactory sslServerSocketFactory = mSslFactory.getSSLServerSocketFactory();
                     SSLServerSocket sslServerSocket = (SSLServerSocket) sslServerSocketFactory.createServerSocket();
                     sslServerSocket.bind(address);
@@ -58,7 +58,7 @@ public class TcpServerFactory extends AbstractFactory<TcpServerTask> {
             e.printStackTrace();
         } finally {
             isOpenServer = serverSocket.isBound();
-            task.onOpenServer(isOpenServer);
+            task.onBindServer(isOpenServer);
         }
         return isOpenServer;
     }

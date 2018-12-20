@@ -8,7 +8,6 @@ import task.executor.TaskExecutorPoolManager;
 import task.executor.joggle.IConsumerAttribute;
 import task.executor.joggle.ILoopTaskExecutor;
 import task.executor.joggle.ITaskContainer;
-import util.LogDog;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -124,16 +123,15 @@ public class JavHttpConnect {
 
     private void startTaskAndPushToCache(RequestEntity entity) {
         IConsumerAttribute attribute = mHttpTaskManage.getAttribute();
+        attribute.pushToCache(entity);
         ILoopTaskExecutor executor = mHttpTaskManage.getExecutor();
         if (!executor.getAliveState()) {
             executor.startTask();
         } else if (executor.isIdleState() && executor.getAliveState()) {
-            ITaskContainer container = TaskExecutorPoolManager.getInstance().runTask(mCoreTask, mHttpTaskManage.getAttribute());
-            container.setAttribute(attribute);
+            ITaskContainer container = TaskExecutorPoolManager.getInstance().runTask(mCoreTask, attribute);
             executor = container.getTaskExecutor();
             mHttpTaskManage.setTaskContainer(container);
         }
-        attribute.pushToCache(entity);
         executor.resumeTask();
     }
 
@@ -192,9 +190,6 @@ public class JavHttpConnect {
             netTaskEntity.setAddress(address);
             netTaskEntity.setSendData(data);
             submitPost(netTaskEntity);
-            if (data != null) {
-                LogDog.d("==>JavHttpConnect post submitEntity = " + new String(data));
-            }
         } else if (requestMethod == GET.class) {
             StringBuilder builder = new StringBuilder();
             builder.append(address);
@@ -205,7 +200,6 @@ public class JavHttpConnect {
             String url = builder.toString();
             netTaskEntity.setAddress(url);
             submitGet(netTaskEntity);
-            LogDog.d("==>JavHttpConnect get submitEntity = " + url);
         }
     }
 

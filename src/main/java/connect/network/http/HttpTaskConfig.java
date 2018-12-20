@@ -43,7 +43,7 @@ public class HttpTaskConfig implements IHttpTaskConfig {
     }
 
     @Override
-    public void setRequestProperty(Map<String, String> property) {
+    public void setGlobalRequestProperty(Map<String, String> property) {
         this.mRequestProperty = property;
     }
 
@@ -123,7 +123,7 @@ public class HttpTaskConfig implements IHttpTaskConfig {
         return mTimeout;
     }
 
-    protected Map<String, String> getRequestProperty() {
+    protected Map<String, String> getGlobalRequestProperty() {
         return mRequestProperty;
     }
 

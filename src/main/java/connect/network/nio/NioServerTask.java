@@ -34,11 +34,11 @@ public class NioServerTask {
 
     //---------------------------- get ---------------------------------------
 
-    public int getPort() {
+    public int getServerPort() {
         return mPort;
     }
 
-    public String getHost() {
+    public String getServerHost() {
         return mHost;
     }
 

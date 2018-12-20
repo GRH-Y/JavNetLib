@@ -65,7 +65,7 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
                 connection.setRequestProperty("Content-Type", "application/json");
             }
 
-            setRequestProperty(connection, mConfig.getRequestProperty());
+            setRequestProperty(connection, mConfig.getGlobalRequestProperty());
             setRequestProperty(connection, task.getProperty());
 
         } catch (Exception e) {
@@ -141,6 +141,9 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
             int code = connection.getResponseCode();
 //                Logcat.d("Http Response Code = " + code);
             LogDog.d("==> Request address = " + submitEntity.getAddress());
+            if (submitEntity.getSendData() != null) {
+                LogDog.d("==>JavHttpConnect post submitEntity = " + new String(submitEntity.getSendData()));
+            }
             if (code != HttpURLConnection.HTTP_OK) {
                 LogDog.e("Http Response Code = " + code);
                 onResultCallBack(submitEntity);

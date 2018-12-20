@@ -42,10 +42,10 @@ public class NioServerFactory extends AbstractNioFactory<NioServerTask> {
     protected void onConnectTask(Selector selector, NioServerTask task) {
         //创建服务，并注册到selector，监听所有的事件
         ServerSocketChannel serverSocketChannel = task.getSocketChannel();
-        if (serverSocketChannel == null && task.getHost() != null && task.getPort() > 0) {
+        if (serverSocketChannel == null && task.getServerHost() != null && task.getServerPort() > 0) {
             try {
                 serverSocketChannel = ServerSocketChannel.open();
-                serverSocketChannel.bind(new InetSocketAddress(task.getHost(), task.getPort()));
+                serverSocketChannel.bind(new InetSocketAddress(task.getServerHost(), task.getServerPort()));
                 task.setSocketChannel(serverSocketChannel);
             } catch (Exception e) {
                 e.printStackTrace();
