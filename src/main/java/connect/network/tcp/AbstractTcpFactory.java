@@ -9,7 +9,7 @@ import task.executor.TaskContainer;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public abstract class AbstractFactory<T> implements IFactory<T> {
+public abstract class AbstractTcpFactory<T> implements IFactory<T> {
 
     protected volatile Queue<CoreTask> mExecutorQueue;
     protected volatile Queue<T> mConnectCache;
@@ -23,7 +23,7 @@ public abstract class AbstractFactory<T> implements IFactory<T> {
 
     protected ISSLFactory mSslFactory = null;
 
-    public AbstractFactory() {
+    public AbstractTcpFactory() {
         mConnectCache = new ConcurrentLinkedQueue<>();
         mExecutorQueue = new ConcurrentLinkedQueue<>();
     }

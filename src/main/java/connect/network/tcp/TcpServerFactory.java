@@ -8,7 +8,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 
-public class TcpServerFactory extends AbstractFactory<TcpServerTask> {
+public class TcpServerFactory extends AbstractTcpFactory<TcpServerTask> {
     private static TcpServerFactory mFactory;
 
     private TcpServerFactory() {

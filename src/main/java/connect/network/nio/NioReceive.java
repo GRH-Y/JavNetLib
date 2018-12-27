@@ -5,7 +5,6 @@ import connect.network.base.joggle.IReceive;
 import util.IoUtils;
 import util.ThreadAnnotation;
 
-import java.io.IOException;
 import java.nio.channels.SocketChannel;
 
 public class NioReceive implements IReceive {
@@ -33,11 +32,10 @@ public class NioReceive implements IReceive {
      *
      * @return 如果返回false则会关闭该链接
      */
-    protected boolean onRead(SocketChannel channel) throws IOException {
+    protected void onRead(SocketChannel channel) throws Exception {
         byte[] data = IoUtils.tryRead(channel);
         if (data != null) {
             ThreadAnnotation.disposeMessage(mReceiveMethodName, mReceive, data);
         }
-        return true;
     }
 }

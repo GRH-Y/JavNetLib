@@ -24,7 +24,7 @@ public class TcpReceive implements IReceive {
 
     }
 
-    protected void onRead(InputStream stream) {
+    protected void onRead(InputStream stream) throws Exception {
         byte[] data = IoUtils.tryRead(stream);
         if (data != null) {
             ThreadAnnotation.disposeMessage(mReceiveMethodName, mReceive, data);

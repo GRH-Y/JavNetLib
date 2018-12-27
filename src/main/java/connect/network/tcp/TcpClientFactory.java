@@ -9,7 +9,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
-public class TcpClientFactory extends AbstractFactory<TcpClientTask> {
+public class TcpClientFactory extends AbstractTcpFactory<TcpClientTask> {
 
     private static TcpClientFactory mFactory;
 
@@ -91,6 +91,7 @@ public class TcpClientFactory extends AbstractFactory<TcpClientTask> {
                 InputStream stream = task.getInputStream();
                 receive.onRead(stream);
             } catch (Throwable e) {
+                removeTask(task);
                 e.printStackTrace();
             }
         }
@@ -99,6 +100,7 @@ public class TcpClientFactory extends AbstractFactory<TcpClientTask> {
                 OutputStream stream = task.getOutputStream();
                 sender.onWrite(stream);
             } catch (Throwable e) {
+                removeTask(task);
                 e.printStackTrace();
             }
         }

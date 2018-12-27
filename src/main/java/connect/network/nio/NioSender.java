@@ -3,7 +3,7 @@ package connect.network.nio;
 
 import connect.network.base.joggle.ISender;
 
-import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Queue;
@@ -27,12 +27,18 @@ public class NioSender implements ISender {
      *
      * @return 成功发送返回true
      */
-    protected boolean onWrite(SocketChannel channel) throws IOException {
-        boolean ret = true;
+    protected void onWrite(SocketChannel channel) throws Exception {
         while (!cache.isEmpty()) {
             ByteBuffer buffer = cache.remove();
-            ret = channel.write(buffer) > 0;
+            try {
+                if (channel.write(buffer) <= 0) {
+                    throw new Exception("NioSender onWrite error  !!!");
+                }
+            } catch (Exception e) {
+                if (!(e instanceof SocketTimeoutException)) {
+                    throw new Exception(e);
+                }
+            }
         }
-        return ret;
     }
 }

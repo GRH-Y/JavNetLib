@@ -166,10 +166,7 @@ public class NioClientFactory extends AbstractNioFactory<NioClientTask> {
                 NioReceive receive = task.getReceive();
                 if (receive != null) {
                     try {
-                        boolean ret = receive.onRead(channel);
-                        if (!ret) {
-                            mDestroyCache.add(task);
-                        }
+                        receive.onRead(channel);
                     } catch (Exception e) {
                         mDestroyCache.add(task);
                         e.printStackTrace();
@@ -180,10 +177,7 @@ public class NioClientFactory extends AbstractNioFactory<NioClientTask> {
                 NioSender sender = task.getSender();
                 if (sender != null) {
                     try {
-                        boolean ret = sender.onWrite(channel);
-                        if (!ret) {
-                            mDestroyCache.add(task);
-                        }
+                        sender.onWrite(channel);
                     } catch (Exception e) {
                         mDestroyCache.add(task);
                         e.printStackTrace();
