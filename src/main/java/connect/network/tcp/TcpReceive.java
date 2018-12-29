@@ -21,7 +21,6 @@ public class TcpReceive implements IReceive {
     public void setReceive(Object receive, String receiveMethodName) {
         this.mReceive = receive;
         this.mReceiveMethodName = receiveMethodName;
-
     }
 
     protected void onRead(InputStream stream) throws Exception {

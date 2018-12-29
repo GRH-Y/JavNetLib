@@ -18,7 +18,7 @@ public class TcpClientTask {
 
     //---------------------------- set ---------------------------------------
 
-    public void setSocket(Socket socket) {
+    protected void setSocket(Socket socket) {
         this.mSocket = socket;
     }
 

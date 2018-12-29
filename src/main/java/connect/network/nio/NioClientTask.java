@@ -38,7 +38,7 @@ public class NioClientTask {
         this.receive = receive;
     }
 
-    public void setChannel(SocketChannel channel) {
+    protected void setChannel(SocketChannel channel) {
         this.mChannel = channel;
     }
 

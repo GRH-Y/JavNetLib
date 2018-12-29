@@ -79,7 +79,7 @@ public class NioClientFactory extends AbstractNioFactory<NioClientTask> {
         //创建失败
         if (channel == null) {
             task.onConnectSocketChannel(false);
-            mDestroyCache.add(task);
+            removeTask(task);
             return;
         }
         try {
@@ -95,7 +95,7 @@ public class NioClientFactory extends AbstractNioFactory<NioClientTask> {
             channel.keyFor(selector).attach(task);
         } catch (Exception e) {
             task.onConnectSocketChannel(false);
-            mDestroyCache.add(task);
+            removeTask(task);
             e.printStackTrace();
         }
     }
@@ -146,7 +146,7 @@ public class NioClientFactory extends AbstractNioFactory<NioClientTask> {
                         isOpen = channel.finishConnect();// 完成连接
                     }
                 } catch (Exception e) {
-                    mDestroyCache.add(task);
+                    removeTask(task);
                     e.printStackTrace();
                 } finally {
                     task.onConnectSocketChannel(isOpen);
@@ -156,7 +156,7 @@ public class NioClientFactory extends AbstractNioFactory<NioClientTask> {
                             registerChannel(task, selector, channel);
                             channel.keyFor(selector).attach(task);
                         } catch (Exception e) {
-                            mDestroyCache.add(task);
+                            removeTask(task);
                             e.printStackTrace();
                         }
                     }
@@ -168,7 +168,7 @@ public class NioClientFactory extends AbstractNioFactory<NioClientTask> {
                     try {
                         receive.onRead(channel);
                     } catch (Exception e) {
-                        mDestroyCache.add(task);
+                        removeTask(task);
                         e.printStackTrace();
                     }
                 }
@@ -179,7 +179,7 @@ public class NioClientFactory extends AbstractNioFactory<NioClientTask> {
                     try {
                         sender.onWrite(channel);
                     } catch (Exception e) {
-                        mDestroyCache.add(task);
+                        removeTask(task);
                         e.printStackTrace();
                     }
                 }

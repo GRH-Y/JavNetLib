@@ -1,54 +1,20 @@
 package connect.network.nio;
 
 
-import connect.network.base.joggle.IFactory;
-import connect.network.base.joggle.ISSLFactory;
-import task.executor.BaseLoopTask;
-import task.executor.LoopTaskExecutor;
-import task.executor.TaskContainer;
-import util.JdkVersion;
+import connect.network.base.AbstractFactory;
+import connect.network.base.FactoryCoreTask;
+import connect.network.tcp.AbstractTcpFactory;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.Iterator;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
-public abstract class AbstractNioFactory<T> implements IFactory<T> {
+public abstract class AbstractNioFactory<T> extends AbstractTcpFactory<T> {
 
-    protected volatile Queue<CoreTask> mExecutorQueue;
-    protected volatile Queue<T> mConnectCache;
-    protected volatile Queue<T> mDestroyCache;
 
-    private boolean mIsNeedDestroy = true;
     private Selector mSelector;
 
-    private long mLoadTime = 0;//2000000000
-
-    protected ISSLFactory mSslFactory = null;
-
-    public AbstractNioFactory() {
-        mConnectCache = new ConcurrentLinkedQueue<>();
-        mExecutorQueue = new ConcurrentLinkedQueue<>();
-        mDestroyCache = new ConcurrentLinkedQueue<>();
-    }
-
-    /**
-     * 设置处理线程负荷时间
-     *
-     * @param loadTime 毫秒
-     */
-    public void setLoadTime(int loadTime) {
-        if (mLoadTime > 0) {
-            this.mLoadTime = loadTime * 1000000L;
-        }
-    }
-
-    @Override
-    public void setSslFactory(ISSLFactory sslFactory) {
-        this.mSslFactory = sslFactory;
-    }
 
     abstract protected void onConnectTask(Selector selector, T task);
 
@@ -56,10 +22,22 @@ public abstract class AbstractNioFactory<T> implements IFactory<T> {
 
     abstract protected void onDisconnectTask(T task);
 
+    @Override
+    protected boolean onConnectTask(T task) {
+        return false;
+    }
+
+    @Override
+    protected void onExecTask(T task) {
+    }
+
+    public AbstractNioFactory() {
+        setFactoryCoreTask(new NioCoreTask(this));
+    }
 
     @Override
     public void addTask(T task) {
-        if (task != null && !mExecutorQueue.isEmpty() && !mConnectCache.contains(task)) {
+        if (task != null && mSelector != null) {
             Iterator<SelectionKey> iterator = mSelector.keys().iterator();
             while (iterator.hasNext()) {
                 SelectionKey selectionKey = iterator.next();
@@ -68,51 +46,22 @@ public abstract class AbstractNioFactory<T> implements IFactory<T> {
                     return;
                 }
             }
-            mConnectCache.add(task);
+            super.addTask(task);
             mSelector.wakeup();
-            wakeUpCoreTask();
         }
     }
 
     @Override
     public void removeTask(T task) {
-        if (task != null && !mExecutorQueue.isEmpty() && !mDestroyCache.contains(task)) {
-            mDestroyCache.add(task);
+        if (task != null && mSelector != null) {
+            super.removeTask(task);
             mSelector.wakeup();
-            wakeUpCoreTask();
         }
     }
+
 
     @Override
     public void open() {
-        if (mExecutorQueue.isEmpty()) {
-            openCoreTask();
-        }
-    }
-
-    @Override
-    public void close() {
-        setIsNeedDestroy(true);
-        destroyCoreTask();
-    }
-
-    /**
-     * @param status
-     */
-    protected void setIsNeedDestroy(boolean status) {
-        mIsNeedDestroy = status;
-    }
-
-    protected void wakeUpCoreTask() {
-        for (CoreTask coreTask : mExecutorQueue) {
-            coreTask.getExecutor().resumeTask();
-        }
-    }
-
-    /**
-     * 开启新的线程
-     */
-    protected void openCoreTask() {
         if (mSelector == null) {
             try {
                 mSelector = Selector.open();
@@ -120,55 +69,34 @@ public abstract class AbstractNioFactory<T> implements IFactory<T> {
                 e.printStackTrace();
             }
         }
-        CoreTask coreTask = new CoreTask();
-        coreTask.getExecutor().startTask();
-        mExecutorQueue.add(coreTask);
+        super.open();
     }
 
-    protected void destroyCoreTask() {
-        if (JdkVersion.isJava8()) {
-            mExecutorQueue.forEach(item -> {
-                item.getExecutor().stopTask();
-                mSelector.wakeup();
-                item.getExecutor().blockStopTask();
-            });
-        } else {
-            while (!mExecutorQueue.isEmpty()) {
-                CoreTask coreTask = mExecutorQueue.remove();
-                coreTask.getExecutor().stopTask();
-                mSelector.wakeup();
-                coreTask.getExecutor().blockStopTask();
+    @Override
+    public void close() {
+        super.close();
+        if (mSelector != null) {
+            try {
+                mSelector.close();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
-        mExecutorQueue.clear();
-        mConnectCache.clear();
-        try {
-            mSelector.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
 
-    protected class CoreTask extends BaseLoopTask {
+    private class NioCoreTask<K> extends FactoryCoreTask<K> {
 
-        private TaskContainer container;
-        private LoopTaskExecutor executor;
-
-        private CoreTask() {
-            container = new TaskContainer(this);
-            executor = container.getTaskExecutor();
+        private NioCoreTask(AbstractFactory factory) {
+            super(factory);
         }
 
-        public LoopTaskExecutor getExecutor() {
-            return executor;
-        }
-
-        private void removeNeedDestroyNioTask() {
+        @Override
+        protected void onRemoveNeedDestroyTask() {
             //销毁链接
             while (!mDestroyCache.isEmpty()) {
-                T target = mDestroyCache.remove();
-                onDisconnectTask(target);
+                K target = mDestroyCache.remove();
+                onDisconnectTask((T) target);
                 Iterator<SelectionKey> iterator = mSelector.keys().iterator();
                 while (iterator.hasNext()) {
                     SelectionKey selectionKey = iterator.next();
@@ -187,17 +115,20 @@ public abstract class AbstractNioFactory<T> implements IFactory<T> {
         }
 
         @Override
-        protected void onRunLoopTask() {
+        protected void onCreateData() {
+        }
 
-            long startTime = 0;
-            if (mLoadTime != 0) {
-                startTime = System.nanoTime();
-            }
+        @Override
+        protected void onProcess() {
+        }
+
+        @Override
+        protected void onRunLoopTask() {
 
             //检测是否有新的任务添加
             while (!mConnectCache.isEmpty()) {
-                T task = mConnectCache.remove();
-                onConnectTask(mSelector, task);
+                K task = mConnectCache.remove();
+                onConnectTask(mSelector, (T) task);
             }
 
             int count = 0;
@@ -212,32 +143,19 @@ public abstract class AbstractNioFactory<T> implements IFactory<T> {
             }
 
             //清除要结束的任务
-            removeNeedDestroyNioTask();
-
-            if (mLoadTime == 0) {
-                return;
-            }
-
-            long useTime = System.nanoTime() - startTime;
-            if (useTime > mLoadTime) {
-                //执行速度过慢，则另外开启线程!
-//                Logcat.d("==> 执行速度过慢，则另外开启线程! " + useTime);
-                openCoreTask();
-            } else if (useTime < 1000000 && mExecutorQueue.size() > 1) {
-                //少于1毫秒而且线程数据大于1，则另外关闭多余线程!
-                setIsNeedDestroy(false);
-                getExecutor().stopTask();
-                mExecutorQueue.remove(this);
-            }
+            onRemoveNeedDestroyTask();
         }
 
         @Override
         protected void onDestroyTask() {
             //线程结束，是否要调用任务生命周期onClose方法
-            if (mIsNeedDestroy) {
-                for (SelectionKey selectionKey : mSelector.keys()) {
-                    T task = (T) selectionKey.attachment();
+            for (SelectionKey selectionKey : mSelector.keys()) {
+                T task = (T) selectionKey.attachment();
+                try {
                     onDisconnectTask(task);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
                     selectionKey.cancel();
                 }
             }

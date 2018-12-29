@@ -23,24 +23,11 @@ public class JavUdpConnect {
     private CoreTask coreTask = null;
     private boolean isServer = false;
     private boolean isBroadcast = false;
-    private LIVE_TIME ttl = LIVE_TIME.LOCAL_AREA;
+    private LiveTime ttl = LiveTime.LOCAL_AREA;
     private String ip = null;
     private boolean isShutdownReceive = false;
     private int port = 0;
 
-    public enum LIVE_TIME {
-        LOCAL_NETWORK(1), NETWORK_SITE(32), LOCAL_AREA(64), LOCAL_CONTINENT(128), EVERYWHERE(255);
-
-        int ttl = 1;
-
-        LIVE_TIME(int ttl) {
-            this.ttl = ttl;
-        }
-
-        public int getTtl() {
-            return ttl;
-        }
-    }
 
     public JavUdpConnect(String ip, int port) {
         init(ip, port, false, false, null);
@@ -54,11 +41,11 @@ public class JavUdpConnect {
         init(ip, port, isServer, isBroadcast, null);
     }
 
-    public JavUdpConnect(String ip, int port, boolean isServer, boolean isBroadcast, LIVE_TIME ttl) {
+    public JavUdpConnect(String ip, int port, boolean isServer, boolean isBroadcast, LiveTime ttl) {
         init(ip, port, isServer, isBroadcast, ttl);
     }
 
-    private void init(String ip, int port, boolean isServer, boolean isBroadcast, LIVE_TIME ttl) {
+    private void init(String ip, int port, boolean isServer, boolean isBroadcast, LiveTime ttl) {
         this.ip = ip;
         this.port = port;
         this.isBroadcast = isBroadcast;

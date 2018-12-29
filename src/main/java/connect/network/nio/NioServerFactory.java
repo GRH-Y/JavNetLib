@@ -53,7 +53,7 @@ public class NioServerFactory extends AbstractNioFactory<NioServerTask> {
         }
         if (serverSocketChannel == null) {
             task.onOpenServerChannel(false);
-            mDestroyCache.add(task);
+            removeTask(task);
             return;
         }
         try {
@@ -68,7 +68,7 @@ public class NioServerFactory extends AbstractNioFactory<NioServerTask> {
             boolean isOpen = serverSocketChannel.isOpen();
             task.onOpenServerChannel(isOpen);
             if (!isOpen) {
-                mDestroyCache.add(task);
+                removeTask(task);
             }
         }
     }

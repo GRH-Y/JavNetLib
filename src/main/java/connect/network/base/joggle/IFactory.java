@@ -20,12 +20,17 @@ public interface IFactory<T> {
      * 设置ssl
      * @param sslFactory
      */
-    void setSslFactory(ISSLFactory sslFactory);
+    void setSSlFactory(ISSLFactory sslFactory);
 
     /**
      * 打开
      */
     void open();
+
+    /**
+     * 打开高性能模式
+     */
+    void openHighPer();
 
     /**
      * 关闭
