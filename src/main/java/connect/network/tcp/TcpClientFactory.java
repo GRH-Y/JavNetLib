@@ -30,7 +30,10 @@ public class TcpClientFactory extends AbstractTcpFactory<TcpClientTask> {
 
 
     public static void destroy() {
-        mFactory = null;
+        if (mFactory != null) {
+            mFactory.close();
+            mFactory = null;
+        }
     }
 
     @Override

@@ -33,7 +33,10 @@ public class NioClientFactory extends AbstractNioFactory<NioClientTask> {
     }
 
     public static void destroy() {
-        mFactory = null;
+        if (mFactory != null) {
+            mFactory.close();
+            mFactory = null;
+        }
     }
 
     private NioClientFactory() {
@@ -155,7 +158,7 @@ public class NioClientFactory extends AbstractNioFactory<NioClientTask> {
                         try {
                             registerChannel(task, selector, channel);
                             channel.keyFor(selector).attach(task);
-                        } catch (Exception e) {
+                        } catch (Throwable e) {
                             removeTask(task);
                             e.printStackTrace();
                         }
@@ -167,7 +170,7 @@ public class NioClientFactory extends AbstractNioFactory<NioClientTask> {
                 if (receive != null) {
                     try {
                         receive.onRead(channel);
-                    } catch (Exception e) {
+                    } catch (Throwable e) {
                         removeTask(task);
                         e.printStackTrace();
                     }
@@ -178,7 +181,7 @@ public class NioClientFactory extends AbstractNioFactory<NioClientTask> {
                 if (sender != null) {
                     try {
                         sender.onWrite(channel);
-                    } catch (Exception e) {
+                    } catch (Throwable e) {
                         removeTask(task);
                         e.printStackTrace();
                     }

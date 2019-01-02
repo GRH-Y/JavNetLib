@@ -27,7 +27,10 @@ public class TcpServerFactory extends AbstractTcpFactory<TcpServerTask> {
     }
 
     public static void destroy() {
-        mFactory = null;
+        if (mFactory != null) {
+            mFactory.close();
+            mFactory = null;
+        }
     }
 
     @Override

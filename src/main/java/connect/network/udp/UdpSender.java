@@ -8,11 +8,17 @@ import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class UdpSender implements ISender {
 
-    private Queue<UdpSendrEntity> cache;
+    private Queue<UdpSenderEntity> cache;
     private DatagramPacket mPacket;
+
+    private Lock lock = new ReentrantLock();
+    private Condition condition = lock.newCondition();
 
     public UdpSender() {
         cache = new ConcurrentLinkedQueue<>();
@@ -26,16 +32,44 @@ public class UdpSender implements ISender {
 
     @Override
     public void sendData(byte[] data) {
-        cache.add(new UdpSendrEntity(data, data.length));
+        if (data != null) {
+            cache.add(new UdpSenderEntity(data, data.length));
+            wakeUpWait();
+        }
     }
 
     public void sendData(byte[] data, int length) {
-        cache.add(new UdpSendrEntity(data, length));
+        if (data != null && length > 0) {
+            cache.add(new UdpSenderEntity(data, length));
+            wakeUpWait();
+        }
     }
 
-    protected void onWrite(DatagramSocket socket, InetSocketAddress address) throws Exception {
+
+    protected void wakeUpWait() {
+        lock.lock();
+        try {
+            condition.signalAll();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    protected void onWrite(DatagramSocket socket, InetSocketAddress address, boolean isHasReceive) throws Exception {
+        if (!isHasReceive && cache.isEmpty()) {
+            lock.lock();
+            try {
+                condition.await();
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                lock.unlock();
+            }
+        }
         while (!cache.isEmpty()) {
-            UdpSendrEntity entity = cache.remove();
+            UdpSenderEntity entity = cache.remove();
             try {
                 if (mPacket == null) {
                     mPacket = new DatagramPacket(entity.data, entity.length, address);

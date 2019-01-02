@@ -1,6 +1,5 @@
 package connect.network.udp;
 
-import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 
 public class UdpTask {
@@ -14,12 +13,14 @@ public class UdpTask {
 
     private final boolean isServer;
     private final boolean isBroadcast;
-    private LiveTime liveTime = null;
+    private LiveTime liveTime = LiveTime.LOCAL_AREA;
 
     protected UdpTask(boolean isServer, boolean isBroadcast, LiveTime liveTime) {
         this.isServer = isServer;
         this.isBroadcast = isBroadcast;
-        this.liveTime = liveTime;
+        if (liveTime != null) {
+            this.liveTime = liveTime;
+        }
     }
 
     //---------------------------- set ---------------------------------------

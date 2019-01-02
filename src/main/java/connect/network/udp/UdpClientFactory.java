@@ -1,14 +1,10 @@
 package connect.network.udp;
 
 import connect.network.base.AbstractFactory;
-import connect.network.tcp.TcpClientFactory;
-import connect.network.tcp.TcpReceive;
-import connect.network.tcp.TcpSender;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.*;
+import java.net.DatagramSocket;
+import java.net.InetSocketAddress;
+import java.net.MulticastSocket;
 
 public class UdpClientFactory extends AbstractFactory<UdpClientTask> {
 
@@ -32,14 +28,17 @@ public class UdpClientFactory extends AbstractFactory<UdpClientTask> {
 
 
     public static void destroy() {
-        mFactory = null;
+        if (mFactory != null) {
+            mFactory.close();
+            mFactory = null;
+        }
     }
 
     @Override
     protected boolean onConnectTask(UdpClientTask task) {
         address = new InetSocketAddress(task.getHost(), task.getPort());
         try {
-            DatagramSocket socket = null;
+            DatagramSocket socket;
             if (task.isServer()) {
                 //多播UDP
                 if (task.isBroadcast() && task.getLiveTime() != null) {
@@ -70,9 +69,10 @@ public class UdpClientFactory extends AbstractFactory<UdpClientTask> {
             task.setSocket(socket);
             task.onConfigSocket(socket);
         } catch (Exception e) {
+            task.setSocket(null);
             e.printStackTrace();
         }
-        return false;
+        return task.getSocket() != null;
     }
 
     @Override
@@ -89,7 +89,7 @@ public class UdpClientFactory extends AbstractFactory<UdpClientTask> {
         }
         if (sender != null) {
             try {
-                sender.onWrite(task.getSocket(), address);
+                sender.onWrite(task.getSocket(), address, receive != null);
             } catch (Throwable e) {
                 removeTask(task);
                 e.printStackTrace();
@@ -104,6 +104,10 @@ public class UdpClientFactory extends AbstractFactory<UdpClientTask> {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
+            UdpSender sender = task.getSender();
+            if (sender != null) {
+                sender.wakeUpWait();
+            }
             DatagramSocket socket = task.getSocket();
             if (socket != null) {
                 socket.close();

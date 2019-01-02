@@ -31,7 +31,10 @@ public class NioServerFactory extends AbstractNioFactory<NioServerTask> {
     }
 
     public static void destroy() {
-        mFactory = null;
+        if (mFactory != null) {
+            mFactory.close();
+            mFactory = null;
+        }
     }
 
     private NioServerFactory() {

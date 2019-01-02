@@ -2,7 +2,8 @@ package connect.network.base;
 
 import task.executor.BaseConsumerTask;
 import task.executor.LoopTaskExecutor;
-import task.executor.TaskContainer;
+import task.executor.TaskExecutorPoolManager;
+import task.executor.joggle.ITaskContainer;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -14,7 +15,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class FactoryCoreTask<T> extends BaseConsumerTask<T> {
 
-    protected TaskContainer container;
+    protected ITaskContainer container;
     protected LoopTaskExecutor executor;
     protected AbstractFactory mFactory;
 
@@ -34,7 +35,7 @@ public class FactoryCoreTask<T> extends BaseConsumerTask<T> {
 
     public FactoryCoreTask(AbstractFactory factory) {
         this.mFactory = factory;
-        container = new TaskContainer(this);
+        container = TaskExecutorPoolManager.getInstance().createJThread(this);
         executor = container.getTaskExecutor();
         mConnectCache = new ConcurrentLinkedQueue<>();
         mExecutorQueue = new ConcurrentLinkedQueue<>();
