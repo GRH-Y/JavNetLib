@@ -9,7 +9,6 @@ import java.net.MulticastSocket;
 public class UdpClientFactory extends AbstractFactory<UdpClientTask> {
 
     private static UdpClientFactory mFactory;
-    private InetSocketAddress address = null;
 
     private UdpClientFactory() {
     }
@@ -36,7 +35,7 @@ public class UdpClientFactory extends AbstractFactory<UdpClientTask> {
 
     @Override
     protected boolean onConnectTask(UdpClientTask task) {
-        address = new InetSocketAddress(task.getHost(), task.getPort());
+        InetSocketAddress address = new InetSocketAddress(task.getHost(), task.getPort());
         try {
             DatagramSocket socket;
             if (task.isServer()) {
@@ -89,7 +88,7 @@ public class UdpClientFactory extends AbstractFactory<UdpClientTask> {
         }
         if (sender != null) {
             try {
-                sender.onWrite(task.getSocket(), address, receive != null);
+                sender.onWrite(task.getSocket(), task.getHost(), task.getPort());
             } catch (Throwable e) {
                 removeTask(task);
                 e.printStackTrace();
@@ -104,10 +103,6 @@ public class UdpClientFactory extends AbstractFactory<UdpClientTask> {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            UdpSender sender = task.getSender();
-            if (sender != null) {
-                sender.wakeUpWait();
-            }
             DatagramSocket socket = task.getSocket();
             if (socket != null) {
                 socket.close();
