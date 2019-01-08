@@ -57,4 +57,10 @@ public class NioServerTask {
 
     protected void onCloseServerChannel() {
     }
+
+    /**
+     * 当前状态服务彻底关闭，可以做资源回收工作
+     */
+    protected void onRecovery() {
+    }
 }

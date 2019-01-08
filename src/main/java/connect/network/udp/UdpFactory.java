@@ -6,19 +6,19 @@ import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
 
-public class UdpClientFactory extends AbstractFactory<UdpClientTask> {
+public class UdpFactory extends AbstractFactory<UdpTask> {
 
-    private static UdpClientFactory mFactory;
+    private static UdpFactory mFactory;
 
-    private UdpClientFactory() {
+    private UdpFactory() {
     }
 
 
-    public synchronized static UdpClientFactory getFactory() {
+    public synchronized static UdpFactory getFactory() {
         if (mFactory == null) {
-            synchronized (UdpClientFactory.class) {
+            synchronized (UdpFactory.class) {
                 if (mFactory == null) {
-                    mFactory = new UdpClientFactory();
+                    mFactory = new UdpFactory();
                 }
             }
         }
@@ -34,7 +34,7 @@ public class UdpClientFactory extends AbstractFactory<UdpClientTask> {
     }
 
     @Override
-    protected boolean onConnectTask(UdpClientTask task) {
+    protected boolean onConnectTask(UdpTask task) {
         InetSocketAddress address = new InetSocketAddress(task.getHost(), task.getPort());
         try {
             DatagramSocket socket;
@@ -75,8 +75,7 @@ public class UdpClientFactory extends AbstractFactory<UdpClientTask> {
     }
 
     @Override
-    protected void onExecTask(UdpClientTask task) {
-        UdpSender sender = task.getSender();
+    protected void onExecRead(UdpTask task) {
         UdpReceive receive = task.getReceive();
         if (receive != null) {
             try {
@@ -86,6 +85,11 @@ public class UdpClientFactory extends AbstractFactory<UdpClientTask> {
                 e.printStackTrace();
             }
         }
+    }
+
+    @Override
+    protected void onExecWrite(UdpTask task) {
+        UdpSender sender = task.getSender();
         if (sender != null) {
             try {
                 sender.onWrite(task.getSocket(), task.getHost(), task.getPort());
@@ -97,7 +101,7 @@ public class UdpClientFactory extends AbstractFactory<UdpClientTask> {
     }
 
     @Override
-    protected void onDisconnectTask(UdpClientTask task) {
+    protected void onDisconnectTask(UdpTask task) {
         try {
             task.onCloseSocket();
         } catch (Exception e) {

@@ -37,6 +37,7 @@ public class NioServerFactory extends AbstractNioFactory<NioServerTask> {
         }
     }
 
+
     private NioServerFactory() {
         super();
     }
@@ -93,12 +94,26 @@ public class NioServerFactory extends AbstractNioFactory<NioServerTask> {
                     e.printStackTrace();
                 }
             }
+            // 删除已处理过的事件
+            iterator.remove();
         }
-        iterator.remove();// 删除已处理过的事件
     }
 
     @Override
     protected void onDisconnectTask(NioServerTask task) {
-        task.onCloseServerChannel();
+        try {
+            task.onCloseServerChannel();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    protected void onRecoveryTask(NioServerTask task) {
+        try {
+            task.onRecovery();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

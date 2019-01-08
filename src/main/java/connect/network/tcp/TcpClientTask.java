@@ -87,6 +87,16 @@ public class TcpClientTask {
     }
 
 
+    /**
+     * 当前状态链接还没关闭，可以做最后的一次数据传输
+     */
     protected void onCloseSocket() {
+    }
+
+    /**
+     * 当前状态链接彻底关闭，可以做资源回收工作
+     */
+    protected void onRecovery()
+    {
     }
 }

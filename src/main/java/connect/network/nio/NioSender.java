@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class NioSender implements ISender {
 
     protected Queue<ByteBuffer> cache;
+    protected SocketChannel channel;
 
     public NioSender() {
         cache = new ConcurrentLinkedQueue<>();
@@ -19,7 +20,18 @@ public class NioSender implements ISender {
 
     @Override
     public void sendData(byte[] data) {
-        cache.add(ByteBuffer.wrap(data));
+        synchronized (NioSender.class) {
+            cache.add(ByteBuffer.wrap(data));
+            NioClientFactory.getFactory().registerWrite(this);
+        }
+    }
+
+    protected void setChannel(SocketChannel channel) {
+        this.channel = channel;
+    }
+
+    public SocketChannel getChannel() {
+        return channel;
     }
 
     /**
@@ -38,6 +50,11 @@ public class NioSender implements ISender {
                 if (!(e instanceof SocketTimeoutException)) {
                     throw new Exception(e);
                 }
+            }
+        }
+        synchronized (NioSender.class) {
+            if (cache.isEmpty()) {
+                NioClientFactory.getFactory().unRegisterWrite(this);
             }
         }
     }

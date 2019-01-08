@@ -86,8 +86,7 @@ public class TcpClientFactory extends AbstractTcpFactory<TcpClientTask> {
     }
 
     @Override
-    protected void onExecTask(TcpClientTask task) {
-        TcpSender sender = task.getSender();
+    protected void onExecRead(TcpClientTask task) {
         TcpReceive receive = task.getReceive();
         if (receive != null) {
             try {
@@ -98,6 +97,11 @@ public class TcpClientFactory extends AbstractTcpFactory<TcpClientTask> {
                 e.printStackTrace();
             }
         }
+    }
+
+    @Override
+    protected void onExecWrite(TcpClientTask task) {
+        TcpSender sender = task.getSender();
         if (sender != null) {
             try {
                 OutputStream stream = task.getOutputStream();
@@ -108,6 +112,7 @@ public class TcpClientFactory extends AbstractTcpFactory<TcpClientTask> {
             }
         }
     }
+
 
     @Override
     protected void onDisconnectTask(TcpClientTask task) {

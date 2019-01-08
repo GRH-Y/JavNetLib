@@ -33,6 +33,14 @@ public class FactoryCoreTask<T> extends BaseConsumerTask<T> {
     protected volatile Queue<T> mDestroyCache;
 
 
+    public LoopTaskExecutor getExecutor() {
+        return executor;
+    }
+
+    public ITaskContainer getContainer() {
+        return container;
+    }
+
     public FactoryCoreTask(AbstractFactory factory) {
         this.mFactory = factory;
         container = TaskExecutorPoolManager.getInstance().createJThread(this);
@@ -64,20 +72,6 @@ public class FactoryCoreTask<T> extends BaseConsumerTask<T> {
         }
     }
 
-    private void execTask() {
-        //执行任务
-        for (T task : mExecutorQueue) {
-            if (executor.getLoopState()) {
-                try {
-                    mFactory.onExecTask(task);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            } else {
-                break;
-            }
-        }
-    }
 
     @Override
     protected void onCreateData() {
@@ -98,15 +92,40 @@ public class FactoryCoreTask<T> extends BaseConsumerTask<T> {
             }
         }
 
-        execTask();
+        if (mExecutorQueue.isEmpty() && mConnectCache.isEmpty() && mDestroyCache.isEmpty()) {
+            executor.waitTask(0);
+        }
 
+        //执行读任务
+        for (T task : mExecutorQueue) {
+            if (executor.getLoopState()) {
+                try {
+                    mFactory.onExecRead(task);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            } else {
+                break;
+            }
+        }
         //清除要结束的任务
         onRemoveNeedDestroyTask();
     }
 
     @Override
     protected void onProcess() {
-        execTask();
+        //执行写任务
+        for (T task : mExecutorQueue) {
+            if (executor.getLoopState()) {
+                try {
+                    mFactory.onExecWrite(task);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            } else {
+                break;
+            }
+        }
     }
 
 

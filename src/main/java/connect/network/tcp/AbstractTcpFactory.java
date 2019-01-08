@@ -13,4 +13,8 @@ public abstract class AbstractTcpFactory<T> extends AbstractFactory<T> {
         this.mSslFactory = sslFactory;
     }
 
+    @Override
+    protected void onExecWrite(T task) {
+    }
+
 }

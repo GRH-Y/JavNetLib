@@ -16,7 +16,9 @@ public abstract class AbstractFactory<T> implements IFactory<T> {
 
     abstract protected boolean onConnectTask(T task);
 
-    abstract protected void onExecTask(T task);
+    abstract protected void onExecRead(T task);
+
+    abstract protected void onExecWrite(T task);
 
     abstract protected void onDisconnectTask(T task);
 

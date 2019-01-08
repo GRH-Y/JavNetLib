@@ -67,7 +67,7 @@ public class TcpServerFactory extends AbstractTcpFactory<TcpServerTask> {
     }
 
     @Override
-    protected void onExecTask(TcpServerTask task) {
+    protected void onExecRead(TcpServerTask task) {
         ServerSocket serverSocket = task.getServerSocket();
         try {
             Socket socket = serverSocket.accept();
@@ -81,6 +81,7 @@ public class TcpServerFactory extends AbstractTcpFactory<TcpServerTask> {
             }
         }
     }
+
 
     @Override
     protected void onDisconnectTask(TcpServerTask task) {

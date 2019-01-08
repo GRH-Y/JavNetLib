@@ -12,9 +12,7 @@ import java.util.Iterator;
 
 public abstract class AbstractNioFactory<T> extends AbstractTcpFactory<T> {
 
-
-    private Selector mSelector;
-
+    protected Selector mSelector;
 
     abstract protected void onConnectTask(Selector selector, T task);
 
@@ -22,13 +20,19 @@ public abstract class AbstractNioFactory<T> extends AbstractTcpFactory<T> {
 
     abstract protected void onDisconnectTask(T task);
 
+    abstract protected void onRecoveryTask(T task);
+
     @Override
     protected boolean onConnectTask(T task) {
         return false;
     }
 
     @Override
-    protected void onExecTask(T task) {
+    protected void onExecRead(T task) {
+    }
+
+    @Override
+    protected void onExecWrite(T task) {
     }
 
     public AbstractNioFactory() {
@@ -74,13 +78,11 @@ public abstract class AbstractNioFactory<T> extends AbstractTcpFactory<T> {
 
     @Override
     public void close() {
-        super.close();
+        if (coreTask != null) {
+            coreTask.getExecutor().stopTask();
+        }
         if (mSelector != null) {
-            try {
-                mSelector.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            mSelector.wakeup();
         }
     }
 
@@ -111,6 +113,7 @@ public abstract class AbstractNioFactory<T> extends AbstractTcpFactory<T> {
                         break;
                     }
                 }
+                onRecoveryTask((T) target);
             }
         }
 
@@ -141,7 +144,6 @@ public abstract class AbstractNioFactory<T> extends AbstractTcpFactory<T> {
             if (count > 0) {
                 onSelectorTask(mSelector);
             }
-
             //清除要结束的任务
             onRemoveNeedDestroyTask();
         }
@@ -157,6 +159,14 @@ public abstract class AbstractNioFactory<T> extends AbstractTcpFactory<T> {
                     e.printStackTrace();
                 } finally {
                     selectionKey.cancel();
+                    onRecoveryTask(task);
+                }
+            }
+            if (mSelector != null) {
+                try {
+                    mSelector.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
         }
