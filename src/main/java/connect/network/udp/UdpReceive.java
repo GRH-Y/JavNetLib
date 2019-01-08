@@ -9,8 +9,8 @@ import java.net.SocketTimeoutException;
 
 public class UdpReceive implements IReceive {
 
-    private Object mReceive;
-    private String mReceiveMethodName;
+    protected Object mReceive;
+    protected String mReceiveMethodName;
 
     public UdpReceive(Object receive, String receiveMethodName) {
         this.mReceive = receive;

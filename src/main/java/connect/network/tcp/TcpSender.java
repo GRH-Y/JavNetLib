@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class TcpSender implements ISender {
 
-    private Queue<byte[]> cache;
+    protected Queue<byte[]> cache;
 
     public TcpSender() {
         cache = new ConcurrentLinkedQueue<>();

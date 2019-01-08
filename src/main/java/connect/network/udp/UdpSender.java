@@ -11,8 +11,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class UdpSender implements ISender {
 
-    private Queue<UdpSenderEntity> cache;
-    private DatagramPacket mPacket;
+    protected Queue<UdpSenderEntity> cache;
+    protected DatagramPacket mPacket;
 
     public UdpSender() {
         cache = new ConcurrentLinkedQueue<>();

@@ -9,8 +9,8 @@ import java.io.InputStream;
 
 public class TcpReceive implements IReceive {
 
-    private Object mReceive;
-    private String mReceiveMethodName;
+    protected Object mReceive;
+    protected String mReceiveMethodName;
 
     public TcpReceive(Object receive, String receiveMethodName) {
         this.mReceive = receive;

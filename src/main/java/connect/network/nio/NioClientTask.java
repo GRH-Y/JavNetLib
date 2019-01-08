@@ -1,6 +1,7 @@
 package connect.network.nio;
 
 
+import java.net.Socket;
 import java.nio.channels.SocketChannel;
 
 /**
@@ -70,6 +71,9 @@ public class NioClientTask {
     }
 
     //---------------------------- on ---------------------------------------
+
+    protected void onConfigSocket(SocketChannel socket) {
+    }
 
     /**
      * 链接状态回调

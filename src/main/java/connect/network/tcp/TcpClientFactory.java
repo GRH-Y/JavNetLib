@@ -41,8 +41,8 @@ public class TcpClientFactory extends AbstractTcpFactory<TcpClientTask> {
         boolean isConnect;
         Socket socket = task.getSocket();
         try {
-            if (socket == null && task.getHost() != null && task.getPort() > 0) {
-                InetSocketAddress address = new InetSocketAddress(task.getHost(), task.getPort());
+            InetSocketAddress address = new InetSocketAddress(task.getHost(), task.getPort());
+            if (socket == null) {
                 if (task.getPort() == 443) {
                     SSLSocketFactory sslSocketFactory = mSslFactory.getSSLSocketFactory();
                     SSLSocketImpl sslSocketImpl = (SSLSocketImpl) sslSocketFactory.createSocket();
@@ -53,9 +53,7 @@ public class TcpClientFactory extends AbstractTcpFactory<TcpClientTask> {
                     socket = sslSocketImpl;
                 } else {
                     socket = new Socket();
-                    socket.connect(address, 3000);
                 }
-                task.setSocket(socket);
             }
             if (socket != null) {
                 socket.setSoTimeout(1000);
@@ -70,7 +68,12 @@ public class TcpClientFactory extends AbstractTcpFactory<TcpClientTask> {
                 socket.setSoLinger(true, 0);
                 task.setInputStream(socket.getInputStream());
                 task.setOutputStream(socket.getOutputStream());
+                //配置socket
                 task.onConfigSocket(socket);
+                //开始链接
+                socket.connect(address, 3000);
+                //保存socket
+                task.setSocket(socket);
             }
         } catch (Throwable e) {
             e.printStackTrace();

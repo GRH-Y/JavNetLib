@@ -5,6 +5,7 @@ import sun.security.ssl.SSLSocketImpl;
 
 import javax.net.ssl.SSLSocketFactory;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
@@ -105,8 +106,17 @@ public class NioClientFactory extends AbstractNioFactory<NioClientTask> {
             try {
                 channel = SocketChannel.open();
                 channel.configureBlocking(false);// 设置为非阻塞
-                channel.connect(new InetSocketAddress(task.getHost(), task.getPort()));
+                Socket socket = channel.socket();
+                //复用端口
+                socket.setReuseAddress(true);
+                socket.setKeepAlive(true);
+                //关闭Nagle算法
+                socket.setTcpNoDelay(true);
+                //执行Socket的close方法，该方法也会立即返回
+                socket.setSoLinger(true, 0);
                 configSSL(task, channel);
+                task.onConfigSocket(channel);
+                channel.connect(new InetSocketAddress(task.getHost(), task.getPort()));
                 task.setChannel(channel);
             } catch (Exception e) {
                 channel = null;
