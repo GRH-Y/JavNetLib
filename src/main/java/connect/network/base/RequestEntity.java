@@ -37,6 +37,11 @@ public class RequestEntity {
 
     private Map<String, String> property = null;
 
+    /**
+     * 是否独立任务（如果是独立任务会单独开启线程处理）
+     */
+    private boolean isIndependentTask = false;
+
     public int getTaskTag() {
         return taskTag;
     }
@@ -144,5 +149,13 @@ public class RequestEntity {
 
     public void setViewTarget(Object viewTarget) {
         this.viewTarget = viewTarget;
+    }
+
+    public void setIndependentTask(boolean independentTask) {
+        isIndependentTask = independentTask;
+    }
+
+    public boolean isIndependentTask() {
+        return isIndependentTask;
     }
 }

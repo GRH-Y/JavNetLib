@@ -124,15 +124,19 @@ public class JavHttpConnect {
     private void startTaskAndPushToCache(RequestEntity entity) {
         IConsumerAttribute attribute = mHttpTaskManage.getAttribute();
         attribute.pushToCache(entity);
-        ILoopTaskExecutor executor = mHttpTaskManage.getExecutor();
-        if (!executor.getAliveState()) {
-            executor.startTask();
-        } else if (executor.isIdleState() && executor.getAliveState()) {
-            ITaskContainer container = TaskExecutorPoolManager.getInstance().runTask(mCoreTask, attribute);
-            executor = container.getTaskExecutor();
-            mHttpTaskManage.setTaskContainer(container);
+        if (entity.isIndependentTask()) {
+            TaskExecutorPoolManager.getInstance().runTask(mCoreTask, mHttpTaskManage.getAttribute());
+        } else {
+            ILoopTaskExecutor executor = mHttpTaskManage.getExecutor();
+            if (!executor.getAliveState()) {
+                executor.startTask();
+            } else if (executor.isIdleState() && executor.getAliveState()) {
+                ITaskContainer container = TaskExecutorPoolManager.getInstance().runTask(mCoreTask, attribute);
+                executor = container.getTaskExecutor();
+                mHttpTaskManage.setTaskContainer(container);
+            }
+            executor.resumeTask();
         }
-        executor.resumeTask();
     }
 
     /**

@@ -6,12 +6,15 @@ import connect.network.base.joggle.ISessionCallBack;
 import connect.network.http.joggle.IRequestIntercept;
 import connect.network.http.joggle.IResponseConvert;
 import connect.network.http.joggle.POST;
+import storage.FileHelper;
 import task.executor.BaseConsumerTask;
 import task.executor.joggle.ILoopTaskExecutor;
 import util.IoUtils;
 import util.LogDog;
 
 import javax.net.ssl.HttpsURLConnection;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -155,42 +158,60 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
                 return;
             }
 
-            int length = connection.getContentLength();
+            String encode = connection.getHeaderField("Content-Encoding");
+
             InputStream is = connection.getInputStream();
-            int available = is.available();
-            byte[] buffer;
-            if (length <= 0 && available <= 0) {
-                buffer = IoUtils.tryRead(is);
-            } else {
-                buffer = IoUtils.tryRead(is);
-            }
-            if (buffer == null) {
+            Object resultType = submitEntity.getResultType();
+            if (resultType.getClass().isAssignableFrom(String.class)) {
+                //目录结果为字符串说明是下载文件
+                File file = new File((String) resultType);
+                File parentFile = file.getParentFile();
+                boolean exists = parentFile.exists();
+                if (!exists) {
+                    exists = parentFile.mkdirs();
+                }
+                if (exists) {
+                    FileOutputStream outputStream = new FileOutputStream(file);
+                    boolean state = IoUtils.pipReadWrite(is, outputStream, false);
+                    if (state) {
+                        submitEntity.setResultData(resultType);
+                    }
+                }
                 onResultCallBack(submitEntity);
-                return;
+            } else {
+                int length = connection.getContentLength();
+                int available = is.available();
+                byte[] buffer;
+                if (length <= 0 && available <= 0) {
+                    buffer = IoUtils.tryRead(is);
+                } else {
+                    buffer = IoUtils.tryRead(is);
+                }
+                if (buffer == null) {
+                    onResultCallBack(submitEntity);
+                    return;
+                }
+
+                //拦截请求
+                IRequestIntercept intercept = mConfig.getInterceptRequest();
+                if (intercept != null && intercept.intercept(submitEntity)) {
+                    return;
+                }
+
+                //转换响应数据
+                Object entity = buffer;
+                IResponseConvert convert = mConfig.getConvertResult();
+                if (convert != null) {
+                    entity = convert.handlerEntity((Class) resultType, buffer, encode);
+                }
+
+                //拦截请求
+                if (intercept != null && intercept.interceptCallBack(submitEntity, entity)) {
+                    return;
+                }
+                submitEntity.setResultData(entity == null ? buffer : entity);
+                onResultCallBack(submitEntity);
             }
-
-            //拦截请求
-            IRequestIntercept intercept = mConfig.getInterceptRequest();
-            if (intercept != null && intercept.intercept(submitEntity)) {
-                return;
-            }
-
-            Class resultCls = (Class) submitEntity.getResultType();
-
-            //转换响应数据
-            Object entity = buffer;
-            IResponseConvert convert = mConfig.getConvertResult();
-            if (convert != null) {
-                entity = convert.handlerEntity(resultCls, buffer);
-            }
-
-            //拦截请求
-            if (intercept != null && intercept.interceptCallBack(submitEntity, entity)) {
-                return;
-            }
-            submitEntity.setResultData(entity == null ? buffer : entity);
-            onResultCallBack(submitEntity);
-
         } catch (Throwable e) {
             e.printStackTrace();
             onResultCallBack(submitEntity);
