@@ -74,6 +74,7 @@
 
 
 #混淆规则
+
     -keep class * extends java.lang.annotation.Annotation { *; }
     -keep interface * extends java.lang.annotation.Annotation { *; }
     # 保留Serializable序列化的类不被混淆
