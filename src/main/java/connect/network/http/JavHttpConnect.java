@@ -125,7 +125,9 @@ public class JavHttpConnect {
         IConsumerAttribute attribute = mHttpTaskManage.getAttribute();
         attribute.pushToCache(entity);
         if (entity.isIndependentTask()) {
-            TaskExecutorPoolManager.getInstance().runTask(mCoreTask, mHttpTaskManage.getAttribute());
+            //一次性任务
+            ITaskContainer container = TaskExecutorPoolManager.getInstance().runTask(mCoreTask, mHttpTaskManage.getAttribute());
+            container.getTaskExecutor().setLoopState(false);
         } else {
             ILoopTaskExecutor executor = mHttpTaskManage.getExecutor();
             if (!executor.getAliveState()) {

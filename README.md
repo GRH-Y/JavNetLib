@@ -71,3 +71,19 @@
          private void errorCallBack(RequestEntity entity) {
      
          }
+         
+#混淆规则
+    -keep class * extends java.lang.annotation.Annotation { *; }
+    -keep interface * extends java.lang.annotation.Annotation { *; }
+    # 保留Serializable序列化的类不被混淆
+    -keepclassmembers class * implements java.io.Serializable {
+        static final long serialVersionUID;
+        private static final java.io.ObjectStreamField[] serialPersistentFields;
+        !static !transient <fields>;
+        !private <fields>;
+        !private <methods>;
+        private void writeObject(java.io.ObjectOutputStream);
+        private void readObject(java.io.ObjectInputStream);
+        java.lang.Object writeReplace();
+        java.lang.Object readResolve();
+    }

@@ -6,7 +6,6 @@ import connect.network.base.joggle.ISessionCallBack;
 import connect.network.http.joggle.IRequestIntercept;
 import connect.network.http.joggle.IResponseConvert;
 import connect.network.http.joggle.POST;
-import storage.FileHelper;
 import task.executor.BaseConsumerTask;
 import task.executor.joggle.ILoopTaskExecutor;
 import util.IoUtils;
@@ -65,7 +64,7 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
 
             if (POST.class.getSimpleName().equals(task.getRequestMethod())) {
                 connection.setDoOutput(true);
-                connection.setRequestProperty("Content-Type", "application/json");
+                connection.setRequestProperty("Content-Type", HttpTaskConfig.CONTENT_TYPE_JSON);
             }
 
             setRequestProperty(connection, mConfig.getGlobalRequestProperty());
@@ -108,13 +107,15 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
 
     @Override
     protected void onProcess() {
-        requestData(mConfig.popCacheData());
+        RequestEntity entity = mConfig.popCacheData();
+        if (entity != null) {
+            requestData(entity);
+        }
     }
 
     protected void onResultCallBack(RequestEntity submitEntity) {
-        ILoopTaskExecutor executor = mConfig.getExecutor();
         ISessionCallBack callBack = mConfig.getSessionCallBack();
-        if (callBack != null && executor.getLoopState()) {
+        if (callBack != null) {
             callBack.notifyMessage(submitEntity);
         }
     }

@@ -1,7 +1,6 @@
 package connect.network.nio;
 
 
-import java.net.Socket;
 import java.nio.channels.SocketChannel;
 
 /**
