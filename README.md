@@ -71,7 +71,8 @@
          private void errorCallBack(RequestEntity entity) {
      
          }
-         
+
+
 #混淆规则
     -keep class * extends java.lang.annotation.Annotation { *; }
     -keep interface * extends java.lang.annotation.Annotation { *; }
