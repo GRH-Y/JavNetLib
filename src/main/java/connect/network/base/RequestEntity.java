@@ -25,6 +25,7 @@ public class RequestEntity {
 
     private String scbMethodName = null;
     private String ecbMethodName = null;
+    private String processMethod = null;
     private boolean isAutoSetDataForView = false;
     /**
      * 接口回调类
@@ -127,8 +128,16 @@ public class RequestEntity {
         return ecbMethodName;
     }
 
+    public String getProcessMethodName() {
+        return processMethod;
+    }
+
     public void setEcbMethodName(String ecbMethodName) {
         this.ecbMethodName = ecbMethodName;
+    }
+
+    public void setProcessMethodName(String processMethod) {
+        this.processMethod = processMethod;
     }
 
     public void setAutoSetDataForView(boolean autoSetDataForView) {

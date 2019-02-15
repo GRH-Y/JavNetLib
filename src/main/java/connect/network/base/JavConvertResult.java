@@ -21,7 +21,7 @@ public class JavConvertResult implements IResponseConvert {
         LogDog.d("==> Request to return the content = " + resultStr);
 
         if (resultCls.isAssignableFrom(byte[].class)) {
-            return result;
+            return newData;
         }
         return JsonUtils.toEntity(resultCls, resultStr);
     }

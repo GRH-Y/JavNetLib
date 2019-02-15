@@ -116,7 +116,7 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
     protected void onResultCallBack(RequestEntity submitEntity) {
         ISessionCallBack callBack = mConfig.getSessionCallBack();
         if (callBack != null) {
-            callBack.notifyMessage(submitEntity);
+            callBack.notifyData(submitEntity);
         }
     }
 
@@ -143,12 +143,18 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
             }
 
             int code = connection.getResponseCode();
+            int length = connection.getContentLength();
 //                Logcat.d("Http Response Code = " + code);
             LogDog.d("==> Request address = " + submitEntity.getAddress());
             if (submitEntity.getSendData() != null) {
                 LogDog.d("==>JavHttpConnect post submitEntity = " + new String(submitEntity.getSendData()));
             }
-            if (code != HttpURLConnection.HTTP_OK) {
+            if (code == HttpURLConnection.HTTP_MOVED_TEMP) {
+                String newUrl = connection.getHeaderField("Location");
+                submitEntity.setAddress(newUrl);
+                mConfig.getAttribute().pushToCache(submitEntity);
+                return;
+            } else if (code != HttpURLConnection.HTTP_OK) {
                 LogDog.e("Http Response Code = " + code);
                 onResultCallBack(submitEntity);
                 return;
@@ -160,9 +166,9 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
             }
 
             String encode = connection.getHeaderField("Content-Encoding");
-
             InputStream is = connection.getInputStream();
             Object resultType = submitEntity.getResultType();
+
             if (resultType.getClass().isAssignableFrom(String.class)) {
                 //目录结果为字符串说明是下载文件
                 File file = new File((String) resultType);
@@ -173,14 +179,14 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
                 }
                 if (exists) {
                     FileOutputStream outputStream = new FileOutputStream(file);
-                    boolean state = IoUtils.pipReadWrite(is, outputStream, false);
+                    boolean state = ProcessIoUtils.pipReadWrite(is, outputStream, false, length, submitEntity, mConfig.getSessionCallBack());
+//                    boolean state = IoUtils.pipReadWrite(is, outputStream, false);
                     if (state) {
                         submitEntity.setResultData(resultType);
                     }
                 }
                 onResultCallBack(submitEntity);
             } else {
-                int length = connection.getContentLength();
                 int available = is.available();
                 byte[] buffer;
                 if (length <= 0 && available <= 0) {

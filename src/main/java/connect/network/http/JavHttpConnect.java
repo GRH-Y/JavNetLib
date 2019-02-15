@@ -2,6 +2,7 @@ package connect.network.http;
 
 
 import connect.network.base.JavConvertResult;
+import connect.network.base.JavSessionCallBack;
 import connect.network.base.RequestEntity;
 import connect.network.http.joggle.*;
 import task.executor.TaskExecutorPoolManager;
@@ -36,7 +37,9 @@ public class JavHttpConnect {
 
     protected JavHttpConnect() {
         mHttpTaskManage = new HttpTaskConfig();
+        mHttpTaskManage.setSessionCallBack(new JavSessionCallBack());
         mHttpTaskManage.setConvertResult(new JavConvertResult());
+        mHttpTaskManage.setTimeout(8000);
         mCoreTask = new HttpCoreTask(mHttpTaskManage);
         ITaskContainer container = TaskExecutorPoolManager.getInstance().runTask(mCoreTask, mHttpTaskManage.getAttribute());
         mHttpTaskManage.setTaskContainer(container);
@@ -182,6 +185,7 @@ public class JavHttpConnect {
         netTaskEntity.setTaskTag(atnTaskTag);
         netTaskEntity.setScbMethodName(request.successMethod());
         netTaskEntity.setEcbMethodName(request.errorMethod());
+        netTaskEntity.setProcessMethodName(request.processMethod());
         netTaskEntity.setCallBackTarget(callBackTarget);
         netTaskEntity.setViewTarget(viewTarget);
         netTaskEntity.setResultType(request.resultType());

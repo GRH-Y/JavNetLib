@@ -32,6 +32,7 @@ public @interface ARequest {
 
     /**
      * 任务tag (区别任务)
+     *
      * @return
      */
     int taskTag() default JavHttpConnect.DEFAULT_TASK_TAG;
@@ -39,17 +40,25 @@ public @interface ARequest {
 
     /**
      * 本次请求成功回调结果的方法名
-     *
+     * 方法参数必须是（对应resultType字段类型）
      * @return
      */
     String successMethod() default "";
 
     /**
      * 本次请求失败回调结果的方法名
+     * 方法参数必须是（RequestEntity entity）
      *
      * @return
      */
     String errorMethod() default "";
+
+    /**
+     * 本次请求过程状态回调方法名
+     * 方法参数必须是 (int process, int maxProcess, boolean isOver)
+     * @return
+     */
+    String processMethod() default "";
 
     /**
      * resultType 字段是解析成当前结果为制定的类型

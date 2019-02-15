@@ -28,11 +28,18 @@ public interface ISessionCallBack {
 
 
     /**
-     * 成功通知
+     * 通知结果
      *
      * @param entity
      */
-    void notifyMessage(RequestEntity entity);
+    void notifyData(RequestEntity entity);
 
-
+    /**
+     * 通知处理过程状态
+     * @param entity
+     * @param process
+     * @param maxProcess
+     * @param isOver
+     */
+    void notifyProcess(RequestEntity entity,int process, int maxProcess, boolean isOver);
 }

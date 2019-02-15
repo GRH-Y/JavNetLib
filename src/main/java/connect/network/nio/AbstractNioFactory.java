@@ -108,8 +108,9 @@ public abstract class AbstractNioFactory<T> extends AbstractTcpFactory<T> {
                             selectionKey.channel().close();
                         } catch (IOException e) {
                             e.printStackTrace();
+                        } finally {
+                            selectionKey.cancel();
                         }
-                        selectionKey.cancel();
                         break;
                     }
                 }

@@ -38,8 +38,7 @@ public class JavSessionCallBack implements ISessionCallBack {
      * @param entity 请求任务
      */
     @Override
-    public void notifyMessage(RequestEntity entity) {
-
+    public void notifyData(RequestEntity entity) {
         String methodName;
         Object resultData;
         if (entity.getResultData() == null) {
@@ -50,6 +49,12 @@ public class JavSessionCallBack implements ISessionCallBack {
             resultData = entity.getResultData();
         }
         ThreadAnnotation.disposeMessage(methodName, entity.getCallBackTarget(), resultData);
+    }
+
+    @Override
+    public void notifyProcess(RequestEntity entity, int process, int maxProcess, boolean isOver) {
+        String methodName = entity.getProcessMethodName();
+        ThreadAnnotation.disposeMessage(methodName, entity.getCallBackTarget(), process, maxProcess, isOver);
     }
 
 }
