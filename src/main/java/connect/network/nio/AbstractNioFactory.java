@@ -8,9 +8,9 @@ import connect.network.tcp.AbstractTcpFactory;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 public abstract class AbstractNioFactory<T> extends AbstractTcpFactory<T> {
 
@@ -55,6 +55,12 @@ public abstract class AbstractNioFactory<T> extends AbstractTcpFactory<T> {
                     return;
                 }
             }
+//            mSelector.keys().forEach(selectionKey -> {
+//                T hasTask = (T) selectionKey.attachment();
+//                if (hasTask == task) {
+//                    return;
+//                }
+//            });
 //            Iterator<SelectionKey> iterator = mSelector.keys().iterator();
 //            while (iterator.hasNext()) {
 //                SelectionKey selectionKey = iterator.next();
@@ -82,7 +88,7 @@ public abstract class AbstractNioFactory<T> extends AbstractTcpFactory<T> {
         if (mSelector == null) {
             try {
                 mSelector = Selector.open();
-                selectionKeyList = new CopyOnWriteArrayList(mSelector.keys());
+                selectionKeyList = new ArrayList<>(mSelector.keys());
             } catch (IOException e) {
                 e.printStackTrace();
             }
