@@ -9,10 +9,17 @@ import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public abstract class AbstractNioFactory<T> extends AbstractTcpFactory<T> {
 
     protected Selector mSelector;
+
+    /**
+     * 解决线程安全问题
+     */
+    protected List<SelectionKey> selectionKeyList;
 
     abstract protected void onConnectTask(Selector selector, T task);
 
@@ -42,14 +49,20 @@ public abstract class AbstractNioFactory<T> extends AbstractTcpFactory<T> {
     @Override
     public void addTask(T task) {
         if (task != null && mSelector != null) {
-            Iterator<SelectionKey> iterator = mSelector.keys().iterator();
-            while (iterator.hasNext()) {
-                SelectionKey selectionKey = iterator.next();
+            for (SelectionKey selectionKey : selectionKeyList) {
                 T hasTask = (T) selectionKey.attachment();
                 if (hasTask == task) {
                     return;
                 }
             }
+//            Iterator<SelectionKey> iterator = mSelector.keys().iterator();
+//            while (iterator.hasNext()) {
+//                SelectionKey selectionKey = iterator.next();
+//                T hasTask = (T) selectionKey.attachment();
+//                if (hasTask == task) {
+//                    return;
+//                }
+//            }
             super.addTask(task);
             mSelector.wakeup();
         }
@@ -69,6 +82,7 @@ public abstract class AbstractNioFactory<T> extends AbstractTcpFactory<T> {
         if (mSelector == null) {
             try {
                 mSelector = Selector.open();
+                selectionKeyList = new CopyOnWriteArrayList(mSelector.keys());
             } catch (IOException e) {
                 e.printStackTrace();
             }

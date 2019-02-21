@@ -88,7 +88,10 @@ public class HttpTaskConfig implements IHttpTaskConfig {
     }
 
     protected <T> T getExecutor() {
-        return mTaskContainer.getTaskExecutor();
+        if (mTaskContainer != null) {
+            return mTaskContainer.getTaskExecutor();
+        }
+        return null;
     }
 
     protected String getBaseUrl() {
@@ -135,7 +138,6 @@ public class HttpTaskConfig implements IHttpTaskConfig {
             mTaskContainer.getTaskExecutor().destroyTask();
         }
         mAttribute.clearCacheData();
-        mAttribute = null;
     }
 
 }
