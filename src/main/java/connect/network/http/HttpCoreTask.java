@@ -10,6 +10,7 @@ import task.executor.BaseConsumerTask;
 import task.executor.joggle.ILoopTaskExecutor;
 import util.IoUtils;
 import util.LogDog;
+import util.StringUtils;
 
 import javax.net.ssl.HttpsURLConnection;
 import java.io.File;
@@ -31,7 +32,7 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
     private HttpURLConnection init(RequestEntity task) {
         HttpURLConnection connection = null;
         try {
-            String address = task.getAddress();
+            String address = mConfig.getBaseUrl() == null ? task.getAddress() : mConfig.getBaseUrl() + task.getAddress();
             URL url = new URL(address);
 
             if (address.startsWith("https")) {
@@ -144,13 +145,16 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
 
             int code = connection.getResponseCode();
             int length = connection.getContentLength();
-//                Logcat.d("Http Response Code = " + code);
-            LogDog.d("==> Request address = " + submitEntity.getAddress());
+
+            LogDog.d("==> Request address = " + (StringUtils.isEmpty(mConfig.getBaseUrl()) ? submitEntity.getAddress() : mConfig.getBaseUrl() + submitEntity.getAddress()));
             if (submitEntity.getSendData() != null) {
                 LogDog.d("==>JavHttpConnect post submitEntity = " + new String(submitEntity.getSendData()));
             }
             if (code == HttpURLConnection.HTTP_MOVED_TEMP) {
                 String newUrl = connection.getHeaderField("Location");
+                if (StringUtils.isNotEmpty(mConfig.getBaseUrl())) {
+                    newUrl.replace(mConfig.getBaseUrl(), "");
+                }
                 submitEntity.setAddress(newUrl);
                 mConfig.getAttribute().pushToCache(submitEntity);
                 return;

@@ -49,6 +49,9 @@ public class NioServerTask {
 
     //---------------------------- on ---------------------------------------
 
+    protected void onConfigServer(ServerSocketChannel channel) {
+    }
+
     protected void onAcceptServerChannel(SocketChannel channel) {
     }
 

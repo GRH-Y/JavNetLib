@@ -179,7 +179,7 @@ public class JavHttpConnect {
         ARequest request = (ARequest) clx.getAnnotation(ARequest.class);
         int atnTaskTag = taskTag != DEFAULT_TASK_TAG ? taskTag : request.taskTag();
         Class requestMethod = request.requestMethod();
-        String address = mHttpTaskManage.getBaseUrl() == null ? request.url() : mHttpTaskManage.getBaseUrl() + request.url();
+        String address = request.url();
 
         RequestEntity netTaskEntity = new RequestEntity();
         netTaskEntity.setTaskTag(atnTaskTag);

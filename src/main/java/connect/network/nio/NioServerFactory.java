@@ -49,6 +49,7 @@ public class NioServerFactory extends AbstractNioFactory<NioServerTask> {
         if (serverSocketChannel == null && task.getServerHost() != null && task.getServerPort() > 0) {
             try {
                 serverSocketChannel = ServerSocketChannel.open();
+                task.onConfigServer(serverSocketChannel);
                 serverSocketChannel.bind(new InetSocketAddress(task.getServerHost(), task.getServerPort()));
                 task.setSocketChannel(serverSocketChannel);
             } catch (Exception e) {
