@@ -67,6 +67,8 @@ public class UdpFactory extends AbstractFactory<UdpTask> {
             socket.setSoTimeout(100);
             task.setSocket(socket);
             task.onConfigSocket(socket);
+            task.getSender().setSocket(socket);
+            task.getReceive().setSocket(socket);
         } catch (Exception e) {
             task.setSocket(null);
             e.printStackTrace();

@@ -12,12 +12,23 @@ public class NioReceive implements IReceive {
     protected Object mReceive;
     protected String mReceiveMethodName;
 
+    protected SocketChannel channel = null;
+
     public NioReceive() {
     }
 
     public NioReceive(Object receive, String receiveMethodName) {
         this.mReceive = receive;
         this.mReceiveMethodName = receiveMethodName;
+    }
+
+
+    protected void setChannel(SocketChannel channel) {
+        this.channel = channel;
+    }
+
+    public SocketChannel getChannel() {
+        return channel;
     }
 
 

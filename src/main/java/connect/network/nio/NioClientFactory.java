@@ -91,11 +91,13 @@ public class NioClientFactory extends AbstractNioFactory<NioClientTask> {
         if (task.getReceive() != null && task.getSender() != null) {
             channel.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
             task.getSender().setChannel(channel);
+            task.getReceive().setChannel(channel);
         } else if (task.getSender() != null) {
             channel.register(selector, SelectionKey.OP_WRITE);
             task.getSender().setChannel(channel);
         } else if (task.getReceive() != null) {
             channel.register(selector, SelectionKey.OP_READ);
+            task.getReceive().setChannel(channel);
         }
     }
 
@@ -105,6 +107,7 @@ public class NioClientFactory extends AbstractNioFactory<NioClientTask> {
         if (task.getHost() != null && task.getPort() > 0) {
             try {
                 channel = SocketChannel.open();
+                task.setChannel(channel);
                 channel.configureBlocking(false);// 设置为非阻塞
                 Socket socket = channel.socket();
                 //复用端口
@@ -117,7 +120,6 @@ public class NioClientFactory extends AbstractNioFactory<NioClientTask> {
                 configSSL(task, channel);
                 task.onConfigSocket(channel);
                 channel.connect(new InetSocketAddress(task.getHost(), task.getPort()));
-                task.setChannel(channel);
             } catch (Exception e) {
                 channel = null;
                 e.printStackTrace();
@@ -145,8 +147,8 @@ public class NioClientFactory extends AbstractNioFactory<NioClientTask> {
                 channel.configureBlocking(false);// 设置为非阻塞
             }
             if (channel.isConnected()) {
-                task.onConnectSocketChannel(true);
                 registerChannel(task, selector, channel);
+                task.onConnectSocketChannel(true);
             } else {
                 channel.register(selector, SelectionKey.OP_CONNECT);
             }
@@ -206,7 +208,6 @@ public class NioClientFactory extends AbstractNioFactory<NioClientTask> {
                     removeTask(task);
                     e.printStackTrace();
                 } finally {
-                    task.onConnectSocketChannel(isOpen);
                     if (isOpen) {
 //                        configSSL(task, channel);
                         try {
@@ -217,13 +218,14 @@ public class NioClientFactory extends AbstractNioFactory<NioClientTask> {
                             e.printStackTrace();
                         }
                     }
+                    task.onConnectSocketChannel(isOpen);
                 }
             } else if (selectionKey.isValid() && selectionKey.isReadable() && task != null) {
 //                Logcat.d("==> selector isReadable keys = " + selector.keys().size());
                 NioReceive receive = task.getReceive();
                 if (receive != null) {
                     try {
-                        receive.onRead(channel);
+                        receive.onRead(task.getSocketChannel());
                     } catch (Throwable e) {
                         removeTask(task);
                         e.printStackTrace();
@@ -234,7 +236,7 @@ public class NioClientFactory extends AbstractNioFactory<NioClientTask> {
                 NioSender sender = task.getSender();
                 if (sender != null) {
                     try {
-                        sender.onWrite(channel);
+                        sender.onWrite(task.getSocketChannel());
                     } catch (Throwable e) {
                         removeTask(task);
                         e.printStackTrace();

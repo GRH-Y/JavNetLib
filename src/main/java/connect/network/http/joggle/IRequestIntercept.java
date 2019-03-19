@@ -1,6 +1,6 @@
 package connect.network.http.joggle;
 
-import connect.network.base.RequestEntity;
+import connect.network.http.RequestEntity;
 
 public interface IRequestIntercept {
     /**

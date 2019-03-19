@@ -1,6 +1,5 @@
 package connect.network.http;
 
-import connect.network.base.RequestEntity;
 import connect.network.base.joggle.ISessionCallBack;
 import util.IoUtils;
 

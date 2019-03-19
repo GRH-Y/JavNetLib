@@ -3,6 +3,7 @@ package connect.network.nio;
 
 import connect.network.base.joggle.ISender;
 
+import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
@@ -20,9 +21,22 @@ public class NioSender implements ISender {
 
     @Override
     public void sendData(byte[] data) {
-        synchronized (NioSender.class) {
-            cache.add(ByteBuffer.wrap(data));
-            NioClientFactory.getFactory().registerWrite(this);
+        if (data != null) {
+            synchronized (NioSender.class) {
+                cache.add(ByteBuffer.wrap(data));
+                NioClientFactory.getFactory().registerWrite(this);
+            }
+        }
+    }
+
+    @Override
+    public void sendDataNow(byte[] data) {
+        if (data != null) {
+            try {
+                channel.write(ByteBuffer.wrap(data));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -40,7 +54,7 @@ public class NioSender implements ISender {
      * @return 成功发送返回true
      */
     protected void onWrite(SocketChannel channel) throws Exception {
-        while (!cache.isEmpty()) {
+        while (!cache.isEmpty() && channel != null) {
             ByteBuffer buffer = cache.remove();
             try {
                 if (channel.write(buffer) <= 0) {
@@ -52,8 +66,8 @@ public class NioSender implements ISender {
                 }
             }
         }
-        synchronized (NioSender.class) {
-            if (cache.isEmpty()) {
+        if (cache.isEmpty()) {
+            synchronized (NioSender.class) {
                 NioClientFactory.getFactory().unRegisterWrite(this);
             }
         }

@@ -15,5 +15,10 @@ public interface ISender {
      */
     void sendData(byte[] data);
 
+    /**
+     * 立即发送数据
+     * @param data
+     */
+    void sendDataNow(byte[] data);
 
 }

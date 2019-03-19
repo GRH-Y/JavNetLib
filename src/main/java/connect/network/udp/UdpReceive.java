@@ -11,6 +11,7 @@ public class UdpReceive implements IReceive {
 
     protected Object mReceive;
     protected String mReceiveMethodName;
+    protected DatagramSocket socket = null;
 
     public UdpReceive(Object receive, String receiveMethodName) {
         this.mReceive = receive;
@@ -21,6 +22,14 @@ public class UdpReceive implements IReceive {
     public void setReceive(Object receive, String receiveMethodName) {
         this.mReceive = receive;
         this.mReceiveMethodName = receiveMethodName;
+    }
+
+    protected void setSocket(DatagramSocket socket) {
+        this.socket = socket;
+    }
+
+    public DatagramSocket getSocket() {
+        return socket;
     }
 
     protected void onRead(DatagramSocket socket) throws Exception {

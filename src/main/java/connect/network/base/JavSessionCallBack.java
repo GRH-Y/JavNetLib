@@ -2,6 +2,7 @@ package connect.network.base;
 
 
 import connect.network.base.joggle.ISessionCallBack;
+import connect.network.http.RequestEntity;
 import util.ThreadAnnotation;
 
 /**

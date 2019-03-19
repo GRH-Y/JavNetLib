@@ -3,7 +3,6 @@ package connect.network.http;
 
 import connect.network.base.JavConvertResult;
 import connect.network.base.JavSessionCallBack;
-import connect.network.base.RequestEntity;
 import connect.network.http.joggle.*;
 import task.executor.TaskExecutorPoolManager;
 import task.executor.joggle.IConsumerAttribute;

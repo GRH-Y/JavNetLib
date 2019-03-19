@@ -2,6 +2,7 @@ package connect.network.udp;
 
 import connect.network.base.joggle.ISender;
 
+import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
@@ -13,6 +14,7 @@ public class UdpSender implements ISender {
 
     protected Queue<UdpSenderEntity> cache;
     protected DatagramPacket mPacket;
+    protected DatagramSocket socket = null;
 
     public UdpSender() {
         cache = new ConcurrentLinkedQueue<>();
@@ -31,13 +33,38 @@ public class UdpSender implements ISender {
         }
     }
 
+    @Override
+    public void sendDataNow(byte[] data) {
+        if (data != null) {
+            sendDataNow(data, data.length);
+        }
+    }
+
+    public void sendDataNow(byte[] data, int length) {
+        if (data != null) {
+            try {
+                mPacket.setData(data);
+                mPacket.setLength(length);
+                socket.send(mPacket);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     public void sendData(byte[] data, int length) {
         if (data != null && length > 0) {
             cache.add(new UdpSenderEntity(data, length));
         }
     }
 
+    protected void setSocket(DatagramSocket socket) {
+        this.socket = socket;
+    }
 
+    public DatagramSocket getSocket() {
+        return socket;
+    }
 
     protected void onWrite(DatagramSocket socket, String host, int port) throws Exception {
         while (!cache.isEmpty()) {

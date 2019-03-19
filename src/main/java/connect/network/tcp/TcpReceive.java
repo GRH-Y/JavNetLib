@@ -11,10 +11,19 @@ public class TcpReceive implements IReceive {
 
     protected Object mReceive;
     protected String mReceiveMethodName;
+    protected InputStream stream = null;
 
     public TcpReceive(Object receive, String receiveMethodName) {
         this.mReceive = receive;
         this.mReceiveMethodName = receiveMethodName;
+    }
+
+    protected void setStream(InputStream stream) {
+        this.stream = stream;
+    }
+
+    public InputStream getStream() {
+        return stream;
     }
 
     @Override

@@ -2,6 +2,7 @@ package connect.network.tcp;
 
 import connect.network.base.joggle.ISender;
 
+import java.io.IOException;
 import java.io.OutputStream;
 import java.net.SocketTimeoutException;
 import java.util.Queue;
@@ -10,6 +11,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class TcpSender implements ISender {
 
     protected Queue<byte[]> cache;
+    protected OutputStream stream = null;
 
     public TcpSender() {
         cache = new ConcurrentLinkedQueue<>();
@@ -17,11 +19,32 @@ public class TcpSender implements ISender {
 
     @Override
     public void sendData(byte[] data) {
-        cache.add(data);
+        if (data != null) {
+            cache.add(data);
+        }
+    }
+
+    @Override
+    public void sendDataNow(byte[] data) {
+        if (data != null) {
+            try {
+                stream.write(data);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    protected void setStream(OutputStream stream) {
+        this.stream = stream;
+    }
+
+    public OutputStream getStream() {
+        return stream;
     }
 
     protected void onWrite(OutputStream stream) throws Exception {
-        while (!cache.isEmpty()) {
+        while (!cache.isEmpty() && stream != null) {
             byte[] data = cache.remove();
             try {
                 stream.write(data);

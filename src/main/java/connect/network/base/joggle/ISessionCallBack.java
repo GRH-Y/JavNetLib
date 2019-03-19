@@ -1,7 +1,7 @@
 package connect.network.base.joggle;
 
 
-import connect.network.base.RequestEntity;
+import connect.network.http.RequestEntity;
 
 /**
  * 会话回调接口

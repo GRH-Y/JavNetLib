@@ -1,8 +1,5 @@
-package connect.network.base;
+package connect.network.http;
 
-
-import connect.network.http.ConnectType;
-import connect.network.http.JavHttpConnect;
 
 import java.util.Map;
 
@@ -27,6 +24,11 @@ public class RequestEntity {
     private String ecbMethodName = null;
     private String processMethod = null;
     private boolean isAutoSetDataForView = false;
+
+    /**
+     * 回调接口返回结果的值
+     */
+    private Object resultType = null;
     /**
      * 接口回调类
      */
@@ -58,11 +60,6 @@ public class RequestEntity {
     public Map<String, String> getProperty() {
         return property;
     }
-
-    /**
-     * 回调接口返回结果的值
-     */
-    private Object resultType = null;
 
     public String getAddress() {
         return address;
@@ -100,7 +97,7 @@ public class RequestEntity {
         return resultData;
     }
 
-    public void setResultData(Object resultData) {
+    protected void setResultData(Object resultData) {
         this.resultData = resultData;
     }
 

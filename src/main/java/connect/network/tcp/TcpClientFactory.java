@@ -4,8 +4,6 @@ import sun.security.ssl.SSLSocketImpl;
 
 import javax.net.ssl.SSLSocketFactory;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
@@ -66,14 +64,16 @@ public class TcpClientFactory extends AbstractTcpFactory<TcpClientTask> {
                 socket.setTcpNoDelay(true);
                 //执行Socket的close方法，该方法也会立即返回
                 socket.setSoLinger(true, 0);
-                task.setInputStream(socket.getInputStream());
-                task.setOutputStream(socket.getOutputStream());
                 //配置socket
                 task.onConfigSocket(socket);
                 //开始链接
                 socket.connect(address, 3000);
                 //保存socket
                 task.setSocket(socket);
+                TcpReceive tcpReceive = task.getReceive();
+                tcpReceive.setStream(socket.getInputStream());
+                TcpSender tcpSender = task.getSender();
+                tcpSender.setStream(socket.getOutputStream());
             }
         } catch (Throwable e) {
             e.printStackTrace();
@@ -93,8 +93,7 @@ public class TcpClientFactory extends AbstractTcpFactory<TcpClientTask> {
         TcpReceive receive = task.getReceive();
         if (receive != null) {
             try {
-                InputStream stream = task.getInputStream();
-                receive.onRead(stream);
+                receive.onRead(receive.getStream());
             } catch (Throwable e) {
                 removeTask(task);
                 e.printStackTrace();
@@ -107,8 +106,7 @@ public class TcpClientFactory extends AbstractTcpFactory<TcpClientTask> {
         TcpSender sender = task.getSender();
         if (sender != null) {
             try {
-                OutputStream stream = task.getOutputStream();
-                sender.onWrite(stream);
+                sender.onWrite(sender.getStream());
             } catch (Throwable e) {
                 removeTask(task);
                 e.printStackTrace();
