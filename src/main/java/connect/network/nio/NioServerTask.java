@@ -1,6 +1,8 @@
 package connect.network.nio;
 
 
+import connect.network.base.BaseNetTask;
+
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
@@ -10,7 +12,7 @@ import java.nio.channels.SocketChannel;
  * @author yyz
  * @version 1.0
  */
-public class NioServerTask {
+public class NioServerTask extends BaseNetTask {
 
     private String mHost;
     private int mPort;

@@ -2,7 +2,7 @@ package connect.network.nio;
 
 
 import connect.network.base.joggle.IReceive;
-import util.IoUtils;
+import util.IoEnvoy;
 import util.ThreadAnnotation;
 
 import java.nio.channels.SocketChannel;
@@ -44,7 +44,7 @@ public class NioReceive implements IReceive {
      * @return 如果返回false则会关闭该链接
      */
     protected void onRead(SocketChannel channel) throws Exception {
-        byte[] data = IoUtils.tryRead(channel);
+        byte[] data = IoEnvoy.tryRead(channel);
         if (data != null) {
             ThreadAnnotation.disposeMessage(mReceiveMethodName, mReceive, data);
         }

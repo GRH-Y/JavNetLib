@@ -1,6 +1,9 @@
 package connect.network.base.joggle;
 
-public interface IFactory<T> {
+
+import connect.network.base.BaseNetTask;
+
+public interface IFactory<T extends BaseNetTask> {
 
     /**
      * 添加nio任务
@@ -16,8 +19,17 @@ public interface IFactory<T> {
      */
     void removeTask(T task);
 
+
+    /**
+     * 移除nio任务
+     *
+     * @param tag 每个任务都有唯一的tag
+     */
+    void removeTask(int tag);
+
     /**
      * 设置ssl
+     *
      * @param sslFactory
      */
     void setSSlFactory(ISSLFactory sslFactory);

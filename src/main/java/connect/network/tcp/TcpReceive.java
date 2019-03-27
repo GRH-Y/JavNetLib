@@ -2,7 +2,7 @@ package connect.network.tcp;
 
 
 import connect.network.base.joggle.IReceive;
-import util.IoUtils;
+import util.IoEnvoy;
 import util.ThreadAnnotation;
 
 import java.io.InputStream;
@@ -33,7 +33,7 @@ public class TcpReceive implements IReceive {
     }
 
     protected void onRead(InputStream stream) throws Exception {
-        byte[] data = IoUtils.tryRead(stream);
+        byte[] data = IoEnvoy.tryRead(stream);
         if (data != null) {
             ThreadAnnotation.disposeMessage(mReceiveMethodName, mReceive, data);
         }

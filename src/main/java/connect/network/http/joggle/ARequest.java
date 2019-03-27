@@ -17,6 +17,12 @@ import java.lang.annotation.Target;
 public @interface ARequest {
 
     /**
+     * 是否启用HttpTaskConfig配置的基本的url
+     * @return
+     */
+    boolean disableBaseUrl() default false;
+
+    /**
      * 请求类型（POST 或者 GET）
      *
      * @return

@@ -71,9 +71,13 @@ public class TcpClientFactory extends AbstractTcpFactory<TcpClientTask> {
                 //保存socket
                 task.setSocket(socket);
                 TcpReceive tcpReceive = task.getReceive();
-                tcpReceive.setStream(socket.getInputStream());
+                if (tcpReceive != null) {
+                    tcpReceive.setStream(socket.getInputStream());
+                }
                 TcpSender tcpSender = task.getSender();
-                tcpSender.setStream(socket.getOutputStream());
+                if (tcpSender != null) {
+                    tcpSender.setStream(socket.getOutputStream());
+                }
             }
         } catch (Throwable e) {
             e.printStackTrace();

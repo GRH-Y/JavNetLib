@@ -1,7 +1,7 @@
 package connect.network.http;
 
 import connect.network.base.joggle.ISessionCallBack;
-import util.IoUtils;
+import util.IoEnvoy;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -23,7 +23,7 @@ public class ProcessIoUtils {
         while (state) {
             try {
                 int available = is.available();
-                available = available > 0 ? available : IoUtils.SIZE;
+                available = available > 0 ? available : IoEnvoy.SIZE;
                 byte[] buffer = new byte[available];
                 int len = is.read(buffer);
                 if (len > 0) {

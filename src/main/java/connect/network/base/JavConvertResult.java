@@ -1,7 +1,7 @@
 package connect.network.base;
 
 import connect.network.http.joggle.IResponseConvert;
-import json.JsonUtils;
+import json.JsonEnvoy;
 import util.GZipUtils;
 import util.LogDog;
 
@@ -23,6 +23,6 @@ public class JavConvertResult implements IResponseConvert {
         if (resultCls.isAssignableFrom(byte[].class)) {
             return newData;
         }
-        return JsonUtils.toEntity(resultCls, resultStr);
+        return JsonEnvoy.toEntity(resultCls, resultStr);
     }
 }

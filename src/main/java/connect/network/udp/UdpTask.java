@@ -1,8 +1,10 @@
 package connect.network.udp;
 
+import connect.network.base.BaseNetTask;
+
 import java.net.DatagramSocket;
 
-public class UdpTask {
+public class UdpTask extends BaseNetTask {
 
     private DatagramSocket mSocket;
     private String mHost;
@@ -91,7 +93,6 @@ public class UdpTask {
     /**
      * 当前状态链接彻底关闭，可以做资源回收工作
      */
-    protected void onRecovery()
-    {
+    protected void onRecovery() {
     }
 }

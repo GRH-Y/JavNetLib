@@ -1,6 +1,8 @@
 package connect.network.nio;
 
 
+import connect.network.base.BaseNetTask;
+
 import java.nio.channels.SocketChannel;
 
 /**
@@ -9,7 +11,7 @@ import java.nio.channels.SocketChannel;
  * @author yyz
  * @version 1.0
  */
-public class NioClientTask {
+public class NioClientTask extends BaseNetTask {
 
     private String mHost;
 
@@ -69,6 +71,7 @@ public class NioClientTask {
         return receive;
     }
 
+
     //---------------------------- on ---------------------------------------
 
     protected void onConfigSocket(SocketChannel socket) {
@@ -93,7 +96,6 @@ public class NioClientTask {
     /**
      * 当前状态链接彻底关闭，可以做资源回收工作
      */
-    protected void onRecovery()
-    {
+    protected void onRecovery() {
     }
 }

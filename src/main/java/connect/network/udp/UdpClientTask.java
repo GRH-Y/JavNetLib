@@ -1,6 +1,6 @@
 package connect.network.udp;
 
-public class UdpClientTask extends UdpTask {
+public class UdpClientTask extends UdpTask  {
 
     public UdpClientTask() {
         super(false, false, null);

@@ -9,7 +9,7 @@ import task.executor.joggle.IConsumerTaskExecutor;
  *
  * @param <T>
  */
-public abstract class AbstractFactory<T> implements IFactory<T> {
+public abstract class AbstractFactory<T extends BaseNetTask> implements IFactory<T> {
 
     protected FactoryCoreTask coreTask;
 
@@ -39,6 +39,14 @@ public abstract class AbstractFactory<T> implements IFactory<T> {
     public void removeTask(T task) {
         if (task != null && coreTask != null && coreTask.executor.getLoopState()) {
             coreTask.removeNeedDestroyTask(task);
+            wakeUpCoreTask();
+        }
+    }
+
+    @Override
+    public void removeTask(int tag) {
+        if (tag > 0 && coreTask != null && coreTask.executor.getLoopState()) {
+            coreTask.removeNeedDestroyTask(tag);
             wakeUpCoreTask();
         }
     }

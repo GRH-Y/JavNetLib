@@ -2,6 +2,7 @@ package connect.network.nio;
 
 
 import connect.network.base.AbstractFactory;
+import connect.network.base.BaseNetTask;
 import connect.network.base.FactoryCoreTask;
 import connect.network.tcp.AbstractTcpFactory;
 
@@ -12,7 +13,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public abstract class AbstractNioFactory<T> extends AbstractTcpFactory<T> {
+public abstract class AbstractNioFactory<T extends BaseNetTask> extends AbstractTcpFactory<T> {
 
     protected Selector mSelector;
 
@@ -82,6 +83,14 @@ public abstract class AbstractNioFactory<T> extends AbstractTcpFactory<T> {
         }
     }
 
+    @Override
+    public void removeTask(int tag) {
+        if (tag > 0 && mSelector != null) {
+            super.removeTask(tag);
+            mSelector.wakeup();
+        }
+    }
+
 
     @Override
     public void open() {
@@ -107,12 +116,37 @@ public abstract class AbstractNioFactory<T> extends AbstractTcpFactory<T> {
     }
 
 
-    private class NioCoreTask<K> extends FactoryCoreTask<K> {
+    private class NioCoreTask<K extends BaseNetTask> extends FactoryCoreTask<K> {
 
         private NioCoreTask(AbstractFactory factory) {
             super(factory);
         }
 
+        /**
+         * 根据任务tag移除任务，nio任务没有用到mExecutorQueue集合，所以需要重写
+         * @param tag
+         */
+        @Override
+        public void removeNeedDestroyTask(int tag) {
+            for (BaseNetTask task : mDestroyCache) {
+                if (task.getTag() == tag) {
+                    return;
+                }
+            }
+            Iterator<SelectionKey> iterator = mSelector.keys().iterator();
+            while (iterator.hasNext()) {
+                SelectionKey selectionKey = iterator.next();
+                BaseNetTask task = (K) selectionKey.attachment();
+                if (task.getTag() == tag) {
+                    mDestroyCache.add((K) task);
+                    break;
+                }
+            }
+        }
+
+        /**
+         * 移除任务，nio任务没有用到mExecutorQueue集合，所以需要重写
+         */
         @Override
         protected void onRemoveNeedDestroyTask() {
             //销毁链接
@@ -140,15 +174,16 @@ public abstract class AbstractNioFactory<T> extends AbstractTcpFactory<T> {
 
         @Override
         protected void onCreateData() {
+            //一定要重写改方法，nio任务不需要用到 mExecutorQueue 集合
         }
 
         @Override
         protected void onProcess() {
+            //一定要重写改方法，nio任务不需要用到 mExecutorQueue 集合
         }
 
         @Override
         protected void onRunLoopTask() {
-
             //检测是否有新的任务添加
             while (!mConnectCache.isEmpty()) {
                 K task = mConnectCache.remove();

@@ -182,6 +182,7 @@ public class JavHttpConnect {
 
         RequestEntity netTaskEntity = new RequestEntity();
         netTaskEntity.setTaskTag(atnTaskTag);
+        netTaskEntity.setDisableBaseUrl(request.disableBaseUrl());
         netTaskEntity.setScbMethodName(request.successMethod());
         netTaskEntity.setEcbMethodName(request.errorMethod());
         netTaskEntity.setProcessMethodName(request.processMethod());
@@ -191,7 +192,7 @@ public class JavHttpConnect {
         netTaskEntity.setAutoSetDataForView(isAutoSetDataForView);
         netTaskEntity.setRequestMethod(requestMethod.getSimpleName());
 
-        Map<String, String> property = requestEntity.getRequestProperty();
+        Map<String, Object> property = requestEntity.getRequestProperty();
         netTaskEntity.setProperty(property);
         byte[] data = requestEntity.getSendData();
 

@@ -7,9 +7,9 @@ import connect.network.http.joggle.IResponseConvert;
 import connect.network.http.joggle.POST;
 import task.executor.BaseConsumerTask;
 import task.executor.joggle.ILoopTaskExecutor;
-import util.IoUtils;
+import util.IoEnvoy;
 import util.LogDog;
-import util.StringUtils;
+import util.StringEnvoy;
 
 import javax.net.ssl.HttpsURLConnection;
 import java.io.File;
@@ -31,7 +31,7 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
     private HttpURLConnection init(RequestEntity task) {
         HttpURLConnection connection = null;
         try {
-            String address = mConfig.getBaseUrl() == null ? task.getAddress() : mConfig.getBaseUrl() + task.getAddress();
+            String address = mConfig.getBaseUrl() == null || task.isDisableBaseUrl() ? task.getAddress() : mConfig.getBaseUrl() + task.getAddress();
             URL url = new URL(address);
 
             if (address.startsWith("https")) {
@@ -82,16 +82,32 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
      * @param connection
      * @param property
      */
-    private void setRequestProperty(HttpURLConnection connection, Map<String, String> property) {
+    private void setRequestProperty(HttpURLConnection connection, Map<String, Object> property) {
         if (property != null) {
             for (String key : property.keySet()) {
                 try {
-                    connection.setRequestProperty(key, property.get(key));
+                    Object obj = property.get(key);
+                    if (isBasicDataType(obj.getClass())) {
+                        String value;
+                        if (obj instanceof String) {
+                            value = (String) obj;
+                        } else {
+                            value = String.valueOf(obj);
+                        }
+                        connection.setRequestProperty(key, value);
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         }
+    }
+
+    private static boolean isBasicDataType(Class clx) {
+        return clx == Integer.class || clx == int.class || clx == Long.class || clx == long.class
+                || clx == Double.class || clx == double.class || clx == Float.class || clx == float.class
+                || clx == Boolean.class || clx == boolean.class || clx == char.class || clx == Character.class
+                || clx == String.class;
     }
 
     @Override
@@ -145,13 +161,13 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
             int code = connection.getResponseCode();
             int length = connection.getContentLength();
 
-            LogDog.d("==> Request address = " + (StringUtils.isEmpty(mConfig.getBaseUrl()) ? submitEntity.getAddress() : mConfig.getBaseUrl() + submitEntity.getAddress()));
+            LogDog.d("==> Request address = " + (StringEnvoy.isEmpty(mConfig.getBaseUrl()) ? submitEntity.getAddress() : mConfig.getBaseUrl() + submitEntity.getAddress()));
             if (submitEntity.getSendData() != null) {
                 LogDog.d("==>JavHttpConnect post submitEntity = " + new String(submitEntity.getSendData()));
             }
             if (code == HttpURLConnection.HTTP_MOVED_TEMP) {
                 String newUrl = connection.getHeaderField("Location");
-                if (StringUtils.isNotEmpty(mConfig.getBaseUrl())) {
+                if (StringEnvoy.isNotEmpty(mConfig.getBaseUrl())) {
                     newUrl.replace(mConfig.getBaseUrl(), "");
                 }
                 submitEntity.setAddress(newUrl);
@@ -193,9 +209,9 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
                 int available = is.available();
                 byte[] buffer;
                 if (length <= 0 && available <= 0) {
-                    buffer = IoUtils.tryRead(is);
+                    buffer = IoEnvoy.tryRead(is);
                 } else {
-                    buffer = IoUtils.tryRead(is);
+                    buffer = IoEnvoy.tryRead(is);
                 }
                 if (buffer == null) {
                     onResultCallBack(submitEntity);

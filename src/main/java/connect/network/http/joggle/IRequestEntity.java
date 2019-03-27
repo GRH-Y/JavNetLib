@@ -5,7 +5,7 @@ import java.util.Map;
 
 public interface IRequestEntity extends Serializable {
 
-    Map<String, String> getRequestProperty();
+    Map<String, Object> getRequestProperty();
 
    byte[] getSendData();
 }

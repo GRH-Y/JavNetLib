@@ -1,9 +1,11 @@
 package connect.network.tcp;
 
+import connect.network.base.BaseNetTask;
+
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class TcpServerTask {
+public class TcpServerTask extends BaseNetTask {
     private ServerSocket mServerSocket;
     private String mHost;
     private int mPort;

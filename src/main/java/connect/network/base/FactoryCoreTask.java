@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @param <T>
  */
-public class FactoryCoreTask<T> extends BaseConsumerTask<T> {
+public class FactoryCoreTask<T extends BaseNetTask> extends BaseConsumerTask<T> {
 
     protected ITaskContainer container;
     protected LoopTaskExecutor executor;
@@ -72,10 +72,28 @@ public class FactoryCoreTask<T> extends BaseConsumerTask<T> {
         }
     }
 
+    /**
+     * 根据任务tag移除任务，该方法只使用tcp和udp任务
+     * @param tag
+     */
+    public void removeNeedDestroyTask(int tag) {
+        for (BaseNetTask task : mDestroyCache) {
+            if (task.getTag() == tag) {
+                return;
+            }
+        }
+
+        for (BaseNetTask task : mExecutorQueue) {
+            if (task.getTag() == tag) {
+                mDestroyCache.add((T) task);
+                break;
+            }
+        }
+    }
+
 
     @Override
     protected void onCreateData() {
-
         //检测是否有新的任务添加
         while (!mConnectCache.isEmpty()) {
             T task = mConnectCache.remove();

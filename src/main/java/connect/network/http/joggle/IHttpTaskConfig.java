@@ -21,5 +21,5 @@ public interface IHttpTaskConfig {
 
     void setTimeout(int timeout);
 
-    void setGlobalRequestProperty(Map<String, String> property);
+    void setGlobalRequestProperty(Map<String, Object> property);
 }

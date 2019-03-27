@@ -1,9 +1,11 @@
 package connect.network.tcp;
 
 
+import connect.network.base.BaseNetTask;
+
 import java.net.Socket;
 
-public class TcpClientTask {
+public class TcpClientTask extends BaseNetTask {
 
     private Socket mSocket;
     private String mHost;
@@ -77,7 +79,6 @@ public class TcpClientTask {
     /**
      * 当前状态链接彻底关闭，可以做资源回收工作
      */
-    protected void onRecovery()
-    {
+    protected void onRecovery() {
     }
 }

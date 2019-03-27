@@ -24,6 +24,7 @@ public class RequestEntity {
     private String ecbMethodName = null;
     private String processMethod = null;
     private boolean isAutoSetDataForView = false;
+    private boolean isDisableBaseUrl = false;
 
     /**
      * 回调接口返回结果的值
@@ -38,12 +39,20 @@ public class RequestEntity {
      */
     private Object viewTarget = null;
 
-    private Map<String, String> property = null;
+    private Map<String, Object> property = null;
 
     /**
      * 是否独立任务（如果是独立任务会单独开启线程处理）
      */
     private boolean isIndependentTask = false;
+
+    public boolean isDisableBaseUrl() {
+        return isDisableBaseUrl;
+    }
+
+    public void setDisableBaseUrl(boolean enableBaseUrl) {
+        isDisableBaseUrl = enableBaseUrl;
+    }
 
     public int getTaskTag() {
         return taskTag;
@@ -53,11 +62,11 @@ public class RequestEntity {
         this.taskTag = taskTag;
     }
 
-    public void setProperty(Map<String, String> property) {
+    public void setProperty(Map<String, Object> property) {
         this.property = property;
     }
 
-    public Map<String, String> getProperty() {
+    public Map<String, Object> getProperty() {
         return property;
     }
 
