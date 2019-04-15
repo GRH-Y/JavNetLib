@@ -39,7 +39,7 @@ public class RequestEntity {
      */
     private Object viewTarget = null;
 
-    private Map<String, Object> property = null;
+    private Map<String, Object> requestProperty = null;
 
     /**
      * 是否独立任务（如果是独立任务会单独开启线程处理）
@@ -62,12 +62,12 @@ public class RequestEntity {
         this.taskTag = taskTag;
     }
 
-    public void setProperty(Map<String, Object> property) {
-        this.property = property;
+    public void setRequestProperty(Map<String, Object> property) {
+        this.requestProperty = property;
     }
 
-    public Map<String, Object> getProperty() {
-        return property;
+    public Map<String, Object> getRequestProperty() {
+        return requestProperty;
     }
 
     public String getAddress() {

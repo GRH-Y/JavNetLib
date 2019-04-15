@@ -68,7 +68,7 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
             }
 
             setRequestProperty(connection, mConfig.getGlobalRequestProperty());
-            setRequestProperty(connection, task.getProperty());
+            setRequestProperty(connection, task.getRequestProperty());
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -87,7 +87,7 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
             for (String key : property.keySet()) {
                 try {
                     Object obj = property.get(key);
-                    if (isBasicDataType(obj.getClass())) {
+                    if (obj != null && isBasicDataType(obj.getClass())) {
                         String value;
                         if (obj instanceof String) {
                             value = (String) obj;
@@ -113,7 +113,7 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
     @Override
     protected void onCreateData() {
         ILoopTaskExecutor executor = mConfig.getExecutor();
-        if (mConfig.getAttribute().getCacheDataSize() == 0) {
+        if (executor != null && mConfig.getAttribute().getCacheDataSize() == 0) {
             executor.waitTask(mConfig.getFreeExitTime());
             if (mConfig.getAttribute().getCacheDataSize() == 0) {
                 executor.stopTask();
@@ -161,9 +161,9 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
             int code = connection.getResponseCode();
             int length = connection.getContentLength();
 
-            LogDog.d("==> Request address = " + (StringEnvoy.isEmpty(mConfig.getBaseUrl()) ? submitEntity.getAddress() : mConfig.getBaseUrl() + submitEntity.getAddress()));
+            LogDog.d("{HttpCoreTask} Request address = " + connection.getURL().toString());
             if (submitEntity.getSendData() != null) {
-                LogDog.d("==>JavHttpConnect post submitEntity = " + new String(submitEntity.getSendData()));
+                LogDog.d("{HttpCoreTask} Post submitEntity = " + new String(submitEntity.getSendData()));
             }
             if (code == HttpURLConnection.HTTP_MOVED_TEMP) {
                 String newUrl = connection.getHeaderField("Location");
@@ -174,13 +174,13 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
                 mConfig.getAttribute().pushToCache(submitEntity);
                 return;
             } else if (code != HttpURLConnection.HTTP_OK) {
-                LogDog.e("Http Response Code = " + code);
+                LogDog.w("{HttpCoreTask} Http Response Code = " + code);
                 onResultCallBack(submitEntity);
                 return;
             }
 
             if (submitEntity.getCallBackTarget() == null) {
-                LogDog.w("http data.target = null return ....");
+                LogDog.w("{HttpCoreTask} CallBackTarget is null , return now !!!");
                 return;
             }
 
@@ -235,7 +235,11 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
                 if (intercept != null && intercept.interceptCallBack(submitEntity, entity)) {
                     return;
                 }
-                submitEntity.setResultData(entity == null ? buffer : entity);
+
+                if (entity == null) {
+                    LogDog.e("{HttpCoreTask} Convert Entity is null !!! ");
+                }
+                submitEntity.setResultData(entity);
                 onResultCallBack(submitEntity);
             }
         } catch (Throwable e) {

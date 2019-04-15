@@ -193,7 +193,7 @@ public class JavHttpConnect {
         netTaskEntity.setRequestMethod(requestMethod.getSimpleName());
 
         Map<String, Object> property = requestEntity.getRequestProperty();
-        netTaskEntity.setProperty(property);
+        netTaskEntity.setRequestProperty(property);
         byte[] data = requestEntity.getSendData();
 
         if (requestMethod == POST.class) {

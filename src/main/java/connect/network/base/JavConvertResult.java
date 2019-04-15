@@ -17,12 +17,12 @@ public class JavConvertResult implements IResponseConvert {
             byte[] unCompressData = GZipUtils.unCompress(result);
             newData = unCompressData == null ? result : unCompressData;
         }
-        String resultStr = new String(newData);
-        LogDog.d("==> Request to return the content = " + resultStr);
 
         if (resultCls.isAssignableFrom(byte[].class)) {
             return newData;
         }
+        String resultStr = new String(newData);
+        LogDog.d("==> Request to return the content = " + resultStr);
         return JsonEnvoy.toEntity(resultCls, resultStr);
     }
 }
