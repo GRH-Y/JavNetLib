@@ -1,6 +1,8 @@
 package connect.network.nio;
 
 
+import connect.network.base.AbstractNioFactory;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
@@ -50,7 +52,7 @@ public class NioServerFactory extends AbstractNioFactory<NioServerTask> {
             try {
                 serverSocketChannel = ServerSocketChannel.open();
                 task.onConfigServer(serverSocketChannel);
-                serverSocketChannel.bind(new InetSocketAddress(task.getServerHost(), task.getServerPort()));
+                serverSocketChannel.bind(new InetSocketAddress(task.getServerHost(), task.getServerPort()), task.getMaxConnect());
                 task.setSocketChannel(serverSocketChannel);
             } catch (Exception e) {
                 serverSocketChannel = null;

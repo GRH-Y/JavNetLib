@@ -1,5 +1,6 @@
 package connect.network.tcp;
 
+import connect.network.base.AbstractBioFactory;
 import sun.security.ssl.SSLSocketImpl;
 
 import javax.net.ssl.SSLSocketFactory;
@@ -7,7 +8,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
-public class TcpClientFactory extends AbstractTcpFactory<TcpClientTask> {
+public class TcpClientFactory extends AbstractBioFactory<TcpClientTask> {
 
     private static TcpClientFactory mFactory;
 
@@ -39,8 +40,9 @@ public class TcpClientFactory extends AbstractTcpFactory<TcpClientTask> {
         boolean isConnect;
         Socket socket = task.getSocket();
         try {
-            InetSocketAddress address = new InetSocketAddress(task.getHost(), task.getPort());
+            InetSocketAddress address = null;
             if (socket == null) {
+                address = new InetSocketAddress(task.getHost(), task.getPort());
                 if (task.getPort() == 443) {
                     SSLSocketFactory sslSocketFactory = mSslFactory.getSSLSocketFactory();
                     SSLSocketImpl sslSocketImpl = (SSLSocketImpl) sslSocketFactory.createSocket();
@@ -66,23 +68,35 @@ public class TcpClientFactory extends AbstractTcpFactory<TcpClientTask> {
                 socket.setSoLinger(true, 0);
                 //配置socket
                 task.onConfigSocket(socket);
-                //开始链接
-                socket.connect(address, 3000);
-                //保存socket
-                task.setSocket(socket);
-                TcpReceive tcpReceive = task.getReceive();
-                if (tcpReceive != null) {
-                    tcpReceive.setStream(socket.getInputStream());
-                }
-                TcpSender tcpSender = task.getSender();
-                if (tcpSender != null) {
-                    tcpSender.setStream(socket.getOutputStream());
+                if (address != null) {
+                    //开始链接
+                    socket.connect(address, task.getConnectTimeout());
                 }
             }
         } catch (Throwable e) {
             e.printStackTrace();
         } finally {
             isConnect = socket.isConnected();
+            if (isConnect) {
+                //保存socket
+                task.setSocket(socket);
+                TcpReceive tcpReceive = task.getReceive();
+                if (tcpReceive != null) {
+                    try {
+                        tcpReceive.setStream(socket.getInputStream());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+                TcpSender tcpSender = task.getSender();
+                if (tcpSender != null) {
+                    try {
+                        tcpSender.setStream(socket.getOutputStream());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
             try {
                 task.onConnectSocket(isConnect);
             } catch (Throwable e) {

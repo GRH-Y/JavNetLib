@@ -5,6 +5,7 @@ import connect.network.base.joggle.ISessionCallBack;
 import connect.network.http.joggle.IRequestIntercept;
 import connect.network.http.joggle.IResponseConvert;
 import connect.network.http.joggle.POST;
+import storage.FileHelper;
 import task.executor.BaseConsumerTask;
 import task.executor.joggle.ILoopTaskExecutor;
 import util.IoEnvoy;
@@ -33,6 +34,7 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
         try {
             String address = mConfig.getBaseUrl() == null || task.isDisableBaseUrl() ? task.getAddress() : mConfig.getBaseUrl() + task.getAddress();
             URL url = new URL(address);
+            LogDog.d("{HttpCoreTask} Request address = " + url.toString());
 
             if (address.startsWith("https")) {
                 HttpsURLConnection httpsURLConnection = (HttpsURLConnection) url.openConnection();
@@ -129,11 +131,27 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
         }
     }
 
-    protected void onResultCallBack(RequestEntity submitEntity) {
+    private void onResultCallBack(RequestEntity submitEntity) {
+        //拦截结果
+        if (onInterceptResult(submitEntity, submitEntity.getResultData())) {
+            return;
+        }
         ISessionCallBack callBack = mConfig.getSessionCallBack();
         if (callBack != null) {
             callBack.notifyData(submitEntity);
         }
+    }
+
+    private boolean onInterceptRequest(RequestEntity submitEntity) {
+        //拦截请求
+        IRequestIntercept intercept = mConfig.getInterceptRequest();
+        return intercept != null && intercept.intercept(submitEntity);
+    }
+
+    private boolean onInterceptResult(RequestEntity submitEntity, Object entity) {
+        //拦截结果
+        IRequestIntercept intercept = mConfig.getInterceptRequest();
+        return intercept != null && intercept.interceptResult(submitEntity, entity);
     }
 
 
@@ -146,6 +164,10 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
      */
 
     private void requestData(RequestEntity submitEntity) {
+        //拦截请求
+        if (onInterceptRequest(submitEntity)) {
+            return;
+        }
         HttpURLConnection connection = init(submitEntity);
         if (connection == null) {
             onResultCallBack(submitEntity);
@@ -156,15 +178,12 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
                 OutputStream os = connection.getOutputStream();
                 os.write(submitEntity.getSendData());
                 os.flush();
+                LogDog.d("{HttpCoreTask} Post submitEntity = " + new String(submitEntity.getSendData()));
             }
 
             int code = connection.getResponseCode();
             int length = connection.getContentLength();
 
-            LogDog.d("{HttpCoreTask} Request address = " + connection.getURL().toString());
-            if (submitEntity.getSendData() != null) {
-                LogDog.d("{HttpCoreTask} Post submitEntity = " + new String(submitEntity.getSendData()));
-            }
             if (code == HttpURLConnection.HTTP_MOVED_TEMP) {
                 String newUrl = connection.getHeaderField("Location");
                 if (StringEnvoy.isNotEmpty(mConfig.getBaseUrl())) {
@@ -190,13 +209,8 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
 
             if (resultType.getClass().isAssignableFrom(String.class)) {
                 //目录结果为字符串说明是下载文件
-                File file = new File((String) resultType);
-                File parentFile = file.getParentFile();
-                boolean exists = parentFile.exists();
-                if (!exists) {
-                    exists = parentFile.mkdirs();
-                }
-                if (exists) {
+                File file = FileHelper.crateFile((String) resultType);
+                if (file != null) {
                     FileOutputStream outputStream = new FileOutputStream(file);
                     boolean state = ProcessIoUtils.pipReadWrite(is, outputStream, false, length, submitEntity, mConfig.getSessionCallBack());
 //                    boolean state = IoUtils.pipReadWrite(is, outputStream, false);
@@ -218,26 +232,11 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
                     return;
                 }
 
-                //拦截请求
-                IRequestIntercept intercept = mConfig.getInterceptRequest();
-                if (intercept != null && intercept.intercept(submitEntity)) {
-                    return;
-                }
-
-                //转换响应数据
+                //转换成对应的数据
                 Object entity = buffer;
                 IResponseConvert convert = mConfig.getConvertResult();
                 if (convert != null) {
                     entity = convert.handlerEntity((Class) resultType, buffer, encode);
-                }
-
-                //拦截请求
-                if (intercept != null && intercept.interceptCallBack(submitEntity, entity)) {
-                    return;
-                }
-
-                if (entity == null) {
-                    LogDog.e("{HttpCoreTask} Convert Entity is null !!! ");
                 }
                 submitEntity.setResultData(entity);
                 onResultCallBack(submitEntity);

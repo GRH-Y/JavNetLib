@@ -10,9 +10,22 @@ public class TcpClientTask extends BaseNetTask {
     private Socket mSocket;
     private String mHost;
     private int mPort;
+    private int connectTimeout = 3000;
 
     private TcpReceive receive = null;
     private TcpSender sender = null;
+
+    public TcpClientTask() {
+    }
+
+    public TcpClientTask(String host, int port) {
+        setAddress(host, port);
+    }
+
+    public TcpClientTask(Socket socket) {
+        setSocket(socket);
+    }
+
 
     //---------------------------- set ---------------------------------------
 
@@ -33,6 +46,9 @@ public class TcpClientTask extends BaseNetTask {
         this.sender = sender;
     }
 
+    public void setConnectTimeout(int connectTimeout) {
+        this.connectTimeout = connectTimeout;
+    }
 
     //---------------------------- get ---------------------------------------
 
@@ -54,6 +70,10 @@ public class TcpClientTask extends BaseNetTask {
 
     public TcpReceive getReceive() {
         return receive;
+    }
+
+    public int getConnectTimeout() {
+        return connectTimeout;
     }
 
     //---------------------------- on ---------------------------------------

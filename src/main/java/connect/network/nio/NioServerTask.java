@@ -17,6 +17,7 @@ public class NioServerTask extends BaseNetTask {
     private String mHost;
     private int mPort;
     private ServerSocketChannel mChannel = null;
+    private int mMaxConnect = 50;
 
     //---------------------------- set ---------------------------------------
 
@@ -34,6 +35,10 @@ public class NioServerTask extends BaseNetTask {
         this.mChannel = channel;
     }
 
+    public void setMaxConnect(int maxConnect) {
+        this.mMaxConnect = mMaxConnect;
+    }
+
     //---------------------------- get ---------------------------------------
 
     public int getServerPort() {
@@ -48,6 +53,9 @@ public class NioServerTask extends BaseNetTask {
         return mChannel;
     }
 
+    public int getMaxConnect() {
+        return mMaxConnect;
+    }
 
     //---------------------------- on ---------------------------------------
 

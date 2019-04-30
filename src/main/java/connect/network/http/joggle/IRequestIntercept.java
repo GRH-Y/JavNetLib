@@ -4,16 +4,16 @@ import connect.network.http.RequestEntity;
 
 public interface IRequestIntercept {
     /**
-     * 拦截请求(已请求返回，但没有处理请求返回结果)
+     * 拦截请求(当前状态是准备发起请求)
      *
      * @return 返回true则需要拦截
      */
     boolean intercept(RequestEntity submitEntity);
 
     /**
-     * 拦截请求回调结果(已处理返回结果，但没有回调返回结果)
+     * 拦截请求回调结果(当前状态是请求完成)
      *
      * @return 返回true则需要拦截
      */
-    boolean interceptCallBack(RequestEntity submitEntity, Object entity);
+    boolean interceptResult(RequestEntity submitEntity, Object entity);
 }

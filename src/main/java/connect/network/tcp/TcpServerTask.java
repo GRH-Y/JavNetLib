@@ -10,7 +10,7 @@ public class TcpServerTask extends BaseNetTask {
     private String mHost;
     private int mPort;
 
-    private int mConnectNum = 50;
+    private int mMaxConnect = 50;
 
     //---------------------------- get ---------------------------------------
 
@@ -26,11 +26,10 @@ public class TcpServerTask extends BaseNetTask {
         return mHost;
     }
 
-    public int getConnectNum() {
-        return mConnectNum;
+    public int getMaxConnect() {
+        return mMaxConnect;
     }
-
-    //---------------------------- set ---------------------------------------
+//---------------------------- set ---------------------------------------
 
     public void setAddress(String host, int port) {
         this.mHost = host;
@@ -41,8 +40,8 @@ public class TcpServerTask extends BaseNetTask {
         this.mServerSocket = mServerSocket;
     }
 
-    public void setConnectNum(int connectNum) {
-        this.mConnectNum = connectNum;
+    public void setMaxConnect(int maxConnect) {
+        this.mMaxConnect = mMaxConnect;
     }
 
     //---------------------------- on ---------------------------------------

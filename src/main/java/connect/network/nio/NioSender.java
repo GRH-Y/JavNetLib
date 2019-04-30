@@ -24,7 +24,8 @@ public class NioSender implements ISender {
         if (data != null) {
             synchronized (NioSender.class) {
                 cache.add(ByteBuffer.wrap(data));
-                NioClientFactory.getFactory().registerWrite(this);
+                NioSimpleClientFactory factory = (NioSimpleClientFactory) NioClientFactory.getFactory();
+                factory.registerWrite(this);
             }
         }
     }
@@ -68,7 +69,8 @@ public class NioSender implements ISender {
         }
         if (cache.isEmpty()) {
             synchronized (NioSender.class) {
-                NioClientFactory.getFactory().unRegisterWrite(this);
+                NioSimpleClientFactory factory = (NioSimpleClientFactory) NioClientFactory.getFactory();
+                factory.unRegisterWrite(this);
             }
         }
     }

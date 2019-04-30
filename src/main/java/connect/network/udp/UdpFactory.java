@@ -1,12 +1,12 @@
 package connect.network.udp;
 
-import connect.network.base.AbstractFactory;
+import connect.network.base.AbstractBioFactory;
 
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
 
-public class UdpFactory extends AbstractFactory<UdpTask> {
+public class UdpFactory extends AbstractBioFactory<UdpTask> {
 
     private static UdpFactory mFactory;
 

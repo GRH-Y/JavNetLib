@@ -26,6 +26,10 @@ public class NioClientTask extends BaseNetTask {
     public NioClientTask() {
     }
 
+    public NioClientTask(String host, int port) {
+        setAddress(host, port);
+    }
+
     public NioClientTask(SocketChannel channel) {
         mChannel = channel;
     }

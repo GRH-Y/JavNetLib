@@ -2,7 +2,6 @@ package connect.network.base;
 
 import connect.network.base.joggle.IFactory;
 import connect.network.base.joggle.ISSLFactory;
-import task.executor.joggle.IConsumerTaskExecutor;
 
 /**
  * 复用的工厂
@@ -11,80 +10,48 @@ import task.executor.joggle.IConsumerTaskExecutor;
  */
 public abstract class AbstractFactory<T extends BaseNetTask> implements IFactory<T> {
 
-    protected FactoryCoreTask coreTask;
+    protected FactoryEngine mFactoryEngine;
+    protected ISSLFactory mSslFactory = null;
 
-
-    abstract protected boolean onConnectTask(T task);
-
-    abstract protected void onExecRead(T task);
-
-    abstract protected void onExecWrite(T task);
-
-    abstract protected void onDisconnectTask(T task);
-
-
-    protected void setFactoryCoreTask(FactoryCoreTask coreTask) {
-        this.coreTask = coreTask;
+    protected void setEngine(FactoryEngine engine) {
+        this.mFactoryEngine = engine;
     }
+
+    protected abstract FactoryEngine getEngine();
 
     @Override
     public void addTask(T task) {
-        if (task != null && coreTask != null && coreTask.executor.getLoopState() && !coreTask.mConnectCache.contains(task)) {
-            coreTask.mConnectCache.add(task);
-            wakeUpCoreTask();
-        }
+        mFactoryEngine.addTask(task);
     }
 
     @Override
     public void removeTask(T task) {
-        if (task != null && coreTask != null && coreTask.executor.getLoopState()) {
-            coreTask.removeNeedDestroyTask(task);
-            wakeUpCoreTask();
-        }
+        mFactoryEngine.removeTask(task);
     }
 
     @Override
     public void removeTask(int tag) {
-        if (tag > 0 && coreTask != null && coreTask.executor.getLoopState()) {
-            coreTask.removeNeedDestroyTask(tag);
-            wakeUpCoreTask();
-        }
+        mFactoryEngine.removeTask(tag);
     }
 
     @Override
     public void setSSlFactory(ISSLFactory sslFactory) {
+        this.mSslFactory = sslFactory;
     }
 
     @Override
     public void open() {
-        if (coreTask == null) {
-            coreTask = new FactoryCoreTask(this);
-        }
-        if (!coreTask.executor.isStartState()) {
-            coreTask.executor.startTask();
-        }
+        mFactoryEngine.startEngine();
     }
 
     @Override
     public void openHighPer() {
-        if (coreTask != null) {
-            IConsumerTaskExecutor executor = coreTask.container.getTaskExecutor();
-            executor.startAsyncProcessData();
-        }
+        mFactoryEngine.openHighPer();
     }
 
     @Override
     public void close() {
-        if (coreTask != null) {
-            coreTask.executor.blockStopTask();
-        }
-    }
-
-
-    protected void wakeUpCoreTask() {
-        if (coreTask != null) {
-            coreTask.executor.resumeTask();
-        }
+        mFactoryEngine.stopEngine();
     }
 
 }

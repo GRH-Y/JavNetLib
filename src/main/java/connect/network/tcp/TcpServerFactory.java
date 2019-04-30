@@ -8,7 +8,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 
-public class TcpServerFactory extends AbstractTcpFactory<TcpServerTask> {
+public class TcpServerFactory extends AbstractServerFactory<TcpServerTask> {
     private static TcpServerFactory mFactory;
 
     private TcpServerFactory() {
@@ -48,7 +48,7 @@ public class TcpServerFactory extends AbstractTcpFactory<TcpServerTask> {
                     serverSocket = sslServerSocket;
                 } else {
                     serverSocket = new ServerSocket();
-                    serverSocket.bind(address, task.getConnectNum());
+                    serverSocket.bind(address, task.getMaxConnect());
                 }
             }
             if (serverSocket != null) {
@@ -61,13 +61,16 @@ public class TcpServerFactory extends AbstractTcpFactory<TcpServerTask> {
             e.printStackTrace();
         } finally {
             isOpenServer = serverSocket.isBound();
+            if (isOpenServer) {
+                task.setServerSocket(serverSocket);
+            }
             task.onBindServer(isOpenServer);
         }
         return isOpenServer;
     }
 
     @Override
-    protected void onExecRead(TcpServerTask task) {
+    protected void onAcceptTask(TcpServerTask task) {
         ServerSocket serverSocket = task.getServerSocket();
         try {
             Socket socket = serverSocket.accept();
