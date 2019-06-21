@@ -8,6 +8,7 @@ import task.executor.TaskExecutorPoolManager;
 import task.executor.joggle.IConsumerAttribute;
 import task.executor.joggle.ILoopTaskExecutor;
 import task.executor.joggle.ITaskContainer;
+import util.StringEnvoy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -79,11 +80,11 @@ public class JavHttpConnect {
     }
 
     private void submit(int taskTag, String address, ConnectType type, byte[] sendData, String scbMethodName, String ecbMethodName, Object resultType, Object callBackTarget, Object viewTarget, boolean isAutoSetDataForView) {
-        if (address != null && type != null) {
+        if (StringEnvoy.isNotEmpty(address) && type != null) {
             if (ConnectType.GET == type || ConnectType.POST == type) {
                 RequestEntity entity = new RequestEntity();
                 entity.setTaskTag(taskTag);
-                entity.setAddress(address);
+                entity.setAddress(address.trim());
                 entity.setRequestMethod(type.getType());
                 entity.setSendData(sendData);
                 entity.setScbMethodName(scbMethodName);
@@ -174,11 +175,17 @@ public class JavHttpConnect {
      * @param isAutoSetDataForView 是否自动为控件设值
      */
     public void submitEntity(IRequestEntity requestEntity, Object callBackTarget, Object viewTarget, boolean isAutoSetDataForView, int taskTag) {
+        if (requestEntity == null) {
+            throw new NullPointerException("JavHttpConnect submitEntity requestEntity is null ");
+        }
         Class clx = requestEntity.getClass();
         ARequest request = (ARequest) clx.getAnnotation(ARequest.class);
         int atnTaskTag = taskTag != DEFAULT_TASK_TAG ? taskTag : request.taskTag();
         Class requestMethod = request.requestMethod();
-        String address = request.url();
+        String address = request.url().trim();
+        if (StringEnvoy.isEmpty(address)) {
+            throw new NullPointerException("JavHttpConnect submitEntity request.url() is null ");
+        }
 
         RequestEntity netTaskEntity = new RequestEntity();
         netTaskEntity.setTaskTag(atnTaskTag);

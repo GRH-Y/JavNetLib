@@ -41,9 +41,9 @@ public class RequestMultipartFormData {
        ----------------------------
    */
 
-    public RequestMultipartFormData setName(String name, String filename) {
+    public RequestMultipartFormData setName(String name, String filePath) {
         this.name = name;
-        this.filename = filename;
+        this.filename = filePath;
         return this;
     }
 
@@ -79,7 +79,7 @@ public class RequestMultipartFormData {
                 builder.append("\"");
                 //换行
                 builder.append(end);
-                builder.append("Content-Type:application/octet-stream\r\n\r\n");
+                builder.append("Content-Type:image/jpeg\r\n\r\n");
                 outputStream.write(builder.toString().getBytes());
                 //写入图片数据
                 outputStream.write(fileData);
