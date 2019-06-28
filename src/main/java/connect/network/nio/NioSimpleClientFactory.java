@@ -100,7 +100,7 @@ public class NioSimpleClientFactory extends AbstractNioFactory<NioClientTask> {
                 socket.setTcpNoDelay(true);
                 //执行Socket的close方法，该方法也会立即返回
                 socket.setSoLinger(true, 0);
-                configSSL(task, channel);
+                configSSL(task);
                 task.onConfigSocket(channel);
                 channel.connect(new InetSocketAddress(task.getHost(), task.getPort()));
             } catch (Exception e) {
@@ -143,7 +143,7 @@ public class NioSimpleClientFactory extends AbstractNioFactory<NioClientTask> {
         }
     }
 
-    private void configSSL(NioClientTask task, SocketChannel channel) {
+    private void configSSL(NioClientTask task) {
         try {
             if (task.getPort() == 443 && mSslFactory != null) {
 //                while (!channel.finishConnect()) {
@@ -159,10 +159,11 @@ public class NioSimpleClientFactory extends AbstractNioFactory<NioClientTask> {
 //                socket.startHandshake();
                 SSLSocketFactory sslSocketFactory = mSslFactory.getSSLSocketFactory();
                 SSLSocketImpl sslSocketImpl = (SSLSocketImpl) sslSocketFactory.createSocket(task.getHost(), task.getPort());
-                sslSocketImpl.setSoTimeout(3000);
-                sslSocketImpl.setUseClientMode(true);
+//                sslSocketImpl.setSoTimeout(3000);
+//                sslSocketImpl.setUseClientMode(true);
                 sslSocketImpl.startHandshake();
-                sslSocketImpl.close();
+                task.setSSLSocket(sslSocketImpl);
+//                sslSocketImpl.close();
             }
         } catch (Exception e) {
             e.printStackTrace();

@@ -3,6 +3,7 @@ package connect.network.nio;
 
 import connect.network.base.BaseNetTask;
 
+import javax.net.ssl.SSLSocket;
 import java.nio.channels.SocketChannel;
 
 /**
@@ -18,6 +19,8 @@ public class NioClientTask extends BaseNetTask {
     private int mPort;
 
     private SocketChannel mChannel;
+
+    private SSLSocket mSSLSocket;
 
     private NioSender sender = null;
 
@@ -48,6 +51,10 @@ public class NioClientTask extends BaseNetTask {
         this.mChannel = channel;
     }
 
+    protected void setSSLSocket(SSLSocket sslSocket) {
+        this.mSSLSocket = sslSocket;
+    }
+
     public void setAddress(String host, int port) {
         this.mHost = host;
         this.mPort = port;
@@ -65,6 +72,10 @@ public class NioClientTask extends BaseNetTask {
 
     public SocketChannel getSocketChannel() {
         return mChannel;
+    }
+
+    public SSLSocket getSSLSSocket() {
+        return mSSLSocket;
     }
 
     public NioSender getSender() {
