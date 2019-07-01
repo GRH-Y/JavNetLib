@@ -3,6 +3,7 @@ package connect.network.tcp;
 import connect.network.base.AbstractBioFactory;
 import sun.security.ssl.SSLSocketImpl;
 
+import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -42,26 +43,26 @@ public class TcpClientFactory extends AbstractBioFactory<TcpClientTask> {
         try {
             InetSocketAddress address = null;
             if (socket == null) {
-                address = new InetSocketAddress(task.getHost(), task.getPort());
                 if (task.getPort() == 443) {
                     SSLSocketFactory sslSocketFactory = mSslFactory.getSSLSocketFactory();
-                    SSLSocketImpl sslSocketImpl = (SSLSocketImpl) sslSocketFactory.createSocket();
-                    sslSocketImpl.setSoTimeout(1000);
-                    sslSocketImpl.connect(address);
+                    SSLSocketImpl sslSocketImpl = (SSLSocketImpl) sslSocketFactory.createSocket(task.getHost(), task.getPort());
                     sslSocketImpl.setUseClientMode(true);
                     sslSocketImpl.startHandshake();
                     socket = sslSocketImpl;
                 } else {
+                    address = new InetSocketAddress(task.getHost(), task.getPort());
                     socket = new Socket();
                 }
             }
             if (socket != null) {
-                socket.setSoTimeout(1000);
+                socket.setSoTimeout(task.getConnectTimeout());
                 socket.setKeepAlive(true);
                 //复用端口
                 socket.setReuseAddress(true);
-                //关闭接收紧急数据
-                socket.setOOBInline(false);
+                if (!(socket instanceof SSLSocket)) {
+                    //关闭接收紧急数据
+                    socket.setOOBInline(false);
+                }
                 //关闭Nagle算法
                 socket.setTcpNoDelay(true);
                 //执行Socket的close方法，该方法也会立即返回

@@ -36,8 +36,7 @@ public class NioSimpleClientFactory extends AbstractNioFactory<NioClientTask> {
                 SocketChannel channel = sender.getChannel();
                 if (channel != null) {
                     NioClientTask task = (NioClientTask) channel.keyFor(mSelector).attachment();
-                    channel.register(mSelector, SelectionKey.OP_WRITE | SelectionKey.OP_READ);
-                    channel.keyFor(mSelector).attach(task);
+                    channel.register(mSelector, SelectionKey.OP_WRITE | SelectionKey.OP_READ, task);
                     mSelector.wakeup();
                 }
             }
@@ -59,8 +58,7 @@ public class NioSimpleClientFactory extends AbstractNioFactory<NioClientTask> {
                     SelectionKey selectionKey = channel.keyFor(mSelector);
                     if (selectionKey != null) {
                         NioClientTask task = (NioClientTask) selectionKey.attachment();
-                        channel.register(mSelector, SelectionKey.OP_READ);
-                        selectionKey.attach(task);
+                        channel.register(mSelector, SelectionKey.OP_READ, task);
                     }
                 }
             }
@@ -72,14 +70,14 @@ public class NioSimpleClientFactory extends AbstractNioFactory<NioClientTask> {
 
     private void registerChannel(NioClientTask task, Selector selector, SocketChannel channel) throws Exception {
         if (task.getReceive() != null && task.getSender() != null) {
-            channel.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+            channel.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE, task);
             task.getSender().setChannel(channel);
             task.getReceive().setChannel(channel);
         } else if (task.getSender() != null) {
-            channel.register(selector, SelectionKey.OP_WRITE);
+            channel.register(selector, SelectionKey.OP_WRITE, task);
             task.getSender().setChannel(channel);
         } else if (task.getReceive() != null) {
-            channel.register(selector, SelectionKey.OP_READ);
+            channel.register(selector, SelectionKey.OP_READ, task);
             task.getReceive().setChannel(channel);
         }
     }
@@ -133,9 +131,8 @@ public class NioSimpleClientFactory extends AbstractNioFactory<NioClientTask> {
                 registerChannel(task, selector, channel);
                 task.onConnectSocketChannel(true);
             } else {
-                channel.register(selector, SelectionKey.OP_CONNECT);
+                channel.register(selector, SelectionKey.OP_CONNECT, task);
             }
-            channel.keyFor(selector).attach(task);
         } catch (Exception e) {
             task.onConnectSocketChannel(false);
             removeTask(task);
@@ -160,7 +157,7 @@ public class NioSimpleClientFactory extends AbstractNioFactory<NioClientTask> {
                 SSLSocketFactory sslSocketFactory = mSslFactory.getSSLSocketFactory();
                 SSLSocketImpl sslSocketImpl = (SSLSocketImpl) sslSocketFactory.createSocket(task.getHost(), task.getPort());
 //                sslSocketImpl.setSoTimeout(3000);
-//                sslSocketImpl.setUseClientMode(true);
+                sslSocketImpl.setUseClientMode(true);
                 sslSocketImpl.startHandshake();
                 task.setSSLSocket(sslSocketImpl);
 //                sslSocketImpl.close();
@@ -201,7 +198,6 @@ public class NioSimpleClientFactory extends AbstractNioFactory<NioClientTask> {
 //                        configSSL(task, channel);
                         try {
                             registerChannel(task, selector, channel);
-                            channel.keyFor(selector).attach(task);
                         } catch (Throwable e) {
                             removeTask(task);
                             e.printStackTrace();

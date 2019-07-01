@@ -7,18 +7,20 @@ import javax.net.ServerSocketFactory;
 import javax.net.ssl.*;
 import java.io.FileInputStream;
 import java.security.KeyStore;
+import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
 
 public class NioSSLFactory implements ISSLFactory {
     private SSLContext sslContext = null;
 
-    public NioSSLFactory(String protocol) {
-        try {
-            sslContext = SSLContext.getInstance(protocol);
-            sslContext.init(null, new TrustManager[]{x509m}, null);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    public NioSSLFactory() throws NoSuchAlgorithmException {
+        sslContext = SSLContext.getDefault();
+    }
+
+    public NioSSLFactory(String protocol) throws Exception {
+        sslContext = SSLContext.getInstance(protocol);
+        sslContext.init(null, new TrustManager[]{x509m}, null);
+
     }
 
     /**
@@ -28,20 +30,19 @@ public class NioSSLFactory implements ISSLFactory {
      * @param keyStorePath      "C:\Program Files\Java\jdk1.8.0_161\jre\lib\security"
      * @param keyPassword       "changeit"
      */
-    public NioSSLFactory(String protocol, String keyManagerFactory, String keyStoreType, String keyStorePath, String keyPassword) {
-        try {
-            char[] passphrase = keyPassword.toCharArray();
+    public NioSSLFactory(String protocol, String keyManagerFactory, String keyStoreType, String keyStorePath, String keyPassword) throws Exception {
+        char[] password = keyPassword.toCharArray();
 
-            sslContext = SSLContext.getInstance(protocol);
-            KeyManagerFactory kmf = KeyManagerFactory.getInstance(keyManagerFactory);
-            KeyStore ks = KeyStore.getInstance(keyStoreType);
+        sslContext = SSLContext.getInstance(protocol);
+        KeyManagerFactory kmf = KeyManagerFactory.getInstance(keyManagerFactory);
+//        TrustManagerFactory tmf = TrustManagerFactory.getInstance(keyManagerFactory);
+        KeyStore ks = KeyStore.getInstance(keyStoreType);
+//        KeyStore tks = KeyStore.getInstance(keyStoreType);
 
-            ks.load(new FileInputStream(keyStorePath), passphrase);
-            kmf.init(ks, passphrase);
-            sslContext.init(kmf.getKeyManagers(), null, null);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        ks.load(new FileInputStream(keyStorePath), password);
+        kmf.init(ks, password);
+//        tmf.init(tks);
+        sslContext.init(kmf.getKeyManagers(), null, null);//tmf.getTrustManagers()
     }
 
     @Override
