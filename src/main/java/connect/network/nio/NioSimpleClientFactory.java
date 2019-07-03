@@ -35,9 +35,12 @@ public class NioSimpleClientFactory extends AbstractNioFactory<NioClientTask> {
             synchronized (NioClientFactory.class) {
                 SocketChannel channel = sender.getChannel();
                 if (channel != null) {
-                    NioClientTask task = (NioClientTask) channel.keyFor(mSelector).attachment();
-                    channel.register(mSelector, SelectionKey.OP_WRITE | SelectionKey.OP_READ, task);
-                    mSelector.wakeup();
+                    SelectionKey selectionKey = channel.keyFor(mSelector);
+                    if (selectionKey != null) {
+                        NioClientTask task = (NioClientTask) selectionKey.attachment();
+                        channel.register(mSelector, SelectionKey.OP_WRITE | SelectionKey.OP_READ, task);
+                        mSelector.wakeup();
+                    }
                 }
             }
         } catch (Exception e) {
@@ -89,7 +92,6 @@ public class NioSimpleClientFactory extends AbstractNioFactory<NioClientTask> {
             try {
                 channel = SocketChannel.open();
                 task.setChannel(channel);
-                channel.configureBlocking(false);// 设置为非阻塞
                 Socket socket = channel.socket();
                 //复用端口
                 socket.setReuseAddress(true);

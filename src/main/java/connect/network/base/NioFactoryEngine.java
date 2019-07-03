@@ -76,6 +76,11 @@ public class NioFactoryEngine<T extends BaseNetTask> extends LowPcEngine<T> {
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
+                try {
+                    selectionKey.channel().close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
                 selectionKey.cancel();
                 mFactory.onRecoveryTask(task);
             }
@@ -85,6 +90,8 @@ public class NioFactoryEngine<T extends BaseNetTask> extends LowPcEngine<T> {
                 mFactory.mSelector.close();
             } catch (Exception e) {
                 e.printStackTrace();
+            } finally {
+                mFactory.mSelector.keys().clear();
             }
         }
         mConnectCache.clear();

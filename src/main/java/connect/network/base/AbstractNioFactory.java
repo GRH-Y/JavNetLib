@@ -4,17 +4,11 @@ package connect.network.base;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Iterator;
 
 public abstract class AbstractNioFactory<T extends BaseNetTask> extends AbstractFactory<T> {
 
     protected Selector mSelector;
-
-    /**
-     * 解决线程安全问题
-     */
-    protected List<SelectionKey> selectionKeyList;
 
     abstract protected void onConnectTask(Selector selector, T task);
 
@@ -46,10 +40,16 @@ public abstract class AbstractNioFactory<T extends BaseNetTask> extends Abstract
     @Override
     public void addTask(T task) {
         if (task != null && mSelector != null) {
-            for (SelectionKey selectionKey : selectionKeyList) {
-                T hasTask = (T) selectionKey.attachment();
-                if (hasTask == task) {
-                    return;
+            Iterator<SelectionKey> iterator = mSelector.keys().iterator();
+            while (iterator.hasNext()) {
+                try {
+                    SelectionKey selectionKey = iterator.next();
+                    T hasTask = (T) selectionKey.attachment();
+                    if (hasTask == task) {
+                        return;
+                    }
+                } catch (Exception e) {
+                    break;
                 }
             }
             super.addTask(task);
@@ -79,7 +79,6 @@ public abstract class AbstractNioFactory<T extends BaseNetTask> extends Abstract
         if (mSelector == null) {
             try {
                 mSelector = Selector.open();
-                selectionKeyList = new ArrayList<>(mSelector.keys());
             } catch (IOException e) {
                 e.printStackTrace();
             }
