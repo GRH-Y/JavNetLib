@@ -1,7 +1,7 @@
 package connect.network.nio;
 
 import connect.network.base.AbstractNioFactory;
-import connect.network.base.FactoryEngine;
+import connect.network.base.NioEngine;
 import sun.security.ssl.SSLSocketImpl;
 
 import javax.net.ssl.SSLSocketFactory;
@@ -17,11 +17,11 @@ import java.util.Iterator;
  */
 public class NioSimpleClientFactory extends AbstractNioFactory<NioClientTask> {
 
-    public NioSimpleClientFactory() {
+    protected NioSimpleClientFactory() {
         super();
     }
 
-    public NioSimpleClientFactory(FactoryEngine engine) {
+    protected NioSimpleClientFactory(NioEngine engine) {
         super(engine);
     }
 
@@ -73,15 +73,15 @@ public class NioSimpleClientFactory extends AbstractNioFactory<NioClientTask> {
 
     private void registerChannel(NioClientTask task, Selector selector, SocketChannel channel) throws Exception {
         if (task.getReceive() != null && task.getSender() != null) {
+            task.getSender().setChannel(channel);
+            task.getReceive().setChannel(channel);
             channel.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE, task);
-            task.getSender().setChannel(channel);
-            task.getReceive().setChannel(channel);
         } else if (task.getSender() != null) {
-            channel.register(selector, SelectionKey.OP_WRITE, task);
             task.getSender().setChannel(channel);
+            channel.register(selector, SelectionKey.OP_WRITE, task);
         } else if (task.getReceive() != null) {
-            channel.register(selector, SelectionKey.OP_READ, task);
             task.getReceive().setChannel(channel);
+            channel.register(selector, SelectionKey.OP_READ, task);
         }
     }
 

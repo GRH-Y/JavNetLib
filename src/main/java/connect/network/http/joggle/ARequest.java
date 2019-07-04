@@ -53,7 +53,7 @@ public @interface ARequest {
 
     /**
      * 本次请求失败回调结果的方法名
-     * 方法参数必须是（RequestEntity entity）
+     * 方法参数必须是（RequestEntity tool）
      *
      * @return
      */

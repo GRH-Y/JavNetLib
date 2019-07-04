@@ -2,6 +2,7 @@ package connect.network.nio;
 
 
 import connect.network.base.AbstractNioFactory;
+import connect.network.base.joggle.IFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -21,7 +22,7 @@ public class NioServerFactory extends AbstractNioFactory<NioServerTask> {
 
     private static NioServerFactory mFactory = null;
 
-    public static synchronized NioServerFactory getFactory() {
+    public static synchronized IFactory<NioServerTask> getFactory() {
         if (mFactory == null) {
             synchronized (NioClientFactory.class) {
                 if (mFactory == null) {

@@ -1,4 +1,4 @@
-package connect.network.http;
+package connect.network.http.tool;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

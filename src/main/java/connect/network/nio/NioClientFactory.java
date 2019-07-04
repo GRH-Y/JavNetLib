@@ -1,7 +1,7 @@
 package connect.network.nio;
 
 
-import connect.network.base.FactoryEngine;
+import connect.network.base.NioEngine;
 import connect.network.base.joggle.IFactory;
 
 /**
@@ -28,7 +28,7 @@ public class NioClientFactory {
         return mFactory;
     }
 
-    public static synchronized IFactory<NioClientTask> getFactory(FactoryEngine engine) {
+    public static synchronized IFactory<NioClientTask> getFactory(NioEngine engine) {
         if (mFactory == null) {
             synchronized (NioClientFactory.class) {
                 if (mFactory == null) {

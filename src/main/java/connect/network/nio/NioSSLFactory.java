@@ -11,7 +11,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
 
 public class NioSSLFactory implements ISSLFactory {
-    private SSLContext sslContext = null;
+    private SSLContext sslContext;
 
     public NioSSLFactory() throws NoSuchAlgorithmException {
         sslContext = SSLContext.getDefault();

@@ -10,17 +10,7 @@ public abstract class AbstractBioFactory<T extends BaseNetTask> extends Abstract
 
     abstract protected void onDisconnectTask(T task);
 
-    public AbstractBioFactory() {
-        mFactoryEngine = getEngine();
-        if (mFactoryEngine == null) {
-            setEngine(new BioEngine<T>(this));
-        }
-    }
-
-    protected FactoryEngine getEngine() {
-        if (mFactoryEngine == null) {
-            mFactoryEngine = new BioEngine<T>(this);
-        }
-        return mFactoryEngine;
+    protected AbstractBioFactory() {
+        setEngine(new BioEngine(this));
     }
 }

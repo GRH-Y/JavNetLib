@@ -39,10 +39,10 @@ public interface IFactory<T extends BaseNetTask> {
      */
     void open();
 
-    /**
-     * 打开高性能模式
-     */
-    void openHighPer();
+//    /**
+//     * 打开高性能模式
+//     */
+//    void openHighPer();
 
     /**
      * 关闭

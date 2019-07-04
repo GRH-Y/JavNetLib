@@ -12,28 +12,15 @@ import java.util.List;
  *
  * @param <T>
  */
-public class HighPcEngine<T extends BaseNetTask> extends FactoryEngine<T> {
+public class NioHighPcEngine<T extends BaseNetTask> extends NioEngine<T> {
 
-    private FactoryEngine mEngine;
 //    private NetMultiTask multiTask = null;
 
     private List<ITaskContainer> taskContainerList;
 
     private int threadCount = 4;
 
-
-    public HighPcEngine() {
-    }
-
-    public HighPcEngine(AbstractFactory factory) {
-        setFactory(factory);
-    }
-
-    public void setFactory(AbstractFactory factory) {
-        if (factory == null) {
-            throw new NullPointerException("factory is null !!!");
-        }
-        this.mEngine = factory.getEngine();
+    public NioHighPcEngine() {
     }
 
     public void setThreadCount(int threadCount) {
@@ -41,17 +28,16 @@ public class HighPcEngine<T extends BaseNetTask> extends FactoryEngine<T> {
     }
 
     @Override
-    protected void onRunLoopTask() {
-        mEngine.onRunLoopTask();
-    }
-
-    @Override
     protected void startEngine() {
-        taskContainerList = new ArrayList<>(threadCount);
-        for (int count = 0; count < threadCount; count++) {
-            ITaskContainer container = TaskExecutorPoolManager.getInstance().createJThread(this);
-            container.getTaskExecutor().startTask();
-            taskContainerList.add(container);
+        if (taskContainerList == null) {
+            taskContainerList = new ArrayList<>(threadCount);
+        }
+        if (taskContainerList.isEmpty()) {
+            for (int count = 0; count < threadCount; count++) {
+                ITaskContainer container = TaskExecutorPoolManager.getInstance().createJThread(this);
+                container.getTaskExecutor().startTask();
+                taskContainerList.add(container);
+            }
         }
 //        if (multiTask == null) {
 //            multiTask = new NetMultiTask(threadCount, this);
@@ -61,10 +47,12 @@ public class HighPcEngine<T extends BaseNetTask> extends FactoryEngine<T> {
 
     @Override
     protected void stopEngine() {
-        for (ITaskContainer container : taskContainerList) {
-            container.getTaskExecutor().blockStopTask();
+        if (taskContainerList != null) {
+            for (ITaskContainer container : taskContainerList) {
+                container.getTaskExecutor().blockStopTask();
+            }
+            taskContainerList.clear();
         }
-        taskContainerList.clear();
 //        if (multiTask != null) {
 //            multiTask.stopExec();
 //        }
@@ -76,38 +64,38 @@ public class HighPcEngine<T extends BaseNetTask> extends FactoryEngine<T> {
         }
     }
 
-    @Override
-    protected void addTask(T task) {
-        mEngine.addTask(task);
-//        multiTask.wakeUp();
-        wakeUp();
-    }
+//    @Override
+//    protected void addTask(T task) {
+//        mEngine.addTask(task);
+////        multiTask.wakeUp();
+//        wakeUp();
+//    }
 
     @Override
     protected void removeTask(int tag) {
-        mEngine.removeTask(tag);
-//        multiTask.wakeUp();
+        removeTaskImp(tag);
         wakeUp();
+//        multiTask.wakeUp();
     }
 
-    @Override
-    protected void removeTask(T task) {
-        mEngine.removeTask(task);
-//        multiTask.wakeUp();
-        wakeUp();
-    }
+//    @Override
+//    protected void removeTask(T task) {
+//        mEngine.removeTask(task);
+////        multiTask.wakeUp();
+//        wakeUp();
+//    }
 
     private class NetMultiTask {
         private List<ITaskContainer> taskContainerList;
-        private HighPcEngine mEngine;
+        private NioHighPcEngine mEngine;
 
-        public NetMultiTask(HighPcEngine engine) {
+        public NetMultiTask(NioHighPcEngine engine) {
             mEngine = engine;
             int countThread = Runtime.getRuntime().availableProcessors() * 2;
             initThread(countThread);
         }
 
-        public NetMultiTask(int countThread, HighPcEngine engine) {
+        public NetMultiTask(int countThread, NioHighPcEngine engine) {
             mEngine = engine;
             initThread(countThread);
         }

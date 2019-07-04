@@ -19,23 +19,15 @@ public abstract class AbstractNioFactory<T extends BaseNetTask> extends Abstract
     abstract protected void onRecoveryTask(T task);
 
 
-    public AbstractNioFactory() {
-        mFactoryEngine = getEngine();
-        if (mFactoryEngine == null) {
-            setEngine(new NioFactoryEngine<T>(this));
-        }
+    protected AbstractNioFactory() {
+        setEngine(new NioEngine(this));
     }
 
-    public AbstractNioFactory(FactoryEngine engine) {
+    protected AbstractNioFactory(NioEngine engine) {
         setEngine(engine);
+        engine.setFactory(this);
     }
 
-    protected FactoryEngine getEngine() {
-        if (mFactoryEngine == null) {
-            mFactoryEngine = new NioFactoryEngine<T>(this);
-        }
-        return mFactoryEngine;
-    }
 
     @Override
     public void addTask(T task) {

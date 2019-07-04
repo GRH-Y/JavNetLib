@@ -4,20 +4,26 @@ import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.util.Iterator;
 
-public class NioFactoryEngine<T extends BaseNetTask> extends LowPcEngine<T> {
+public class NioEngine<T extends BaseNetTask> extends LowPcEngine {
 
-    protected AbstractNioFactory mFactory;
+    protected AbstractNioFactory<T> mFactory;
 
+    protected NioEngine() {
+    }
 
-    public NioFactoryEngine(AbstractNioFactory factory) {
+    protected NioEngine(AbstractNioFactory<T> factory) {
         this.mFactory = factory;
+    }
+
+    protected void setFactory(AbstractNioFactory<T> mFactory) {
+        this.mFactory = mFactory;
     }
 
     @Override
     protected void onRunLoopTask() {
         //检测是否有新的任务添加
-        if (!mConnectCache.isEmpty()) {
-            T task = mConnectCache.remove();
+        if (!mFactory.mConnectCache.isEmpty()) {
+            T task = mFactory.mConnectCache.remove();
             mFactory.onConnectTask(mFactory.mSelector, task);
         }
 
@@ -41,8 +47,8 @@ public class NioFactoryEngine<T extends BaseNetTask> extends LowPcEngine<T> {
      */
     protected void onRemoveNeedDestroyTask(boolean isRemoveAll) {
         //销毁链接
-        while (!mDestroyCache.isEmpty()) {
-            T target = mDestroyCache.remove();
+        while (!mFactory.mDestroyCache.isEmpty()) {
+            T target = mFactory.mDestroyCache.remove();
             mFactory.onDisconnectTask(target);
             Iterator<SelectionKey> iterator = mFactory.mSelector.keys().iterator();
             while (iterator.hasNext()) {
@@ -94,24 +100,28 @@ public class NioFactoryEngine<T extends BaseNetTask> extends LowPcEngine<T> {
                 mFactory.mSelector.keys().clear();
             }
         }
-        mConnectCache.clear();
-        mDestroyCache.clear();
+        mFactory.mConnectCache.clear();
+        mFactory.mDestroyCache.clear();
+    }
+
+    protected void removeTaskImp(int tag) {
+        for (BaseNetTask task : mFactory.mDestroyCache) {
+            if (task.getTag() == tag) {
+                return;
+            }
+        }
+        for (SelectionKey selectionKey : mFactory.mSelector.keys()) {
+            T task = (T) selectionKey.attachment();
+            if (task.getTag() == tag) {
+                mFactory.mDestroyCache.add(task);
+            }
+        }
     }
 
     @Override
     protected void removeTask(int tag) {
         if (mExecutor.getLoopState()) {
-            for (BaseNetTask task : mDestroyCache) {
-                if (task.getTag() == tag) {
-                    return;
-                }
-            }
-            for (SelectionKey selectionKey : mFactory.mSelector.keys()) {
-                T task = (T) selectionKey.attachment();
-                if (task.getTag() == tag) {
-                    mDestroyCache.add(task);
-                }
-            }
+            removeTaskImp(tag);
             if (mExecutor != null) {
                 mExecutor.resumeTask();
             }

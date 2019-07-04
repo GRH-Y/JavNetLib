@@ -1,9 +1,9 @@
 package connect.network.http;
 
 
-import connect.network.base.JavConvertResult;
-import connect.network.base.JavSessionCallBack;
 import connect.network.http.joggle.*;
+import connect.network.http.tool.JavConvertResult;
+import connect.network.http.tool.JavSessionCallBack;
 import task.executor.TaskExecutorPoolManager;
 import task.executor.joggle.IConsumerAttribute;
 import task.executor.joggle.ILoopTaskExecutor;

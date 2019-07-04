@@ -3,6 +3,9 @@ package connect.network.base;
 import connect.network.base.joggle.IFactory;
 import connect.network.base.joggle.ISSLFactory;
 
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 /**
  * 复用的工厂
  *
@@ -10,28 +13,50 @@ import connect.network.base.joggle.ISSLFactory;
  */
 public abstract class AbstractFactory<T extends BaseNetTask> implements IFactory<T> {
 
-    protected FactoryEngine mFactoryEngine;
+    protected PcEngine mEngine;
     protected ISSLFactory mSslFactory = null;
 
-    protected void setEngine(FactoryEngine engine) {
-        this.mFactoryEngine = engine;
+    /**
+     * 等待创建连接队列
+     */
+    protected Queue<T> mConnectCache;
+
+    /**
+     * 销毁任务队列
+     */
+    protected Queue<T> mDestroyCache;
+
+    protected AbstractFactory() {
+        mConnectCache = new ConcurrentLinkedQueue<>();
+        mDestroyCache = new ConcurrentLinkedQueue<>();
     }
 
-    protected abstract FactoryEngine getEngine();
+    protected void setEngine(PcEngine engine) {
+        this.mEngine = engine;
+    }
+
+    //-----------------------------------------------------------------------------------------
 
     @Override
     public void addTask(T task) {
-        mFactoryEngine.addTask(task);
+        if (task != null && !mConnectCache.contains(task)) {
+            mConnectCache.add(task);
+            mEngine.resumeTask();
+        }
     }
 
     @Override
     public void removeTask(T task) {
-        mFactoryEngine.removeTask(task);
+        if (task != null && !mDestroyCache.contains(task)) {
+            //该任务在此线程才能添加
+            mDestroyCache.add(task);
+            mEngine.resumeTask();
+        }
     }
 
     @Override
     public void removeTask(int tag) {
-        mFactoryEngine.removeTask(tag);
+        mEngine.removeTask(tag);
     }
 
     @Override
@@ -39,19 +64,16 @@ public abstract class AbstractFactory<T extends BaseNetTask> implements IFactory
         this.mSslFactory = sslFactory;
     }
 
-    @Override
-    public void open() {
-        mFactoryEngine.startEngine();
-    }
+    //-----------------------------------------------------------------------------------------
 
     @Override
-    public void openHighPer() {
-        mFactoryEngine.openHighPer();
+    public void open() {
+        mEngine.startEngine();
     }
 
     @Override
     public void close() {
-        mFactoryEngine.stopEngine();
+        mEngine.stopEngine();
     }
 
 }

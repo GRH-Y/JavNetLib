@@ -8,9 +8,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @param <T>
  */
-public class BioEngine<T extends BaseNetTask> extends LowPcEngine<T> {
+public class BioEngine<T extends BaseNetTask> extends LowPcEngine {
 
-    protected AbstractBioFactory mFactory;
+    protected AbstractBioFactory<T> mFactory;
 
     /**
      * 正在执行任务的队列
@@ -18,7 +18,7 @@ public class BioEngine<T extends BaseNetTask> extends LowPcEngine<T> {
     protected Queue<T> mExecutorQueue;
 
 
-    public BioEngine(AbstractBioFactory factory) {
+    public BioEngine(AbstractBioFactory<T> factory) {
         mExecutorQueue = new ConcurrentLinkedQueue<>();
         this.mFactory = factory;
     }
@@ -26,8 +26,8 @@ public class BioEngine<T extends BaseNetTask> extends LowPcEngine<T> {
 
     protected void onRemoveNeedDestroyTask(boolean isRemoveAll) {
         //销毁链接
-        while (!mDestroyCache.isEmpty()) {
-            T task = mDestroyCache.remove();
+        while (!mFactory.mDestroyCache.isEmpty()) {
+            T task = mFactory.mDestroyCache.remove();
             try {
                 mFactory.onDisconnectTask(task);
             } catch (Exception e) {
@@ -44,7 +44,7 @@ public class BioEngine<T extends BaseNetTask> extends LowPcEngine<T> {
     protected void onRunLoopTask() {
         onCreateData();
         onProcess();
-        if (mExecutorQueue.isEmpty() && mConnectCache.isEmpty() && mDestroyCache.isEmpty() && mExecutor.getLoopState()) {
+        if (mExecutorQueue.isEmpty() && mFactory.mConnectCache.isEmpty() && mFactory.mDestroyCache.isEmpty() && mExecutor.getLoopState()) {
             mExecutor.waitTask(0);
         }
     }
@@ -52,17 +52,17 @@ public class BioEngine<T extends BaseNetTask> extends LowPcEngine<T> {
     protected void onCreateData() {
 
         //检测是否有新的任务添加
-        if (!mConnectCache.isEmpty()) {
-            T task = mConnectCache.remove();
+        if (!mFactory.mConnectCache.isEmpty()) {
+            T task = mFactory.mConnectCache.remove();
             try {
                 boolean isConnect = mFactory.onConnectTask(task);
                 if (isConnect) {
                     mExecutorQueue.add(task);
                 } else {
-                    mDestroyCache.add(task);
+                    mFactory.mDestroyCache.add(task);
                 }
             } catch (Exception e) {
-                mDestroyCache.add(task);
+                mFactory.mDestroyCache.add(task);
                 e.printStackTrace();
             }
         }
@@ -105,30 +105,24 @@ public class BioEngine<T extends BaseNetTask> extends LowPcEngine<T> {
                 e.printStackTrace();
             }
         }
-        mConnectCache.clear();
+        mFactory.mConnectCache.clear();
         mExecutorQueue.clear();
-        mDestroyCache.clear();
+        mFactory.mDestroyCache.clear();
     }
 
     @Override
     protected void removeTask(int tag) {
-        for (BaseNetTask task : mDestroyCache) {
+        for (BaseNetTask task : mFactory.mDestroyCache) {
             if (task.getTag() == tag) {
                 return;
             }
         }
         for (BaseNetTask task : mExecutorQueue) {
             if (task.getTag() == tag) {
-                mDestroyCache.add((T) task);
+                mFactory.mDestroyCache.add((T) task);
                 break;
             }
         }
     }
-
-    @Override
-    public void openHighPer() {
-
-    }
-
 
 }

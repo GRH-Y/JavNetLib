@@ -1,4 +1,4 @@
-package connect.network.http;
+package connect.network.http.ssl;
 
 
 import connect.network.base.joggle.ISSLFactory;
