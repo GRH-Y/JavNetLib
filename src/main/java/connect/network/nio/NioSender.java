@@ -23,9 +23,11 @@ public class NioSender implements ISender {
     public void sendData(byte[] data) {
         if (data != null) {
             cache.add(ByteBuffer.wrap(data));
-            NioSimpleClientFactory factory = (NioSimpleClientFactory) NioClientFactory.getFactory();
-            synchronized (NioSender.class) {
-                factory.registerWrite(this);
+            if (channel != null) {
+                NioSimpleClientFactory factory = (NioSimpleClientFactory) NioClientFactory.getFactory();
+                synchronized (NioSender.class) {
+                    factory.registerWrite(this);
+                }
             }
         }
     }

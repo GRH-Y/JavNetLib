@@ -39,7 +39,7 @@ public abstract class AbstractFactory<T extends BaseNetTask> implements IFactory
 
     @Override
     public void addTask(T task) {
-        if (task != null && !mConnectCache.contains(task)) {
+        if (task != null && !mConnectCache.contains(task) && mEngine.isRunning()) {
             mConnectCache.add(task);
             mEngine.resumeTask();
         }
@@ -47,7 +47,7 @@ public abstract class AbstractFactory<T extends BaseNetTask> implements IFactory
 
     @Override
     public void removeTask(T task) {
-        if (task != null && !mDestroyCache.contains(task)) {
+        if (task != null && !mDestroyCache.contains(task) && mEngine.isRunning()) {
             //该任务在此线程才能添加
             mDestroyCache.add(task);
             mEngine.resumeTask();
@@ -56,7 +56,6 @@ public abstract class AbstractFactory<T extends BaseNetTask> implements IFactory
 
     @Override
     public void removeTask(int tag) {
-        mEngine.removeTask(tag);
     }
 
     @Override

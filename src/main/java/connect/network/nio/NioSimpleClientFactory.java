@@ -32,16 +32,12 @@ public class NioSimpleClientFactory extends AbstractNioFactory<NioClientTask> {
      */
     protected void registerWrite(NioSender sender) {
         try {
-            synchronized (NioClientFactory.class) {
-                SocketChannel channel = sender.getChannel();
-                if (channel != null) {
-                    SelectionKey selectionKey = channel.keyFor(mSelector);
-                    if (selectionKey != null) {
-                        NioClientTask task = (NioClientTask) selectionKey.attachment();
-                        channel.register(mSelector, SelectionKey.OP_WRITE | SelectionKey.OP_READ, task);
-                        mSelector.wakeup();
-                    }
-                }
+            SocketChannel channel = sender.getChannel();
+            SelectionKey selectionKey = channel.keyFor(mSelector);
+            if (selectionKey != null) {
+                NioClientTask task = (NioClientTask) selectionKey.attachment();
+                channel.register(mSelector, SelectionKey.OP_WRITE | SelectionKey.OP_READ, task);
+                mSelector.wakeup();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -55,15 +51,11 @@ public class NioSimpleClientFactory extends AbstractNioFactory<NioClientTask> {
      */
     protected void unRegisterWrite(NioSender sender) {
         try {
-            synchronized (NioClientFactory.class) {
-                SocketChannel channel = sender.getChannel();
-                if (channel != null) {
-                    SelectionKey selectionKey = channel.keyFor(mSelector);
-                    if (selectionKey != null) {
-                        NioClientTask task = (NioClientTask) selectionKey.attachment();
-                        channel.register(mSelector, SelectionKey.OP_READ, task);
-                    }
-                }
+            SocketChannel channel = sender.getChannel();
+            SelectionKey selectionKey = channel.keyFor(mSelector);
+            if (selectionKey != null) {
+                NioClientTask task = (NioClientTask) selectionKey.attachment();
+                channel.register(mSelector, SelectionKey.OP_READ, task);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -145,24 +137,12 @@ public class NioSimpleClientFactory extends AbstractNioFactory<NioClientTask> {
     private void configSSL(NioClientTask task) {
         try {
             if (task.getPort() == 443 && mSslFactory != null) {
-//                while (!channel.finishConnect()) {
-//                    // 完成连接
-//                }
-//                SSLSocketFactory socketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
-//                SSLSocketImpl socket = (SSLSocketImpl) socketFactory.createSocket(channel.socket(), task.getHost(), task.getPort(), true);
-//                socket.setUseClientMode(true);
-//                socket.setEnableSessionCreation(false);
-//                socket.setNeedClientAuth(false);
-//                socket.setWantClientAuth(false);
-//                channel.configureBlocking(false);
-//                socket.startHandshake();
                 SSLSocketFactory sslSocketFactory = mSslFactory.getSSLSocketFactory();
                 SSLSocketImpl sslSocketImpl = (SSLSocketImpl) sslSocketFactory.createSocket(task.getHost(), task.getPort());
-//                sslSocketImpl.setSoTimeout(3000);
+                sslSocketImpl.setSoTimeout(1000);
                 sslSocketImpl.setUseClientMode(true);
                 sslSocketImpl.startHandshake();
                 task.setSSLSocket(sslSocketImpl);
-//                sslSocketImpl.close();
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -171,73 +151,60 @@ public class NioSimpleClientFactory extends AbstractNioFactory<NioClientTask> {
 
     @Override
     protected void onSelectorTask(Selector selector) {
-
 //        Logcat.d("==> NioClientFactory onSelectorTask");
-        Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
-        while (iterator.hasNext()) {
-            SelectionKey selectionKey;
-            synchronized (NioSimpleClientFactory.class) {
-                selectionKey = iterator.next();
-            }
-            if (selectionKey == null) {
-                return;
-            }
-            SocketChannel channel = (SocketChannel) selectionKey.channel();
-            NioClientTask task = (NioClientTask) selectionKey.attachment();
+//        synchronized (NioSimpleClientFactory.class) {
+            for (Iterator<SelectionKey> iterator = selector.selectedKeys().iterator(); iterator.hasNext(); iterator.remove()) {
+                SelectionKey selectionKey = iterator.next();
+                SocketChannel channel = (SocketChannel) selectionKey.channel();
+                NioClientTask task = (NioClientTask) selectionKey.attachment();
 
-            if (selectionKey.isValid() && selectionKey.isConnectable() && task != null) {
+                if (selectionKey.isValid() && selectionKey.isConnectable() && task != null) {
 //                Logcat.d("==> selectionKey isConnectable ");
-                boolean isOpen = channel.isConnected();
-                try {
-                    if (channel.isConnectionPending()) {
-                        isOpen = channel.finishConnect();// 完成连接
-                    }
-                } catch (Exception e) {
-                    removeTask(task);
-                    e.printStackTrace();
-                } finally {
-                    if (isOpen) {
+                    boolean isOpen = channel.isConnected();
+                    try {
+                        if (channel.isConnectionPending()) {
+                            isOpen = channel.finishConnect();// 完成连接
+                        }
+                    } catch (Exception e) {
+                        removeTask(task);
+                        e.printStackTrace();
+                    } finally {
+                        if (isOpen) {
 //                        configSSL(task, channel);
+                            try {
+                                registerChannel(task, selector, channel);
+                            } catch (Throwable e) {
+                                removeTask(task);
+                                e.printStackTrace();
+                            }
+                        }
+                        task.onConnectSocketChannel(isOpen);
+                    }
+                } else if (selectionKey.isValid() && selectionKey.isReadable() && task != null) {
+//                Logcat.d("==> selector isReadable keys = " + selector.keys().size());
+                    NioReceive receive = task.getReceive();
+                    if (receive != null) {
                         try {
-                            registerChannel(task, selector, channel);
+                            receive.onRead(task.getSocketChannel());
                         } catch (Throwable e) {
                             removeTask(task);
                             e.printStackTrace();
                         }
                     }
-                    task.onConnectSocketChannel(isOpen);
-                }
-            } else if (selectionKey.isValid() && selectionKey.isReadable() && task != null) {
-//                Logcat.d("==> selector isReadable keys = " + selector.keys().size());
-                NioReceive receive = task.getReceive();
-                if (receive != null) {
-                    try {
-                        receive.onRead(task.getSocketChannel());
-                    } catch (Throwable e) {
-                        removeTask(task);
-                        e.printStackTrace();
-                    }
-                }
-            } else if (selectionKey.isValid() && selectionKey.isWritable() && task != null) {
+                } else if (selectionKey.isValid() && selectionKey.isWritable() && task != null) {
 //                    System.out.println("==> selectionKey isWritable ");
-                NioSender sender = task.getSender();
-                if (sender != null) {
-                    try {
-                        sender.onWrite(task.getSocketChannel());
-                    } catch (Throwable e) {
-                        removeTask(task);
-                        e.printStackTrace();
+                    NioSender sender = task.getSender();
+                    if (sender != null) {
+                        try {
+                            sender.onWrite(task.getSocketChannel());
+                        } catch (Throwable e) {
+                            removeTask(task);
+                            e.printStackTrace();
+                        }
                     }
                 }
             }
-
-            if (task != null) {
-                // 删除已处理过的事件
-                synchronized (NioSimpleClientFactory.class) {
-                    iterator.remove();
-                }
-            }
-        }
+//        }
     }
 
 

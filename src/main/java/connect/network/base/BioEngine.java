@@ -110,19 +110,19 @@ public class BioEngine<T extends BaseNetTask> extends LowPcEngine {
         mFactory.mDestroyCache.clear();
     }
 
-    @Override
-    protected void removeTask(int tag) {
-        for (BaseNetTask task : mFactory.mDestroyCache) {
-            if (task.getTag() == tag) {
-                return;
-            }
-        }
-        for (BaseNetTask task : mExecutorQueue) {
-            if (task.getTag() == tag) {
-                mFactory.mDestroyCache.add((T) task);
-                break;
-            }
-        }
-    }
+//    @Override
+//    protected void removeTask(int tag) {
+//        for (BaseNetTask task : mFactory.mDestroyCache) {
+//            if (task.getTag() == tag) {
+//                return;
+//            }
+//        }
+//        for (BaseNetTask task : mExecutorQueue) {
+//            if (task.getTag() == tag) {
+//                mFactory.mDestroyCache.add((T) task);
+//                break;
+//            }
+//        }
+//    }
 
 }
