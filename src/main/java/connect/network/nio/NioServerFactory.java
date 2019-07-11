@@ -7,10 +7,8 @@ import connect.network.base.joggle.IFactory;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.Iterator;
 
 /**
  * nio服务端工厂(单线程管理多个ServerSocket)
@@ -46,7 +44,7 @@ public class NioServerFactory extends AbstractNioFactory<NioServerTask> {
     }
 
     @Override
-    protected void onConnectTask(Selector selector, NioServerTask task) {
+    protected void onConnectTask(NioServerTask task) {
         //创建服务，并注册到selector，监听所有的事件
         ServerSocketChannel serverSocketChannel = task.getSocketChannel();
         if (serverSocketChannel == null && task.getServerHost() != null && task.getServerPort() > 0) {
@@ -69,8 +67,8 @@ public class NioServerFactory extends AbstractNioFactory<NioServerTask> {
             if (serverSocketChannel.isBlocking()) {
                 serverSocketChannel.configureBlocking(false);
             }
-            serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
-            serverSocketChannel.keyFor(selector).attach(task);
+            serverSocketChannel.register(mSelector, SelectionKey.OP_ACCEPT);
+            serverSocketChannel.keyFor(mSelector).attach(task);
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -84,23 +82,16 @@ public class NioServerFactory extends AbstractNioFactory<NioServerTask> {
 
 
     @Override
-    protected void onSelectorTask(Selector selector) {
-        Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
-        while (iterator.hasNext()) {
-            SelectionKey selectionKey = iterator.next();
-            ServerSocketChannel serverSocketChannel = (ServerSocketChannel) selectionKey.channel();
-            NioServerTask task = (NioServerTask) selectionKey.attachment();
-
-            if (selectionKey.isValid() && selectionKey.isAcceptable()) {
-                try {
-                    SocketChannel channel = serverSocketChannel.accept();
-                    task.onAcceptServerChannel(channel);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+    protected void onSelectionKey(SelectionKey selectionKey) {
+        ServerSocketChannel serverSocketChannel = (ServerSocketChannel) selectionKey.channel();
+        NioServerTask task = (NioServerTask) selectionKey.attachment();
+        if (selectionKey.isValid() && selectionKey.isAcceptable()) {
+            try {
+                SocketChannel channel = serverSocketChannel.accept();
+                task.onAcceptServerChannel(channel);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-            // 删除已处理过的事件
-            iterator.remove();
         }
     }
 

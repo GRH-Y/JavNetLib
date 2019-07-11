@@ -18,9 +18,16 @@ public @interface ARequest {
 
     /**
      * 是否启用HttpTaskConfig配置的基本的url
+     *
      * @return
      */
     boolean disableBaseUrl() default false;
+
+    /**
+     * 是否是独立任务，如果是则单独开启线程处理
+     * @return
+     */
+    boolean isIndependentTask() default false;
 
     /**
      * 请求类型（POST 或者 GET）
@@ -47,6 +54,7 @@ public @interface ARequest {
     /**
      * 本次请求成功回调结果的方法名
      * 方法参数必须是（对应resultType字段类型）
+     *
      * @return
      */
     String successMethod() default "";
@@ -62,6 +70,7 @@ public @interface ARequest {
     /**
      * 本次请求过程状态回调方法名
      * 方法参数必须是 (int process, int maxProcess, boolean isOver)
+     *
      * @return
      */
     String processMethod() default "";

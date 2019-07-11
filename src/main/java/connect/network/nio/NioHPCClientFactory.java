@@ -15,7 +15,7 @@ public class NioHPCClientFactory {
         if (mFactory == null) {
             synchronized (NioHPCClientFactory.class) {
                 if (mFactory == null) {
-                    mFactory = new NioSimpleClientFactory(new NioHighPcEngine());
+                    mFactory = new NioSyncClientFactory(new NioHighPcEngine());
                 }
             }
         }
@@ -26,7 +26,7 @@ public class NioHPCClientFactory {
         if (mFactory == null) {
             synchronized (NioHPCClientFactory.class) {
                 if (mFactory == null && engine != null) {
-                    mFactory = new NioSimpleClientFactory(engine);
+                    mFactory = new NioSyncClientFactory(engine);
                 }
             }
         }
@@ -39,7 +39,7 @@ public class NioHPCClientFactory {
                 if (mFactory == null) {
                     NioHighPcEngine highPcFactoryEngine = new NioHighPcEngine();
                     highPcFactoryEngine.setThreadCount(threadCount);
-                    mFactory = new NioSimpleClientFactory(highPcFactoryEngine);
+                    mFactory = new NioSyncClientFactory(highPcFactoryEngine);
                 }
             }
         }

@@ -14,6 +14,8 @@ import java.nio.channels.SocketChannel;
  */
 public class NioClientTask extends BaseNetTask {
 
+    private int connectTimeout = 1000;
+
     private String mHost;
 
     private int mPort;
@@ -25,6 +27,8 @@ public class NioClientTask extends BaseNetTask {
     private NioSender sender = null;
 
     private NioReceive receive = null;
+
+    private boolean isAutoCheckCertificate = true;
 
     public NioClientTask() {
     }
@@ -60,6 +64,14 @@ public class NioClientTask extends BaseNetTask {
         this.mPort = port;
     }
 
+    public void setConnectTimeout(int connectTimeout) {
+        this.connectTimeout = connectTimeout;
+    }
+
+    public void setAutoCheckCertificate(boolean autoCheckCertificate) {
+        isAutoCheckCertificate = autoCheckCertificate;
+    }
+
     //---------------------------- get ---------------------------------------
 
     public int getPort() {
@@ -86,6 +98,13 @@ public class NioClientTask extends BaseNetTask {
         return receive;
     }
 
+    public int getConnectTimeout() {
+        return connectTimeout;
+    }
+
+    public boolean isAutoCheckCertificate() {
+        return isAutoCheckCertificate;
+    }
 
     //---------------------------- on ---------------------------------------
 

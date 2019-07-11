@@ -1,5 +1,6 @@
 package connect.network.base;
 
+import task.executor.TaskContainer;
 import task.executor.TaskExecutorPoolManager;
 import task.executor.joggle.ITaskContainer;
 
@@ -25,13 +26,22 @@ public class NioHighPcEngine<T extends BaseNetTask> extends NioEngine<T> {
     }
 
     @Override
+    protected boolean isRunning() {
+        if (taskContainerList.isEmpty()) {
+            return false;
+        }
+        ITaskContainer container = taskContainerList.get(0);
+        return container.getTaskExecutor().getLoopState();
+    }
+
+    @Override
     protected void startEngine() {
         if (taskContainerList == null) {
             taskContainerList = new ArrayList<>(threadCount);
         }
         if (taskContainerList.isEmpty()) {
             for (int count = 0; count < threadCount; count++) {
-                ITaskContainer container = TaskExecutorPoolManager.getInstance().createJThread(this);
+                ITaskContainer container = new TaskContainer(this);
                 container.getTaskExecutor().startTask();
                 taskContainerList.add(container);
             }

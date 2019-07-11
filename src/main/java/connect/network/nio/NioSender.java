@@ -24,10 +24,23 @@ public class NioSender implements ISender {
         if (data != null) {
             cache.add(ByteBuffer.wrap(data));
             if (channel != null) {
-                NioSimpleClientFactory factory = (NioSimpleClientFactory) NioClientFactory.getFactory();
-                synchronized (NioSender.class) {
-                    factory.registerWrite(this);
-                }
+                onRegisterWrite();
+            }
+        }
+    }
+
+    protected void onRegisterWrite() {
+        NioSimpleClientFactory factory = (NioSimpleClientFactory) NioClientFactory.getFactory();
+        synchronized (NioSender.class) {
+            factory.registerWrite(this);
+        }
+    }
+
+    protected void onUnRegisterWrite() {
+        NioSimpleClientFactory factory = (NioSimpleClientFactory) NioClientFactory.getFactory();
+        synchronized (NioSender.class) {
+            if (cache.isEmpty()) {
+                factory.unRegisterWrite(this);
             }
         }
     }
@@ -70,12 +83,7 @@ public class NioSender implements ISender {
             }
         }
         if (cache.isEmpty()) {
-            NioSimpleClientFactory factory = (NioSimpleClientFactory) NioClientFactory.getFactory();
-            synchronized (NioSender.class) {
-                if (cache.isEmpty()) {
-                    factory.unRegisterWrite(this);
-                }
-            }
+            onUnRegisterWrite();
         }
     }
 }

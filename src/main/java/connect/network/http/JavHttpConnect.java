@@ -198,6 +198,7 @@ public class JavHttpConnect {
         netTaskEntity.setResultType(request.resultType());
         netTaskEntity.setAutoSetDataForView(isAutoSetDataForView);
         netTaskEntity.setRequestMethod(requestMethod.getSimpleName());
+        netTaskEntity.setIndependentTask(request.isIndependentTask());
 
         Map<String, Object> property = requestEntity.getRequestProperty();
         netTaskEntity.setRequestProperty(property);

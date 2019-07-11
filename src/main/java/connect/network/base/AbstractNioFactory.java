@@ -10,9 +10,9 @@ public abstract class AbstractNioFactory<T extends BaseNetTask> extends Abstract
 
     protected Selector mSelector;
 
-    abstract protected void onConnectTask(Selector selector, T task);
+    protected abstract void onSelectionKey(SelectionKey selectionKey);
 
-    abstract protected void onSelectorTask(Selector selector);
+    abstract protected void onConnectTask(T task);
 
     abstract protected void onDisconnectTask(T task);
 
@@ -28,17 +28,24 @@ public abstract class AbstractNioFactory<T extends BaseNetTask> extends Abstract
         engine.setFactory(this);
     }
 
-    protected void checkConnectTaskImp(boolean isConnectAll) {
+    /**
+     * 检查链接任务
+     * @param isConnectAll
+     */
+    protected void onCheckConnectTaskImp(boolean isConnectAll) {
         while (!mConnectCache.isEmpty()) {
             T task = mConnectCache.remove();
-            onConnectTask(mSelector, task);
+            onConnectTask(task);
             if (!isConnectAll) {
                 break;
             }
         }
     }
 
-    protected void selectorTaskImp() {
+    /**
+     * 获取准备好的任务
+     */
+    protected void onSelectorTaskImp() {
         int count = 0;
         try {
             count = mSelector.select();
@@ -47,20 +54,34 @@ public abstract class AbstractNioFactory<T extends BaseNetTask> extends Abstract
         }
 
         if (count > 0) {
-            onSelectorTask(mSelector);
+            for (Iterator<SelectionKey> iterator = mSelector.selectedKeys().iterator(); iterator.hasNext(); iterator.remove()) {
+                SelectionKey selectionKey = iterator.next();
+                onSelectionKey(selectionKey);
+            }
         }
     }
 
     /**
      * 检查要移除任务
      */
-    protected void checkRemoverTaskImp(boolean isRemoveAll) {
+    protected void onCheckRemoverTaskImp(boolean isRemoveAll) {
         while (!mDestroyCache.isEmpty()) {
             //处理要移除的任务
             T target = mDestroyCache.remove();
             onDisconnectTask(target);
-            for (Iterator<SelectionKey> iterator = mSelector.keys().iterator(); iterator.hasNext(); ) {
-                SelectionKey selectionKey = iterator.next();
+            removerTargetTask(target);
+            onRecoveryTask(target);
+            if (!isRemoveAll) {
+                break;
+            }
+        }
+    }
+
+    //=====================================上面是生命周期回调方法===========================================================
+
+    protected void removerTargetTask(T target) {
+        synchronized (AbstractNioFactory.class) {
+            for (SelectionKey selectionKey : mSelector.keys()) {
                 T task = (T) selectionKey.attachment();
                 if (task == target) {
                     try {
@@ -73,14 +94,10 @@ public abstract class AbstractNioFactory<T extends BaseNetTask> extends Abstract
                     break;
                 }
             }
-            onRecoveryTask(target);
-            if (!isRemoveAll) {
-                break;
-            }
         }
     }
 
-    protected void destroyTask() {
+    protected void destroyTaskImp() {
         //线程准备结束，释放所有链接
         for (SelectionKey selectionKey : mSelector.keys()) {
             T task = (T) selectionKey.attachment();
@@ -103,8 +120,6 @@ public abstract class AbstractNioFactory<T extends BaseNetTask> extends Abstract
                 mSelector.close();
             } catch (Exception e) {
                 e.printStackTrace();
-            } finally {
-                mSelector.keys().clear();
             }
         }
         mConnectCache.clear();
@@ -120,11 +135,21 @@ public abstract class AbstractNioFactory<T extends BaseNetTask> extends Abstract
                     mSelector.wakeup();
                 }
             } else {
-                for (Iterator<SelectionKey> iterator = mSelector.keys().iterator(); iterator.hasNext(); ) {
-                    SelectionKey selectionKey = iterator.next();
-                    T hasTask = (T) selectionKey.attachment();
-                    if (hasTask == task) {
-                        return;
+                synchronized (AbstractNioFactory.class) {
+                    Iterator iterator = this.mSelector.keys().iterator();
+                    while (iterator.hasNext()) {
+                        SelectionKey selectionKey = null;
+                        try {
+                            selectionKey = (SelectionKey) iterator.next();
+                        } catch (Exception e) {
+                        }
+                        if (selectionKey == null) {
+                            break;
+                        }
+                        T hasTask = (T) selectionKey.attachment();
+                        if (hasTask == task) {
+                            return;
+                        }
                     }
                 }
                 if (!mConnectCache.contains(task)) {
@@ -138,12 +163,14 @@ public abstract class AbstractNioFactory<T extends BaseNetTask> extends Abstract
     @Override
     public void removeTask(T task) {
         if (task != null && mSelector != null && !mDestroyCache.contains(task) && mEngine.isRunning()) {
-            for (SelectionKey selectionKey : mSelector.keys()) {
-                T hasTask = (T) selectionKey.attachment();
-                if (hasTask == task) {
-                    mDestroyCache.add(task);
-                    mSelector.wakeup();
-                    break;
+            synchronized (AbstractNioFactory.class) {
+                for (SelectionKey selectionKey : mSelector.keys()) {
+                    T hasTask = (T) selectionKey.attachment();
+                    if (hasTask == task) {
+                        mDestroyCache.add(task);
+                        mSelector.wakeup();
+                        break;
+                    }
                 }
             }
         }
@@ -157,12 +184,14 @@ public abstract class AbstractNioFactory<T extends BaseNetTask> extends Abstract
                     return;
                 }
             }
-            for (SelectionKey selectionKey : mSelector.keys()) {
-                T task = (T) selectionKey.attachment();
-                if (task.getTag() == tag) {
-                    mDestroyCache.add(task);
-                    mSelector.wakeup();
-                    break;
+            synchronized (AbstractNioFactory.class) {
+                for (SelectionKey selectionKey : mSelector.keys()) {
+                    T task = (T) selectionKey.attachment();
+                    if (task.getTag() == tag) {
+                        mDestroyCache.add(task);
+                        mSelector.wakeup();
+                        break;
+                    }
                 }
             }
         }

@@ -18,17 +18,17 @@ public class NioEngine<T extends BaseNetTask> extends LowPcEngine {
     @Override
     protected void onRunLoopTask() {
         //检测是否有新的任务添加
-        mFactory.checkConnectTaskImp(false);
+        mFactory.onCheckConnectTaskImp(false);
         //检查是否有读写任务
-        mFactory.selectorTaskImp();
+        mFactory.onSelectorTaskImp();
         //清除要结束的任务
-        mFactory.checkRemoverTaskImp(false);
+        mFactory.onCheckRemoverTaskImp(false);
     }
 
 
     @Override
     protected void onDestroyTask() {
-        mFactory.destroyTask();
+        mFactory.destroyTaskImp();
     }
 
 }
