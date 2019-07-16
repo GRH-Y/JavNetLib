@@ -15,17 +15,6 @@ public class NioSyncClientFactory extends NioSimpleClientFactory {
         super(engine);
     }
 
-    private SelectionKey getSelectionKey() {
-        SelectionKey selectionKey = null;
-        synchronized (mSelector) {
-            Iterator<SelectionKey> iterator = mSelector.selectedKeys().iterator();
-            if (iterator.hasNext()) {
-                selectionKey = iterator.next();
-                iterator.remove();
-            }
-        }
-        return selectionKey;
-    }
 
     @Override
     protected void onSelectorTaskImp() {
@@ -46,15 +35,25 @@ public class NioSyncClientFactory extends NioSimpleClientFactory {
         }
     }
 
+    private boolean isIteratorNext(Iterator iterator) {
+        synchronized (mSelector) {
+            return iterator.hasNext();
+        }
+    }
+
+    private void iteratorRemove(Iterator iterator) {
+        synchronized (mSelector) {
+            iterator.remove();
+        }
+    }
+
 
     @Override
     protected void onCheckConnectTaskImp(boolean isConnectAll) {
         while (!mConnectCache.isEmpty()) {
             NioClientTask task = null;
-            synchronized (mConnectCache) {
-                if (!mConnectCache.isEmpty()) {
-                    task = mConnectCache.remove();
-                }
+            if (!mConnectCache.isEmpty()) {
+                task = mConnectCache.remove();
             }
             if (task == null) {
                 return;

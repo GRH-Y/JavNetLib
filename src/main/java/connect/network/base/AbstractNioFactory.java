@@ -136,11 +136,11 @@ public abstract class AbstractNioFactory<T extends BaseNetTask> extends Abstract
                 }
             } else {
                 synchronized (AbstractNioFactory.class) {
-                    Iterator iterator = this.mSelector.keys().iterator();
+                    Iterator<SelectionKey> iterator = this.mSelector.keys().iterator();
                     while (iterator.hasNext()) {
                         SelectionKey selectionKey = null;
                         try {
-                            selectionKey = (SelectionKey) iterator.next();
+                            selectionKey = iterator.next();
                         } catch (Exception e) {
                         }
                         if (selectionKey == null) {

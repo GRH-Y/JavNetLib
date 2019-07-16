@@ -97,7 +97,7 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
                             value = String.valueOf(obj);
                         }
                         connection.setRequestProperty(key, value);
-                        LogDog.d("==> HttpCoreTask setRequestProperty key = " + key + " value = " + value);
+                        LogDog.d("==> key = " + key + " value = " + value);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();

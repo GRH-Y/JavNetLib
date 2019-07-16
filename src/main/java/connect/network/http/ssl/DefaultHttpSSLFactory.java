@@ -2,14 +2,25 @@ package connect.network.http.ssl;
 
 
 import connect.network.base.joggle.ISSLFactory;
+import util.StringEnvoy;
 
 import javax.net.ServerSocketFactory;
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLServerSocketFactory;
-import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.*;
 
-public class DefaultHttpSSLFactory implements ISSLFactory {
+public class DefaultHttpSSLFactory implements ISSLFactory, HostnameVerifier {
 
+    protected String hostname;
+
+    public DefaultHttpSSLFactory() {
+    }
+
+    public DefaultHttpSSLFactory(String hostname) {
+        if (StringEnvoy.isEmpty(hostname)) {
+            throw new NullPointerException("hostname is null !!!");
+        }
+        this.hostname = hostname.replace("http://", "").replace("https://", "")
+                .replace("/", "");
+    }
 
     @Override
     public SSLSocketFactory getSSLSocketFactory() {
@@ -21,11 +32,23 @@ public class DefaultHttpSSLFactory implements ISSLFactory {
         return SSLServerSocketFactory.getDefault();
     }
 
-
     @Override
     public HostnameVerifier getHostnameVerifier() {
-//        return (string, sslSession) -> string.equals(sslSession.getPeerHost());
-        return (string, sslSession) -> true;
+        return this;
+    }
+
+    @Override
+    public boolean verify(String hostname, SSLSession sslSession) {
+        if (StringEnvoy.isEmpty(this.hostname)) {
+            return true;
+        } else {
+            if (this.hostname.equals(hostname)) {
+                return true;
+            } else {
+                HostnameVerifier hv = HttpsURLConnection.getDefaultHostnameVerifier();
+                return hv.verify(hostname, sslSession);
+            }
+        }
     }
 
 }
