@@ -2,8 +2,9 @@ package connect.network.http.tool;
 
 import connect.network.http.joggle.IResponseConvert;
 import json.JsonEnvoy;
-import util.GZipUtils;
-import util.LogDog;
+import log.LogDog;
+import storage.GZipUtils;
+import util.StringEnvoy;
 
 public class JavConvertResult implements IResponseConvert {
 
@@ -13,7 +14,7 @@ public class JavConvertResult implements IResponseConvert {
             return null;
         }
         byte[] newData = result;
-        if ("gzip".equals(encode)) {
+        if (StringEnvoy.isNotEmpty(encode) && encode.contains("gzip")) {
             byte[] unCompressData = GZipUtils.unCompress(result);
             newData = unCompressData == null ? result : unCompressData;
         }

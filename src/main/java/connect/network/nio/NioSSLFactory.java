@@ -1,7 +1,7 @@
 package connect.network.nio;
 
 import connect.network.base.joggle.ISSLFactory;
-import util.LogDog;
+import log.LogDog;
 
 import javax.net.ServerSocketFactory;
 import javax.net.ssl.*;

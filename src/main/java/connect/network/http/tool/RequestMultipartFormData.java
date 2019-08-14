@@ -52,7 +52,7 @@ public class RequestMultipartFormData {
             disposition = new StringBuilder();
         }
         disposition.append(dispositionBoundary);
-        disposition.append(" Content-Disposition: form-data; name=\"" + key + "\"");
+        disposition.append("Content-Disposition: form-data; name=\"" + key + "\"");
         disposition.append(end);
         disposition.append(value);
         disposition.append(endDispositionBoundary);

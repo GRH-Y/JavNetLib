@@ -42,12 +42,12 @@ public class JavSessionCallBack implements ISessionCallBack {
     public void notifyData(RequestEntity entity) {
         String methodName;
         Object resultData;
-        if (entity.getResultData() == null) {
+        if (entity.getRespondEntity() == null) {
             methodName = entity.getErrorMethodName();
             resultData = entity;
         } else {
             methodName = entity.getSuccessMethodName();
-            resultData = entity.getResultData();
+            resultData = entity.getRespondEntity();
         }
         ThreadAnnotation.disposeMessage(methodName, entity.getCallBackTarget(), resultData);
     }

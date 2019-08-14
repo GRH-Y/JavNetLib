@@ -1,6 +1,7 @@
 package connect.network.udp;
 
 
+import log.LogDog;
 import task.executor.BaseConsumerTask;
 import task.executor.ConsumerQueueAttribute;
 import task.executor.TaskContainer;
@@ -8,7 +9,6 @@ import task.executor.joggle.IConsumerAttribute;
 import task.executor.joggle.IConsumerTaskExecutor;
 import task.executor.joggle.ILoopTaskExecutor;
 import task.executor.joggle.ITaskContainer;
-import util.LogDog;
 
 import java.net.*;
 

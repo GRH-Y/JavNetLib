@@ -5,11 +5,11 @@ import connect.network.base.joggle.ISessionCallBack;
 import connect.network.http.joggle.IRequestIntercept;
 import connect.network.http.joggle.IResponseConvert;
 import connect.network.http.joggle.POST;
+import log.LogDog;
 import storage.FileHelper;
 import task.executor.BaseConsumerTask;
 import task.executor.joggle.ILoopTaskExecutor;
 import util.IoEnvoy;
-import util.LogDog;
 import util.StringEnvoy;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -29,52 +29,48 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
         mConfig = config;
     }
 
-    private HttpURLConnection init(RequestEntity task) {
-        HttpURLConnection connection = null;
-        try {
-            String address = mConfig.getBaseUrl() == null || task.isDisableBaseUrl() ? task.getAddress() : mConfig.getBaseUrl() + task.getAddress();
-            URL url = new URL(address);
-            LogDog.d("{HttpCoreTask} Request address = " + url.toString());
+    private HttpURLConnection init(RequestEntity task) throws Exception {
+        HttpURLConnection connection;
+        String address = mConfig.getBaseUrl() == null || task.isDisableBaseUrl() ? task.getAddress() : mConfig.getBaseUrl() + task.getAddress();
+        URL url = new URL(address);
+        LogDog.d("{HttpCoreTask} Request address = " + url.toString());
 
-            if (address.startsWith("https")) {
-                HttpsURLConnection httpsURLConnection = (HttpsURLConnection) url.openConnection();
-                if (mConfig.getSslFactory() != null) {
-                    if (mConfig.getSslFactory().getHostnameVerifier() != null) {
-                        httpsURLConnection.setHostnameVerifier(mConfig.getSslFactory().getHostnameVerifier());
-                    }
-                    if (mConfig.getSslFactory().getSSLSocketFactory() != null) {
-                        httpsURLConnection.setSSLSocketFactory(mConfig.getSslFactory().getSSLSocketFactory());
-                    }
+        if (address.startsWith("https")) {
+            HttpsURLConnection httpsURLConnection = (HttpsURLConnection) url.openConnection();
+            if (mConfig.getSslFactory() != null) {
+                if (mConfig.getSslFactory().getHostnameVerifier() != null) {
+                    httpsURLConnection.setHostnameVerifier(mConfig.getSslFactory().getHostnameVerifier());
                 }
-                connection = httpsURLConnection;
-                connection.setInstanceFollowRedirects(false);
-            } else {
-                connection = (HttpURLConnection) url.openConnection();
+                if (mConfig.getSslFactory().getSSLSocketFactory() != null) {
+                    httpsURLConnection.setSSLSocketFactory(mConfig.getSslFactory().getSSLSocketFactory());
+                }
             }
-
-            connection.setConnectTimeout(mConfig.getTimeout());
-            connection.setReadTimeout(mConfig.getTimeout());
-            connection.setRequestMethod(task.getRequestMethod());
-            connection.setUseCaches(false);
-
-            connection.setRequestProperty("Charset", "utf-8");
-            connection.setRequestProperty("User-Agent", "JavHttpConnect-1.0");
-            //此处为暴力方法设置接受所有类型，以此来防范返回415;
-            connection.setRequestProperty("Accept", "*/*");
-            connection.setRequestProperty("Accept-Charset", "utf-8");
-            connection.setRequestProperty("Accept-Encoding", "gzip");
-
-            if (POST.class.getSimpleName().equals(task.getRequestMethod())) {
-                connection.setDoOutput(true);
-                connection.setRequestProperty("Content-Type", HttpTaskConfig.CONTENT_TYPE_JSON);
-            }
-
-            setRequestProperty(connection, mConfig.getGlobalRequestProperty());
-            setRequestProperty(connection, task.getRequestProperty());
-
-        } catch (Exception e) {
-            e.printStackTrace();
+            connection = httpsURLConnection;
+            connection.setInstanceFollowRedirects(false);
+        } else {
+            connection = (HttpURLConnection) url.openConnection();
         }
+
+        connection.setConnectTimeout(mConfig.getTimeout());
+        connection.setReadTimeout(mConfig.getTimeout());
+        connection.setRequestMethod(task.getRequestMethod());
+        connection.setUseCaches(false);
+
+        connection.setRequestProperty("Charset", "utf-8");
+        connection.setRequestProperty("User-Agent", "JavHttpConnect-1.0");
+        //此处为暴力方法设置接受所有类型，以此来防范返回415;
+        connection.setRequestProperty("Accept", "*/*");
+        connection.setRequestProperty("Accept-Charset", "utf-8");
+        connection.setRequestProperty("Accept-Encoding", "gzip, deflate");
+
+        if (POST.class.getSimpleName().equals(task.getRequestMethod())) {
+            connection.setDoOutput(true);
+            connection.setRequestProperty("Content-Type", HttpTaskConfig.CONTENT_TYPE_JSON);
+        }
+
+        setRequestProperty(connection, mConfig.getGlobalRequestProperty());
+        setRequestProperty(connection, task.getRequestProperty());
+
         return connection;
     }
 
@@ -132,9 +128,9 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
         }
     }
 
-    private void onResultCallBack(RequestEntity submitEntity) {
+    private void onResultCallBack(RequestEntity submitEntity, Throwable e) {
         //拦截结果
-        if (onInterceptResult(submitEntity, submitEntity.getResultData())) {
+        if (onInterceptResult(submitEntity, e)) {
             return;
         }
         ISessionCallBack callBack = mConfig.getSessionCallBack();
@@ -149,10 +145,10 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
         return intercept != null && intercept.intercept(submitEntity);
     }
 
-    private boolean onInterceptResult(RequestEntity submitEntity, Object entity) {
+    private boolean onInterceptResult(RequestEntity submitEntity, Throwable e) {
         //拦截结果
         IRequestIntercept intercept = mConfig.getInterceptRequest();
-        return intercept != null && intercept.interceptResult(submitEntity, entity);
+        return intercept != null && intercept.interceptResult(submitEntity, e);
     }
 
 
@@ -169,14 +165,18 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
         if (onInterceptRequest(submitEntity)) {
             return;
         }
-        HttpURLConnection connection = init(submitEntity);
-        if (connection == null) {
-            onResultCallBack(submitEntity);
+        HttpURLConnection connection;
+        try {
+            connection = init(submitEntity);
+        } catch (Exception e) {
+            onResultCallBack(submitEntity, e);
+            e.printStackTrace();
             return;
         }
         try {
             if (submitEntity.getSendData() != null) {
                 OutputStream os = connection.getOutputStream();
+//                byte[] gzip = GZipUtils.compress(submitEntity.getSendData());
                 os.write(submitEntity.getSendData());
                 os.flush();
                 LogDog.d("{HttpCoreTask} Post submitEntity = " + new String(submitEntity.getSendData()));
@@ -186,6 +186,7 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
             int length = connection.getContentLength();
 
             if (code == HttpURLConnection.HTTP_MOVED_TEMP) {
+                //重定向
                 String newUrl = connection.getHeaderField("Location");
                 if (StringEnvoy.isNotEmpty(mConfig.getBaseUrl())) {
                     newUrl.replace(mConfig.getBaseUrl(), "");
@@ -195,7 +196,7 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
                 return;
             } else if (code != HttpURLConnection.HTTP_OK) {
                 LogDog.w("{HttpCoreTask} Http Response Code = " + code);
-                onResultCallBack(submitEntity);
+                onResultCallBack(submitEntity, null);
                 return;
             }
 
@@ -216,35 +217,32 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
                     boolean state = ProcessIoUtils.pipReadWrite(is, outputStream, false, length, submitEntity, mConfig.getSessionCallBack());
 //                    boolean state = IoUtils.pipReadWrite(is, outputStream, false);
                     if (state) {
-                        submitEntity.setResultData(resultType);
+                        submitEntity.setRespondEntity(resultType);
                     }
                 }
-                onResultCallBack(submitEntity);
+                onResultCallBack(submitEntity, null);
             } else {
-                int available = is.available();
                 byte[] buffer;
-                if (length <= 0 && available <= 0) {
+                try {
                     buffer = IoEnvoy.tryRead(is);
-                } else {
-                    buffer = IoEnvoy.tryRead(is);
-                }
-                if (buffer == null) {
-                    onResultCallBack(submitEntity);
+                    submitEntity.setRespond(buffer);
+                } catch (Exception e) {
+                    onResultCallBack(submitEntity, e);
+                    e.printStackTrace();
                     return;
                 }
-
                 //转换成对应的数据
                 Object entity = buffer;
                 IResponseConvert convert = mConfig.getConvertResult();
                 if (convert != null) {
                     entity = convert.handlerEntity((Class) resultType, buffer, encode);
                 }
-                submitEntity.setResultData(entity);
-                onResultCallBack(submitEntity);
+                submitEntity.setRespondEntity(entity);
+                onResultCallBack(submitEntity, null);
             }
         } catch (Throwable e) {
             e.printStackTrace();
-            onResultCallBack(submitEntity);
+            onResultCallBack(submitEntity, e);
         } finally {
             connection.disconnect();
         }

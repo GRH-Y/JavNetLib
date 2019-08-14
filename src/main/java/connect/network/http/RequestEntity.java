@@ -18,7 +18,8 @@ public class RequestEntity {
     private String requestMethod = ConnectType.GET.getType();
 
     private byte[] sendData = null;
-    private Object resultData = null;
+    private byte[] respond = null;
+    private Object respondEntity = null;
 
     private String scbMethodName = null;
     private String ecbMethodName = null;
@@ -102,12 +103,12 @@ public class RequestEntity {
         return ecbMethodName;
     }
 
-    public Object getResultData() {
-        return resultData;
+    public Object getRespondEntity() {
+        return respondEntity;
     }
 
-    protected void setResultData(Object resultData) {
-        this.resultData = resultData;
+    protected void setRespondEntity(Object respondEntity) {
+        this.respondEntity = respondEntity;
     }
 
     public void setAddress(String address) {
@@ -172,5 +173,13 @@ public class RequestEntity {
 
     public boolean isIndependentTask() {
         return isIndependentTask;
+    }
+
+    public void setRespond(byte[] respond) {
+        this.respond = respond;
+    }
+
+    public byte[] getRespond() {
+        return respond;
     }
 }
