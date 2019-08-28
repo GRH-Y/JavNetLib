@@ -184,6 +184,7 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
 
             int code = connection.getResponseCode();
             int length = connection.getContentLength();
+            LogDog.w("{HttpCoreTask} Http Response Code = " + code + " length = " + length);
 
             if (code == HttpURLConnection.HTTP_MOVED_TEMP) {
                 //重定向
@@ -195,7 +196,14 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
                 mConfig.getAttribute().pushToCache(submitEntity);
                 return;
             } else if (code != HttpURLConnection.HTTP_OK) {
-                LogDog.w("{HttpCoreTask} Http Response Code = " + code);
+                InputStream is = connection.getInputStream();
+                try {
+                    byte[] buffer = IoEnvoy.tryRead(is);
+                    submitEntity.setRespondData(buffer);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                submitEntity.setResponseCode(code);
                 onResultCallBack(submitEntity, null);
                 return;
             }
@@ -214,7 +222,7 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
                 File file = FileHelper.crateFile((String) resultType);
                 if (file != null) {
                     FileOutputStream outputStream = new FileOutputStream(file);
-                    boolean state = ProcessIoUtils.pipReadWrite(is, outputStream, false, length, submitEntity, mConfig.getSessionCallBack());
+                    boolean state = ProcessIoUtils.pipReadWrite(is, outputStream, true, length, submitEntity, mConfig.getSessionCallBack());
 //                    boolean state = IoUtils.pipReadWrite(is, outputStream, false);
                     if (state) {
                         submitEntity.setRespondEntity(resultType);
@@ -225,7 +233,7 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
                 byte[] buffer;
                 try {
                     buffer = IoEnvoy.tryRead(is);
-                    submitEntity.setRespond(buffer);
+                    submitEntity.setRespondData(buffer);
                 } catch (Exception e) {
                     onResultCallBack(submitEntity, e);
                     e.printStackTrace();

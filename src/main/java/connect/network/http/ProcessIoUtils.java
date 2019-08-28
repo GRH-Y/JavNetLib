@@ -1,6 +1,7 @@
 package connect.network.http;
 
 import connect.network.base.joggle.ISessionCallBack;
+import log.LogDog;
 import util.IoEnvoy;
 
 import java.io.InputStream;
@@ -20,6 +21,7 @@ public class ProcessIoUtils {
                                        RequestEntity requestEntity, ISessionCallBack callBack) {
         boolean state = true;
         int missCount = 0;
+        long currentLength = 0;
         while (state) {
             try {
                 int available = is.available();
@@ -32,6 +34,8 @@ public class ProcessIoUtils {
                     if (callBack != null) {
                         callBack.notifyProcess(requestEntity, len, maxLength, false);
                     }
+                    missCount = 0;
+                    currentLength += len;
                 } else {
                     if (missCount < 8 && isCanTimeOut) {
                         missCount++;
@@ -52,6 +56,7 @@ public class ProcessIoUtils {
         if (callBack != null) {
             callBack.notifyProcess(requestEntity, 0, maxLength, true);
         }
+        LogDog.w("{ProcessIoUtils} pipReadWrite currentLength = " + currentLength);
         return state;
     }
 

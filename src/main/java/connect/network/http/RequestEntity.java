@@ -1,6 +1,7 @@
 package connect.network.http;
 
 
+import java.net.HttpURLConnection;
 import java.util.Map;
 
 /**
@@ -17,8 +18,9 @@ public class RequestEntity {
     private String address = null;
     private String requestMethod = ConnectType.GET.getType();
 
+    private int responseCode = HttpURLConnection.HTTP_OK;
     private byte[] sendData = null;
-    private byte[] respond = null;
+    private byte[] respondData = null;
     private Object respondEntity = null;
 
     private String scbMethodName = null;
@@ -175,11 +177,19 @@ public class RequestEntity {
         return isIndependentTask;
     }
 
-    public void setRespond(byte[] respond) {
-        this.respond = respond;
+    public void setRespondData(byte[] respondData) {
+        this.respondData = respondData;
     }
 
-    public byte[] getRespond() {
-        return respond;
+    public byte[] getRespondData() {
+        return respondData;
+    }
+
+    protected void setResponseCode(int responseCode) {
+        this.responseCode = responseCode;
+    }
+
+    public int getResponseCode() {
+        return responseCode;
     }
 }
