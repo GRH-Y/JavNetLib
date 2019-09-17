@@ -3,7 +3,6 @@ package connect.network.nio;
 
 import connect.network.base.BaseNetTask;
 
-import javax.net.ssl.SSLSocket;
 import java.nio.channels.SocketChannel;
 
 /**
@@ -22,13 +21,13 @@ public class NioClientTask extends BaseNetTask {
 
     private SocketChannel mChannel;
 
-    private SSLSocket mSSLSocket;
+//    private SSLSocket mSSLSocket;
 
     private NioSender sender = null;
 
     private NioReceive receive = null;
 
-    private boolean isAutoCheckCertificate = true;
+//    private boolean isAutoCheckCertificate = true;
 
     public NioClientTask() {
     }
@@ -55,9 +54,9 @@ public class NioClientTask extends BaseNetTask {
         this.mChannel = channel;
     }
 
-    protected void setSSLSocket(SSLSocket sslSocket) {
-        this.mSSLSocket = sslSocket;
-    }
+//    protected void setSSLSocket(SSLSocket sslSocket) {
+//        this.mSSLSocket = sslSocket;
+//    }
 
     public void setAddress(String host, int port) {
         this.mHost = host;
@@ -68,9 +67,9 @@ public class NioClientTask extends BaseNetTask {
         this.connectTimeout = connectTimeout;
     }
 
-    public void setAutoCheckCertificate(boolean autoCheckCertificate) {
-        isAutoCheckCertificate = autoCheckCertificate;
-    }
+//    public void setAutoCheckCertificate(boolean autoCheckCertificate) {
+//        isAutoCheckCertificate = autoCheckCertificate;
+//    }
 
     //---------------------------- get ---------------------------------------
 
@@ -86,9 +85,9 @@ public class NioClientTask extends BaseNetTask {
         return mChannel;
     }
 
-    public SSLSocket getSSLSSocket() {
-        return mSSLSocket;
-    }
+//    public SSLSocket getSSLSSocket() {
+//        return mSSLSocket;
+//    }
 
     public NioSender getSender() {
         return sender;
@@ -102,9 +101,9 @@ public class NioClientTask extends BaseNetTask {
         return connectTimeout;
     }
 
-    public boolean isAutoCheckCertificate() {
-        return isAutoCheckCertificate;
-    }
+//    public boolean isAutoCheckCertificate() {
+//        return isAutoCheckCertificate;
+//    }
 
     //---------------------------- on ---------------------------------------
 

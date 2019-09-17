@@ -60,7 +60,9 @@ public abstract class AbstractFactory<T extends BaseNetTask> implements IFactory
 
     @Override
     public void setSSlFactory(ISSLFactory sslFactory) {
-        this.mSslFactory = sslFactory;
+        if (sslFactory != null) {
+            this.mSslFactory = sslFactory;
+        }
     }
 
     //-----------------------------------------------------------------------------------------

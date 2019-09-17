@@ -2,9 +2,7 @@ package connect.network.nio;
 
 import connect.network.base.AbstractNioFactory;
 import connect.network.base.NioEngine;
-import sun.security.ssl.SSLSocketImpl;
 
-import javax.net.ssl.SSLSocketFactory;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
@@ -95,14 +93,17 @@ public class NioSimpleClientFactory extends AbstractNioFactory<NioClientTask> {
                     }
                 }
                 task.setChannel(socketChannel);
-                if (!task.isAutoCheckCertificate() && task.getPort() == 443 && mSslFactory != null) {
-                    SSLSocketFactory sslSocketFactory = mSslFactory.getSSLSocketFactory();
-                    SSLSocketImpl sslSocketImpl = (SSLSocketImpl) sslSocketFactory.createSocket(task.getHost(), task.getPort());
-                    sslSocketImpl.setSoTimeout(task.getConnectTimeout());
-                    sslSocketImpl.setUseClientMode(true);
-                    sslSocketImpl.startHandshake();
-                    task.setSSLSocket(sslSocketImpl);
-                }
+//                if (!task.isAutoCheckCertificate() && task.getPort() == 443 && mSslFactory != null) {
+//                    SSLSocketFactory sslSocketFactory = mSslFactory.getSSLSocketFactory();
+//                    if (sslSocketFactory != null) {
+//                        SSLSocketImpl sslSocketImpl = (SSLSocketImpl) sslSocketFactory.createSocket(task.getHost(), task.getPort());
+//                        sslSocketImpl.setSoTimeout(task.getConnectTimeout());
+//                        sslSocketImpl.setUseClientMode(true);
+//                        sslSocketImpl.startHandshake();
+//                        task.setSSLSocket(sslSocketImpl);
+//                        task.setChannel(sslSocketImpl.getChannel());
+//                    }
+//                }
             } catch (Exception e) {
                 socketChannel = null;
                 e.printStackTrace();
@@ -125,6 +126,10 @@ public class NioSimpleClientFactory extends AbstractNioFactory<NioClientTask> {
             removeTask(task);
             return;
         }
+        configSocket(task, channel);
+    }
+
+    private void configSocket(NioClientTask task, SocketChannel channel) {
         try {
             Socket socket = channel.socket();
             socket.setSoTimeout(task.getConnectTimeout());

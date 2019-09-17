@@ -46,7 +46,6 @@ public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
                 }
             }
             connection = httpsURLConnection;
-            connection.setInstanceFollowRedirects(false);
         } else {
             connection = (HttpURLConnection) url.openConnection();
         }
