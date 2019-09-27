@@ -4,7 +4,6 @@ package connect.network.nio;
 import connect.network.base.AbstractNioFactory;
 import connect.network.base.joggle.IFactory;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
@@ -89,7 +88,7 @@ public class NioServerFactory extends AbstractNioFactory<NioServerTask> {
             try {
                 SocketChannel channel = serverSocketChannel.accept();
                 task.onAcceptServerChannel(channel);
-            } catch (IOException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }

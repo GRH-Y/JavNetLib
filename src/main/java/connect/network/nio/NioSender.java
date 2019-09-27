@@ -2,9 +2,9 @@ package connect.network.nio;
 
 
 import connect.network.base.joggle.ISender;
+import log.LogDog;
 
 import java.io.IOException;
-import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.Queue;
@@ -72,14 +72,9 @@ public class NioSender implements ISender {
     protected void onWrite(SocketChannel channel) throws Exception {
         while (!cache.isEmpty() && channel != null) {
             ByteBuffer buffer = cache.remove();
-            try {
-                if (channel.write(buffer) <= 0) {
-                    throw new Exception("NioSender onWrite error  !!!");
-                }
-            } catch (Exception e) {
-                if (!(e instanceof SocketTimeoutException)) {
-                    throw new Exception(e);
-                }
+            if (channel.write(buffer) <= 0) {
+                LogDog.e("NioSender onWrite error  !!!");
+                break;
             }
         }
         if (cache.isEmpty()) {

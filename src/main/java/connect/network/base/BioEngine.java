@@ -50,7 +50,6 @@ public class BioEngine<T extends BaseNetTask> extends LowPcEngine {
     }
 
     protected void onCreateData() {
-
         //检测是否有新的任务添加
         if (!mFactory.mConnectCache.isEmpty()) {
             T task = mFactory.mConnectCache.remove();

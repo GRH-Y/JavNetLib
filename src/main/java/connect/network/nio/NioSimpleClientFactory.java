@@ -2,6 +2,7 @@ package connect.network.nio;
 
 import connect.network.base.AbstractNioFactory;
 import connect.network.base.NioEngine;
+import log.LogDog;
 
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -31,7 +32,7 @@ public class NioSimpleClientFactory extends AbstractNioFactory<NioClientTask> {
         try {
             SocketChannel channel = sender.getChannel();
             SelectionKey selectionKey = channel.keyFor(mSelector);
-            if (selectionKey != null) {
+            if (selectionKey != null && channel.isOpen()) {
                 NioClientTask task = (NioClientTask) selectionKey.attachment();
                 channel.register(mSelector, SelectionKey.OP_WRITE | SelectionKey.OP_READ, task);
                 mSelector.wakeup();
@@ -50,7 +51,7 @@ public class NioSimpleClientFactory extends AbstractNioFactory<NioClientTask> {
         try {
             SocketChannel channel = sender.getChannel();
             SelectionKey selectionKey = channel.keyFor(mSelector);
-            if (selectionKey != null) {
+            if (selectionKey != null && channel.isOpen()) {
                 NioClientTask task = (NioClientTask) selectionKey.attachment();
                 channel.register(mSelector, SelectionKey.OP_READ, task);
             }
@@ -83,12 +84,15 @@ public class NioSimpleClientFactory extends AbstractNioFactory<NioClientTask> {
                 socketChannel.configureBlocking(false);
                 boolean result = socketChannel.connect(new InetSocketAddress(task.getHost(), task.getPort()));
                 if (!result) {
-                    long startTime = System.currentTimeMillis();
-                    while (!socketChannel.finishConnect()) {
-                        if (System.currentTimeMillis() - startTime < task.getConnectTimeout()) {
-                            Thread.sleep(100);
-                        } else {
-                            throw new SocketTimeoutException("connect " + task.getHost() + ":" + task.getPort() + " timeout !!!");
+                    boolean isFinishConnect = socketChannel.finishConnect();
+                    if (!isFinishConnect && task.getConnectTimeout() > 0) {
+                        long startTime = System.currentTimeMillis();
+                        while (!socketChannel.finishConnect()) {
+                            if (System.currentTimeMillis() - startTime < task.getConnectTimeout()) {
+                                Thread.sleep(100);
+                            } else {
+                                throw new SocketTimeoutException("connect " + task.getHost() + ":" + task.getPort() + " timeout !!!");
+                            }
                         }
                     }
                 }
@@ -132,27 +136,33 @@ public class NioSimpleClientFactory extends AbstractNioFactory<NioClientTask> {
     private void configSocket(NioClientTask task, SocketChannel channel) {
         try {
             Socket socket = channel.socket();
-            socket.setSoTimeout(task.getConnectTimeout());
             //复用端口
             socket.setReuseAddress(true);
-            socket.setKeepAlive(true);
+//            socket.setKeepAlive(true);
+            //设置超时时间
+            socket.setSoTimeout(task.getConnectTimeout());
             //关闭Nagle算法
-            socket.setTcpNoDelay(true);
+            if (task.getConnectTimeout() > 0 && task.getPort() == 443) {
+                try {
+                    socket.setTcpNoDelay(true);
+                } catch (Exception e) {
+                    LogDog.e("The socket does not support setTcpNoDelay() !!! ");
+//                e.printStackTrace();
+                }
+            }
             //执行Socket的close方法，该方法也会立即返回
             socket.setSoLinger(true, 0);
 //            configSSL(task);
             task.onConfigSocket(channel);
-
             if (channel.isBlocking()) {
-                channel.configureBlocking(false);// 设置为非阻塞
+                // 设置为非阻塞
+                channel.configureBlocking(false);
             }
             if (channel.isConnected()) {
                 registerChannel(task, channel);
                 task.onConnectSocketChannel(true);
             } else {
-                synchronized (AbstractNioFactory.class) {
-                    channel.register(mSelector, SelectionKey.OP_CONNECT, task);
-                }
+                channel.register(mSelector, SelectionKey.OP_CONNECT, task);
             }
         } catch (Exception e) {
             task.onConnectSocketChannel(false);

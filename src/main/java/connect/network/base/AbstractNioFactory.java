@@ -30,12 +30,17 @@ public abstract class AbstractNioFactory<T extends BaseNetTask> extends Abstract
 
     /**
      * 检查链接任务
+     *
      * @param isConnectAll
      */
     protected void onCheckConnectTaskImp(boolean isConnectAll) {
         while (!mConnectCache.isEmpty()) {
             T task = mConnectCache.remove();
-            onConnectTask(task);
+            try {
+                onConnectTask(task);
+            } catch (Throwable e) {
+                e.printStackTrace();
+            }
             if (!isConnectAll) {
                 break;
             }
@@ -167,6 +172,7 @@ public abstract class AbstractNioFactory<T extends BaseNetTask> extends Abstract
                 for (SelectionKey selectionKey : mSelector.keys()) {
                     T hasTask = (T) selectionKey.attachment();
                     if (hasTask == task) {
+                        hasTask.getSocketCloseState().set(true);
                         mDestroyCache.add(task);
                         mSelector.wakeup();
                         break;
@@ -188,6 +194,7 @@ public abstract class AbstractNioFactory<T extends BaseNetTask> extends Abstract
                 for (SelectionKey selectionKey : mSelector.keys()) {
                     T task = (T) selectionKey.attachment();
                     if (task.getTag() == tag) {
+                        task.getSocketCloseState().set(true);
                         mDestroyCache.add(task);
                         mSelector.wakeup();
                         break;
