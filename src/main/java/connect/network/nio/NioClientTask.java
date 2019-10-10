@@ -21,13 +21,9 @@ public class NioClientTask extends BaseNetTask {
 
     private SocketChannel mChannel;
 
-//    private SSLSocket mSSLSocket;
-
     private NioSender sender = null;
 
     private NioReceive receive = null;
-
-//    private boolean isAutoCheckCertificate = true;
 
     public NioClientTask() {
     }
@@ -54,10 +50,6 @@ public class NioClientTask extends BaseNetTask {
         this.mChannel = channel;
     }
 
-//    protected void setSSLSocket(SSLSocket sslSocket) {
-//        this.mSSLSocket = sslSocket;
-//    }
-
     public void setAddress(String host, int port) {
         this.mHost = host;
         this.mPort = port;
@@ -66,10 +58,6 @@ public class NioClientTask extends BaseNetTask {
     public void setConnectTimeout(int connectTimeout) {
         this.connectTimeout = connectTimeout;
     }
-
-//    public void setAutoCheckCertificate(boolean autoCheckCertificate) {
-//        isAutoCheckCertificate = autoCheckCertificate;
-//    }
 
     //---------------------------- get ---------------------------------------
 
@@ -85,25 +73,17 @@ public class NioClientTask extends BaseNetTask {
         return mChannel;
     }
 
-//    public SSLSocket getSSLSSocket() {
-//        return mSSLSocket;
-//    }
-
-    public NioSender getSender() {
-        return sender;
+    public <T extends NioSender> T getSender() {
+        return (T) sender;
     }
 
-    public NioReceive getReceive() {
-        return receive;
+    public <T extends NioReceive> T getReceive() {
+        return (T) receive;
     }
 
     public int getConnectTimeout() {
         return connectTimeout;
     }
-
-//    public boolean isAutoCheckCertificate() {
-//        return isAutoCheckCertificate;
-//    }
 
     //---------------------------- on ---------------------------------------
 
@@ -118,13 +98,11 @@ public class NioClientTask extends BaseNetTask {
     protected void onConnectSocketChannel(boolean isConnect) {
     }
 
-
     /**
      * 当前状态链接还没关闭，可以做最后的一次数据传输
      */
     protected void onCloseSocketChannel() {
     }
-
 
     /**
      * 当前状态链接彻底关闭，可以做资源回收工作

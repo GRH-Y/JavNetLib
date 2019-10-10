@@ -35,7 +35,7 @@ public class LowPcEngine extends PcEngine {
     @Override
     protected void stopEngine() {
         if (mExecutor != null) {
-            mExecutor.blockStopTask();
+//            mExecutor.blockStopTask();
             TaskExecutorPoolManager.getInstance().destroy(mContainer);
             mContainer = null;
         }

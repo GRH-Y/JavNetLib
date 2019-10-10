@@ -19,6 +19,17 @@ public class NioServerTask extends BaseNetTask {
     private ServerSocketChannel mChannel = null;
     private int mMaxConnect = 50;
 
+    public NioServerTask() {
+    }
+
+    public NioServerTask(String host, int port) {
+        setAddress(host, port);
+    }
+
+    public NioServerTask(ServerSocketChannel channel) {
+        mChannel = channel;
+    }
+
     //---------------------------- set ---------------------------------------
 
     public void setAddress(String host, int port) {

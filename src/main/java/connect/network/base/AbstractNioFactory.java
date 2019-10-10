@@ -84,52 +84,6 @@ public abstract class AbstractNioFactory<T extends BaseNetTask> extends Abstract
 
     //=====================================上面是生命周期回调方法===========================================================
 
-    protected void removerTargetTask(T target) {
-        synchronized (AbstractNioFactory.class) {
-            for (SelectionKey selectionKey : mSelector.keys()) {
-                T task = (T) selectionKey.attachment();
-                if (task == target) {
-                    try {
-                        selectionKey.channel().close();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    } finally {
-                        selectionKey.cancel();
-                    }
-                    break;
-                }
-            }
-        }
-    }
-
-    protected void destroyTaskImp() {
-        //线程准备结束，释放所有链接
-        for (SelectionKey selectionKey : mSelector.keys()) {
-            T task = (T) selectionKey.attachment();
-            try {
-                onDisconnectTask(task);
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                try {
-                    selectionKey.channel().close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                selectionKey.cancel();
-                onRecoveryTask(task);
-            }
-        }
-        if (mSelector != null) {
-            try {
-                mSelector.close();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        mConnectCache.clear();
-        mDestroyCache.clear();
-    }
 
     @Override
     public void addTask(T task) {
@@ -172,6 +126,7 @@ public abstract class AbstractNioFactory<T extends BaseNetTask> extends Abstract
                 for (SelectionKey selectionKey : mSelector.keys()) {
                     T hasTask = (T) selectionKey.attachment();
                     if (hasTask == task) {
+                        selectionKey.cancel();
                         hasTask.getSocketCloseState().set(true);
                         mDestroyCache.add(task);
                         mSelector.wakeup();
@@ -181,6 +136,53 @@ public abstract class AbstractNioFactory<T extends BaseNetTask> extends Abstract
             }
         }
     }
+
+    protected void destroyTaskImp() {
+        //线程准备结束，释放所有链接
+        for (SelectionKey selectionKey : mSelector.keys()) {
+            T task = (T) selectionKey.attachment();
+            try {
+                onDisconnectTask(task);
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                try {
+                    selectionKey.cancel();
+                    selectionKey.channel().close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                onRecoveryTask(task);
+            }
+        }
+        if (mSelector != null) {
+            try {
+                mSelector.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        mConnectCache.clear();
+        mDestroyCache.clear();
+    }
+
+    protected void removerTargetTask(T target) {
+        synchronized (AbstractNioFactory.class) {
+            for (SelectionKey selectionKey : mSelector.keys()) {
+                T task = (T) selectionKey.attachment();
+                if (task == target) {
+                    try {
+                        selectionKey.cancel();
+                        selectionKey.channel().close();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
 
     @Override
     public void removeTask(int tag) {
@@ -194,6 +196,7 @@ public abstract class AbstractNioFactory<T extends BaseNetTask> extends Abstract
                 for (SelectionKey selectionKey : mSelector.keys()) {
                     T task = (T) selectionKey.attachment();
                     if (task.getTag() == tag) {
+                        selectionKey.cancel();
                         task.getSocketCloseState().set(true);
                         mDestroyCache.add(task);
                         mSelector.wakeup();

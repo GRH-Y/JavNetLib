@@ -52,7 +52,7 @@ public class NioHighPcEngine<T extends BaseNetTask> extends NioEngine<T> {
     protected void stopEngine() {
         if (taskContainerList != null) {
             for (ITaskContainer container : taskContainerList) {
-                container.getTaskExecutor().blockStopTask();
+//                container.getTaskExecutor().blockStopTask();
                 TaskExecutorPoolManager.getInstance().destroy(container);
             }
             taskContainerList.clear();

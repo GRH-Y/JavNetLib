@@ -43,7 +43,7 @@ public class NioReceive implements IReceive {
      *
      * @return 如果返回false则会关闭该链接
      */
-    protected void onRead(SocketChannel channel) throws Exception {
+    protected void onRead() throws Exception {
         byte[] data = IoEnvoy.tryRead(channel);
         if (data != null) {
             ThreadAnnotation.disposeMessage(mReceiveMethodName, mReceive, data);
