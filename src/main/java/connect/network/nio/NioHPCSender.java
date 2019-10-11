@@ -1,16 +1,13 @@
 package connect.network.nio;
 
 
-import log.LogDog;
-import task.executor.BaseConsumerTask;
-import task.executor.ConsumerQueueAttribute;
+import task.executor.BaseLoopTask;
 import task.executor.TaskExecutorPoolManager;
-import task.executor.joggle.IConsumerAttribute;
-import task.executor.joggle.IConsumerTaskExecutor;
 import task.executor.joggle.ITaskContainer;
 
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * 高性能的发送者 (独立线程处理发送数据)
@@ -34,71 +31,54 @@ public class NioHPCSender extends NioSender {
     }
 
 
-    @Override
-    protected void setChannel(SocketChannel channel) {
-        super.setChannel(channel);
-        if (channel != null) {
-            coreSendTask.start();
-        }
-    }
+    private final class CoreSendTask extends BaseLoopTask {
 
-    /**
-     * 销毁线程，任务结束一定要调用，不然会内存泄露
-     */
-    public void destroy() {
-        coreSendTask.stop();
-    }
+        private ITaskContainer taskContainer = null;
+        private Queue<byte[]> mCache = new ConcurrentLinkedQueue();
 
-    private final class CoreSendTask extends BaseConsumerTask<byte[]> {
-
-        private ITaskContainer taskContainer;
-        private IConsumerAttribute<byte[]> attribute;
-
-        CoreSendTask() {
-            taskContainer = TaskExecutorPoolManager.getInstance().createJThread(this);
-            attribute = new ConsumerQueueAttribute<>();
-            taskContainer.setAttribute(attribute);
-            IConsumerTaskExecutor executor = taskContainer.getTaskExecutor();
-            executor.setIdleStateSleep(true);
-        }
 
         void addData(byte[] data) {
-            attribute.pushToCache(data);
-            taskContainer.getTaskExecutor().resumeTask();
-        }
-
-        void start() {
-            taskContainer.getTaskExecutor().startTask();
-        }
-
-        void stop() {
-            taskContainer.getTaskExecutor().stopTask();
+            mCache.add(data);
+            synchronized (CoreSendTask.class) {
+                if (taskContainer == null) {
+                    taskContainer = TaskExecutorPoolManager.getInstance().runTask(this, null);
+                }
+            }
+            synchronized (CoreSendTask.class) {
+                if (taskContainer == null) {
+                    taskContainer = TaskExecutorPoolManager.getInstance().runTask(this, null);
+                }
+            }
         }
 
         @Override
-        protected void onProcess() {
-            byte[] data = attribute.popCacheData();
-            if (data != null) {
-                boolean isError = true;
+        protected void onRunLoopTask() {
+            while (!mCache.isEmpty()) {
+                byte[] data = null;
                 try {
-                    if (channel.isOpen() && channel.isConnected()) {
-                        isError = channel.write(ByteBuffer.wrap(data)) <= 0;
+                    data = mCache.poll();
+                } catch (Exception e) {
+                }
+                if (data != null) {
+                    boolean isError = true;
+                    try {
+                        if (channel.isOpen() && channel.isConnected() && !clientTask.isCloseing()) {
+                            isError = channel.write(ByteBuffer.wrap(data)) < 0;
+                        }
+                    } catch (Throwable e) {
+                        e.printStackTrace();
                     }
-                } catch (Throwable e) {
-                    e.printStackTrace();
+                    if (isError) {
+                        onSenderErrorCallBack();
+                        break;
+                    }
                 }
-                if (isError) {
-                    onSenderErrorCallBack();
-                    LogDog.e("NioSender onWrite error  !!!");
-                }
-
+            }
+            synchronized (CoreSendTask.class) {
+                taskContainer.getTaskExecutor().stopTask();
+                taskContainer = null;
             }
         }
-    }
 
-    /**
-     * 发送数据失败回调
-     */
-    protected void onSenderErrorCallBack() {
     }
 }

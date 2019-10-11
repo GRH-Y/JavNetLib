@@ -160,7 +160,7 @@ public class NioSimpleClientFactory extends AbstractNioFactory<NioClientTask> {
         SocketChannel channel = (SocketChannel) selectionKey.channel();
         NioClientTask task = (NioClientTask) selectionKey.attachment();
 
-        if (selectionKey.isValid() && selectionKey.isConnectable() && task != null) {
+        if (selectionKey.isValid() && selectionKey.isConnectable()) {
             boolean isConnect = channel.isConnected();
             try {
                 if (channel.isConnectionPending()) {
@@ -196,7 +196,7 @@ public class NioSimpleClientFactory extends AbstractNioFactory<NioClientTask> {
                     removeTask(task);
                 }
             }
-        } else if (selectionKey.isValid() && selectionKey.isReadable() && task != null) {
+        } else if (selectionKey.isValid() && selectionKey.isReadable()) {
             NioReceive receive = task.getReceive();
             if (receive != null) {
                 try {

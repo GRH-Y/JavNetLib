@@ -24,7 +24,7 @@ public class LowPcEngine extends PcEngine {
     @Override
     protected void startEngine() {
         if (mContainer == null) {
-            mContainer = TaskExecutorPoolManager.getInstance().createJThread(this);
+            mContainer = TaskExecutorPoolManager.getInstance().createLoopTask(this, null);
             mExecutor = mContainer.getTaskExecutor();
             mExecutor.blockStartTask();
         } else {
