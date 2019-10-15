@@ -1,6 +1,7 @@
 package connect.network.base;
 
-public abstract class AbstractBioFactory<T extends BaseNetTask> extends AbstractFactory<T> {
+
+public abstract class AbstractBioNetFactory<T extends BaseNetTask> extends AbstractNetFactory<T> {
 
     abstract protected boolean onConnectTask(T task);
 
@@ -10,7 +11,8 @@ public abstract class AbstractBioFactory<T extends BaseNetTask> extends Abstract
 
     abstract protected void onDisconnectTask(T task);
 
-    protected AbstractBioFactory() {
+    protected AbstractBioNetFactory() {
         setEngine(new BioEngine(this));
     }
+
 }

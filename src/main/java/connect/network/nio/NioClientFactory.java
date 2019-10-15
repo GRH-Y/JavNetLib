@@ -2,7 +2,7 @@ package connect.network.nio;
 
 
 import connect.network.base.NioEngine;
-import connect.network.base.joggle.IFactory;
+import connect.network.base.joggle.INetFactory;
 
 /**
  * nio客户端工厂接口创建者
@@ -12,12 +12,12 @@ import connect.network.base.joggle.IFactory;
  */
 public class NioClientFactory {
 
-    private static IFactory<NioClientTask> mFactory = null;
+    private static INetFactory<NioClientTask> mFactory = null;
 
     private NioClientFactory() {
     }
 
-    public static synchronized IFactory<NioClientTask> getFactory() {
+    public static synchronized INetFactory<NioClientTask> getFactory() {
         if (mFactory == null) {
             synchronized (NioClientFactory.class) {
                 if (mFactory == null) {
@@ -28,7 +28,7 @@ public class NioClientFactory {
         return mFactory;
     }
 
-    public static synchronized IFactory<NioClientTask> getFactory(NioEngine engine) {
+    public static synchronized INetFactory<NioClientTask> getFactory(NioEngine engine) {
         if (mFactory == null) {
             synchronized (NioClientFactory.class) {
                 if (mFactory == null) {

@@ -1,5 +1,7 @@
 package connect.network.tcp;
 
+import connect.network.base.joggle.ISSLFactory;
+
 import javax.net.ServerSocketFactory;
 import javax.net.ssl.SSLServerSocket;
 import java.io.IOException;
@@ -8,8 +10,10 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 
-public class TcpServerFactory extends AbstractServerFactory<TcpServerTask> {
+public class TcpServerFactory extends AbstractServerNetFactory<TcpServerTask> {
     private static TcpServerFactory mFactory;
+
+    private ISSLFactory mSslFactory = null;
 
     private TcpServerFactory() {
     }
@@ -26,21 +30,20 @@ public class TcpServerFactory extends AbstractServerFactory<TcpServerTask> {
         return mFactory;
     }
 
-    public static void destroy() {
-        if (mFactory != null) {
-            mFactory.close();
-            mFactory = null;
+    public void setSSlFactory(ISSLFactory sslFactory) {
+        if (sslFactory != null) {
+            this.mSslFactory = sslFactory;
         }
     }
 
     @Override
     protected boolean onConnectTask(TcpServerTask task) {
-        boolean isOpenServer;
+        boolean isOpenServer = false;
         ServerSocket serverSocket = task.getServerSocket();
         try {
             if (serverSocket == null && task.getServerHost() != null && task.getServerPort() > 0) {
                 InetSocketAddress address = new InetSocketAddress(task.getServerHost(), task.getServerPort());
-                if (task.getServerPort() == 443) {
+                if (task.getServerPort() == 443 && mSslFactory != null) {
                     ServerSocketFactory sslServerSocketFactory = mSslFactory.getSSLServerSocketFactory();
                     SSLServerSocket sslServerSocket = (SSLServerSocket) sslServerSocketFactory.createServerSocket();
                     sslServerSocket.bind(address);
@@ -55,16 +58,17 @@ public class TcpServerFactory extends AbstractServerFactory<TcpServerTask> {
                 serverSocket.setReuseAddress(true);
                 serverSocket.setSoTimeout(500);
                 serverSocket.setPerformancePreferences(0, 1, 2);
-                task.onConfigServer(serverSocket);
+                isOpenServer = serverSocket.isBound();
             }
         } catch (Throwable e) {
+            isOpenServer = false;
+            removeTask(task);
             e.printStackTrace();
-        } finally {
-            isOpenServer = serverSocket.isBound();
-            if (isOpenServer) {
-                task.setServerSocket(serverSocket);
-            }
-            task.onBindServer(isOpenServer);
+        }
+        try {
+            task.onConfigServer(isOpenServer, isOpenServer ? serverSocket : null);
+        } catch (Throwable e) {
+            e.printStackTrace();
         }
         return isOpenServer;
     }

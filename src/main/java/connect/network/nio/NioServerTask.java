@@ -1,8 +1,9 @@
 package connect.network.nio;
 
 
-import connect.network.base.BaseNetTask;
+import connect.network.base.BaseNioNetTask;
 
+import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
@@ -12,12 +13,13 @@ import java.nio.channels.SocketChannel;
  * @author yyz
  * @version 1.0
  */
-public class NioServerTask extends BaseNetTask {
+public class NioServerTask extends BaseNioNetTask {
 
-    private String mHost;
-    private int mPort;
+    private String mHost = null;
+    private int mPort = 0;
     private ServerSocketChannel mChannel = null;
     private int mMaxConnect = 50;
+    private int acceptTimeout = 3000;
 
     public NioServerTask() {
     }
@@ -42,12 +44,21 @@ public class NioServerTask extends BaseNetTask {
      *
      * @param channel
      */
-    public void setSocketChannel(ServerSocketChannel channel) {
+    public void setServerSocketChannel(ServerSocketChannel channel) {
         this.mChannel = channel;
     }
 
     public void setMaxConnect(int maxConnect) {
         this.mMaxConnect = mMaxConnect;
+    }
+
+    public void setAcceptTimeout(int acceptTimeout) {
+        this.acceptTimeout = acceptTimeout;
+    }
+
+    @Override
+    protected void setSelectionKey(SelectionKey selectionKey) {
+        super.setSelectionKey(selectionKey);
     }
 
     //---------------------------- get ---------------------------------------
@@ -60,7 +71,7 @@ public class NioServerTask extends BaseNetTask {
         return mHost;
     }
 
-    public ServerSocketChannel getSocketChannel() {
+    public ServerSocketChannel getServerSocketChannel() {
         return mChannel;
     }
 
@@ -68,15 +79,16 @@ public class NioServerTask extends BaseNetTask {
         return mMaxConnect;
     }
 
+    public int getAcceptTimeout() {
+        return acceptTimeout;
+    }
+
     //---------------------------- on ---------------------------------------
 
-    protected void onConfigServer(ServerSocketChannel channel) {
+    protected void onConfigServer(boolean isSuccess, ServerSocketChannel channel) {
     }
 
     protected void onAcceptServerChannel(SocketChannel channel) {
-    }
-
-    protected void onOpenServerChannel(boolean isSuccess) {
     }
 
     protected void onCloseServerChannel() {

@@ -6,9 +6,9 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 public class TcpServerTask extends BaseNetTask {
-    private ServerSocket mServerSocket;
-    private String mHost;
-    private int mPort;
+    private ServerSocket mServerSocket = null;
+    private String mHost = null;
+    private int mPort = -1;
 
     private int mMaxConnect = 50;
 
@@ -46,16 +46,13 @@ public class TcpServerTask extends BaseNetTask {
 
     //---------------------------- on ---------------------------------------
 
-    protected void onConfigServer(ServerSocket serverSocket) {
+    protected void onConfigServer(boolean isSuccess, ServerSocket serverSocket) {
     }
 
     protected void onAcceptServer(Socket socket) {
     }
 
     protected void onAcceptTimeoutServer() {
-    }
-
-    protected void onBindServer(boolean isSuccess) {
     }
 
     protected void onCloseServer() {

@@ -1,21 +1,21 @@
 package connect.network.tcp;
 
-import connect.network.base.AbstractBioFactory;
+import connect.network.base.AbstractBioNetFactory;
+import connect.network.base.joggle.ISSLFactory;
 import sun.security.ssl.SSLSocketImpl;
 
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
-import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.Socket;
 
-public class TcpClientFactory extends AbstractBioFactory<TcpClientTask> {
+public class TcpClientFactory extends AbstractBioNetFactory<TcpClientTask> {
 
     private static TcpClientFactory mFactory;
 
+    private ISSLFactory mSslFactory = null;
+
     private TcpClientFactory() {
     }
-
 
     public synchronized static TcpClientFactory getFactory() {
         if (mFactory == null) {
@@ -28,35 +28,30 @@ public class TcpClientFactory extends AbstractBioFactory<TcpClientTask> {
         return mFactory;
     }
 
-
-    public static void destroy() {
-        if (mFactory != null) {
-            mFactory.close();
-            mFactory = null;
+    public void setSSlFactory(ISSLFactory sslFactory) {
+        if (sslFactory != null) {
+            this.mSslFactory = sslFactory;
         }
     }
 
     @Override
     protected boolean onConnectTask(TcpClientTask task) {
-        boolean isConnect;
+        boolean isConnect = false;
         Socket socket = task.getSocket();
         try {
-            InetSocketAddress address = null;
             if (socket == null) {
-                if (task.getPort() == 443) {
+                if (task.getPort() == 443 && mSslFactory != null) {
                     SSLSocketFactory sslSocketFactory = mSslFactory.getSSLSocketFactory();
                     SSLSocketImpl sslSocketImpl = (SSLSocketImpl) sslSocketFactory.createSocket(task.getHost(), task.getPort());
                     sslSocketImpl.setUseClientMode(true);
                     sslSocketImpl.startHandshake();
                     socket = sslSocketImpl;
                 } else {
-                    address = new InetSocketAddress(task.getHost(), task.getPort());
-                    socket = new Socket();
+                    socket = new Socket(task.getHost(), task.getPort());
                 }
             }
             if (socket != null) {
                 socket.setSoTimeout(task.getConnectTimeout());
-                socket.setKeepAlive(true);
                 //复用端口
                 socket.setReuseAddress(true);
                 if (!(socket instanceof SSLSocket)) {
@@ -69,40 +64,37 @@ public class TcpClientFactory extends AbstractBioFactory<TcpClientTask> {
                 socket.setSoLinger(true, 0);
                 //配置socket
                 task.onConfigSocket(socket);
-                if (address != null) {
-                    //开始链接
-                    socket.connect(address, task.getConnectTimeout());
-                }
+                isConnect = socket.isConnected();
             }
         } catch (Throwable e) {
+            isConnect = false;
+            removeTask(task);
             e.printStackTrace();
-        } finally {
-            isConnect = socket.isConnected();
-            if (isConnect) {
-                //保存socket
-                task.setSocket(socket);
-                TcpReceive tcpReceive = task.getReceive();
-                if (tcpReceive != null) {
-                    try {
-                        tcpReceive.setStream(socket.getInputStream());
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-                TcpSender tcpSender = task.getSender();
-                if (tcpSender != null) {
-                    try {
-                        tcpSender.setStream(socket.getOutputStream());
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+        }
+        if (isConnect) {
+            //保存socket
+            task.setSocket(socket);
+            TcpReceive tcpReceive = task.getReceive();
+            if (tcpReceive != null) {
+                try {
+                    tcpReceive.setStream(socket.getInputStream());
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
-            try {
-                task.onConnectSocket(isConnect);
-            } catch (Throwable e) {
-                e.printStackTrace();
+            TcpSender tcpSender = task.getSender();
+            if (tcpSender != null) {
+                try {
+                    tcpSender.setStream(socket.getOutputStream());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
+        }
+        try {
+            task.onConnectSocket(isConnect);
+        } catch (Throwable e) {
+            e.printStackTrace();
         }
         return isConnect;
     }
@@ -144,8 +136,10 @@ public class TcpClientFactory extends AbstractBioFactory<TcpClientTask> {
         Socket socket = task.getSocket();
         if (socket != null) {
             try {
+                socket.shutdownInput();
+                socket.shutdownOutput();
                 socket.close();
-            } catch (IOException e) {
+            } catch (Throwable e) {
                 e.printStackTrace();
             }
         }

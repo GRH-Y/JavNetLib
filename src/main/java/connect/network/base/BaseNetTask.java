@@ -4,28 +4,23 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BaseNetTask {
 
-    private final int tag;
-
-    private volatile AtomicBoolean socketCloseState;
+    private volatile AtomicBoolean isTaskNeedClose;
 
     public BaseNetTask() {
-        tag = hashCode();
-        socketCloseState = new AtomicBoolean(false);
+        isTaskNeedClose = new AtomicBoolean(false);
     }
 
-    protected AtomicBoolean getSocketCloseState() {
-        return socketCloseState;
+    protected void setTaskNeedClose(boolean isClose) {
+        isTaskNeedClose.set(isClose);
     }
 
     /**
      * 是否正在关闭
+     *
      * @return
      */
-    public boolean isCloseing() {
-        return socketCloseState.get();
+    public boolean isTaskNeedClose() {
+        return isTaskNeedClose.get();
     }
 
-    public int getTag() {
-        return tag;
-    }
 }

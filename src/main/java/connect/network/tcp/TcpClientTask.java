@@ -7,9 +7,9 @@ import java.net.Socket;
 
 public class TcpClientTask extends BaseNetTask {
 
-    private Socket mSocket;
-    private String mHost;
-    private int mPort;
+    private Socket mSocket = null;
+    private String mHost = null;
+    private int mPort = -1;
     private int connectTimeout = 3000;
 
     private TcpReceive receive = null;

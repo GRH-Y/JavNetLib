@@ -1,18 +1,17 @@
 package connect.network.udp;
 
-import connect.network.base.AbstractBioFactory;
+import connect.network.base.AbstractBioNetFactory;
 
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
 
-public class UdpFactory extends AbstractBioFactory<UdpTask> {
+public class UdpFactory extends AbstractBioNetFactory<UdpTask> {
 
     private static UdpFactory mFactory;
 
     private UdpFactory() {
     }
-
 
     public synchronized static UdpFactory getFactory() {
         if (mFactory == null) {
@@ -24,7 +23,6 @@ public class UdpFactory extends AbstractBioFactory<UdpTask> {
         }
         return mFactory;
     }
-
 
     public static void destroy() {
         if (mFactory != null) {

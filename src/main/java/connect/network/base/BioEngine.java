@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class BioEngine<T extends BaseNetTask> extends LowPcEngine {
 
-    protected AbstractBioFactory<T> mFactory;
+    protected AbstractBioNetFactory<T> mFactory;
 
     /**
      * 正在执行任务的队列
@@ -18,7 +18,7 @@ public class BioEngine<T extends BaseNetTask> extends LowPcEngine {
     protected Queue<T> mExecutorQueue;
 
 
-    public BioEngine(AbstractBioFactory<T> factory) {
+    public BioEngine(AbstractBioNetFactory<T> factory) {
         mExecutorQueue = new ConcurrentLinkedQueue<>();
         this.mFactory = factory;
     }
@@ -53,16 +53,9 @@ public class BioEngine<T extends BaseNetTask> extends LowPcEngine {
         //检测是否有新的任务添加
         if (!mFactory.mConnectCache.isEmpty()) {
             T task = mFactory.mConnectCache.remove();
-            try {
-                boolean isConnect = mFactory.onConnectTask(task);
-                if (isConnect) {
-                    mExecutorQueue.add(task);
-                } else {
-                    mFactory.mDestroyCache.add(task);
-                }
-            } catch (Exception e) {
-                mFactory.mDestroyCache.add(task);
-                e.printStackTrace();
+            boolean isConnect = mFactory.onConnectTask(task);
+            if (isConnect) {
+                mExecutorQueue.add(task);
             }
         }
     }

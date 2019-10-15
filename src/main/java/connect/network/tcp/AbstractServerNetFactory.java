@@ -1,9 +1,9 @@
 package connect.network.tcp;
 
-import connect.network.base.AbstractBioFactory;
+import connect.network.base.AbstractBioNetFactory;
 import connect.network.base.BaseNetTask;
 
-public abstract class AbstractServerFactory<T extends BaseNetTask> extends AbstractBioFactory<T> {
+public abstract class AbstractServerNetFactory<T extends BaseNetTask> extends AbstractBioNetFactory<T> {
 
     abstract protected void onAcceptTask(T task);
 

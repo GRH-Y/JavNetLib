@@ -1,17 +1,17 @@
 package connect.network.nio;
 
 import connect.network.base.NioHighPcEngine;
-import connect.network.base.joggle.IFactory;
+import connect.network.base.joggle.INetFactory;
 
 public class NioHPCClientFactory {
 
 
-    private static IFactory<NioClientTask> mFactory = null;
+    private static INetFactory<NioClientTask> mFactory = null;
 
     private NioHPCClientFactory() {
     }
 
-    public static synchronized IFactory<NioClientTask> getFactory() {
+    public static synchronized INetFactory<NioClientTask> getFactory() {
         if (mFactory == null) {
             synchronized (NioHPCClientFactory.class) {
                 if (mFactory == null) {
@@ -22,7 +22,7 @@ public class NioHPCClientFactory {
         return mFactory;
     }
 
-    public static synchronized IFactory<NioClientTask> getFactory(NioHighPcEngine engine) {
+    public static synchronized INetFactory<NioClientTask> getFactory(NioHighPcEngine engine) {
         if (mFactory == null) {
             synchronized (NioHPCClientFactory.class) {
                 if (mFactory == null && engine != null) {
@@ -33,7 +33,7 @@ public class NioHPCClientFactory {
         return mFactory;
     }
 
-    public static synchronized IFactory<NioClientTask> getFactory(int threadCount) {
+    public static synchronized INetFactory<NioClientTask> getFactory(int threadCount) {
         if (mFactory == null) {
             synchronized (NioHPCClientFactory.class) {
                 if (mFactory == null) {
@@ -52,5 +52,4 @@ public class NioHPCClientFactory {
             mFactory = null;
         }
     }
-
 }

@@ -62,7 +62,7 @@ public class NioHPCSender extends NioSender {
                 if (data != null) {
                     boolean isError = true;
                     try {
-                        if (channel.isOpen() && channel.isConnected() && !clientTask.isCloseing()) {
+                        if (channel.isOpen() && channel.isConnected() && !clientTask.isTaskNeedClose()) {
                             isError = channel.write(ByteBuffer.wrap(data)) < 0;
                         }
                     } catch (Throwable e) {

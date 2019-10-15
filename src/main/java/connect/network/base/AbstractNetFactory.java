@@ -1,7 +1,6 @@
 package connect.network.base;
 
-import connect.network.base.joggle.IFactory;
-import connect.network.base.joggle.ISSLFactory;
+import connect.network.base.joggle.INetFactory;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -11,10 +10,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @param <T>
  */
-public abstract class AbstractFactory<T extends BaseNetTask> implements IFactory<T> {
+public abstract class AbstractNetFactory<T extends BaseNetTask> implements INetFactory<T> {
 
     protected PcEngine mEngine;
-    protected ISSLFactory mSslFactory = null;
 
     /**
      * 等待创建连接队列
@@ -26,7 +24,7 @@ public abstract class AbstractFactory<T extends BaseNetTask> implements IFactory
      */
     protected Queue<T> mDestroyCache;
 
-    protected AbstractFactory() {
+    protected AbstractNetFactory() {
         mConnectCache = new ConcurrentLinkedQueue<>();
         mDestroyCache = new ConcurrentLinkedQueue<>();
     }
@@ -51,17 +49,6 @@ public abstract class AbstractFactory<T extends BaseNetTask> implements IFactory
             //该任务在此线程才能添加
             mDestroyCache.add(task);
             mEngine.resumeTask();
-        }
-    }
-
-    @Override
-    public void removeTask(int tag) {
-    }
-
-    @Override
-    public void setSSlFactory(ISSLFactory sslFactory) {
-        if (sslFactory != null) {
-            this.mSslFactory = sslFactory;
         }
     }
 

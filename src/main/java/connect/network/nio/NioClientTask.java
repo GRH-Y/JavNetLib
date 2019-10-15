@@ -1,8 +1,9 @@
 package connect.network.nio;
 
 
-import connect.network.base.BaseNetTask;
+import connect.network.base.BaseNioNetTask;
 
+import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
 /**
@@ -11,15 +12,15 @@ import java.nio.channels.SocketChannel;
  * @author yyz
  * @version 1.0
  */
-public class NioClientTask extends BaseNetTask {
+public class NioClientTask extends BaseNioNetTask {
 
     private int connectTimeout = 1000;
 
-    private String mHost;
+    private String mHost = null;
 
-    private int mPort;
+    private int mPort = -1;
 
-    private SocketChannel mChannel;
+    private SocketChannel mChannel = null;
 
     private NioSender sender = null;
 
@@ -55,8 +56,14 @@ public class NioClientTask extends BaseNetTask {
         this.mPort = port;
     }
 
+
     public void setConnectTimeout(int connectTimeout) {
         this.connectTimeout = connectTimeout;
+    }
+
+    @Override
+    protected void setSelectionKey(SelectionKey selectionKey) {
+        super.setSelectionKey(selectionKey);
     }
 
     //---------------------------- get ---------------------------------------
@@ -85,17 +92,10 @@ public class NioClientTask extends BaseNetTask {
         return connectTimeout;
     }
 
+
     //---------------------------- on ---------------------------------------
 
-    protected void onConfigSocket(SocketChannel socket) {
-    }
-
-    /**
-     * 链接状态回调
-     *
-     * @param isConnect
-     */
-    protected void onConnectSocketChannel(boolean isConnect) {
+    protected void onConfigSocket(boolean isConnect, SocketChannel channel) {
     }
 
     /**

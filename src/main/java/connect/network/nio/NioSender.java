@@ -8,11 +8,12 @@ import java.nio.channels.SocketChannel;
 
 public class NioSender implements ISender {
 
-    protected SocketChannel channel;
-    protected NioClientTask clientTask;
+    protected SocketChannel channel = null;
+    protected NioClientTask clientTask = null;
 
     /**
      * 发送数据
+     *
      * @param data
      */
     @Override
@@ -22,6 +23,7 @@ public class NioSender implements ISender {
 
     /**
      * 发送数据
+     *
      * @param data
      */
     @Override
@@ -29,7 +31,7 @@ public class NioSender implements ISender {
         boolean isError = true;
         if (data != null && channel != null && channel.isOpen()) {
             try {
-                if (channel.isOpen() && channel.isConnected() && !clientTask.isCloseing()) {
+                if (channel.isOpen() && channel.isConnected() && !clientTask.isTaskNeedClose()) {
                     isError = channel.write(ByteBuffer.wrap(data)) < 0;
                 }
             } catch (Throwable e) {

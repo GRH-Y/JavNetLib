@@ -12,7 +12,7 @@ import java.util.List;
  *
  * @param <T>
  */
-public class NioHighPcEngine<T extends BaseNetTask> extends NioEngine<T> {
+public class NioHighPcEngine<T extends BaseNioNetTask> extends NioEngine<T> {
 
     private List<ITaskContainer> taskContainerList;
 

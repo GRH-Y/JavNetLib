@@ -17,7 +17,7 @@ public class NioSyncClientFactory extends NioSimpleClientFactory {
 
 
     @Override
-    protected void onSelectorTaskImp() {
+    protected void onSelectorTask() {
         int count = 0;
         try {
             count = mSelector.select();
@@ -49,7 +49,7 @@ public class NioSyncClientFactory extends NioSimpleClientFactory {
 
 
     @Override
-    protected void onCheckConnectTaskImp(boolean isConnectAll) {
+    protected void onCheckConnectTask(boolean isConnectAll) {
         while (!mConnectCache.isEmpty()) {
             NioClientTask task = null;
             if (!mConnectCache.isEmpty()) {
@@ -69,7 +69,7 @@ public class NioSyncClientFactory extends NioSimpleClientFactory {
      * 检查要移除任务
      */
     @Override
-    protected void onCheckRemoverTaskImp(boolean isRemoveAll) {
+    protected void onCheckRemoverTask(boolean isRemoveAll) {
         while (!mDestroyCache.isEmpty()) {
             //处理要移除的任务
             NioClientTask target = null;
@@ -82,7 +82,7 @@ public class NioSyncClientFactory extends NioSimpleClientFactory {
                 return;
             }
             onDisconnectTask(target);
-            removerTargetTask(target);
+            removerTargetTaskImp(target);
             onRecoveryTask(target);
             if (!isRemoveAll) {
                 break;
