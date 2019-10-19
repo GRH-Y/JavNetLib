@@ -1,4 +1,6 @@
-package connect.network.base;
+package connect.network.nio;
+
+import connect.network.base.BaseNetTask;
 
 import java.nio.channels.SelectionKey;
 
@@ -13,4 +15,5 @@ public class BaseNioNetTask extends BaseNetTask {
     protected SelectionKey getSelectionKey() {
         return selectionKey;
     }
+
 }

@@ -1,6 +1,6 @@
 package connect.network.udp;
 
-import connect.network.base.joggle.ISender;
+import connect.network.base.joggle.INetSender;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -10,7 +10,7 @@ import java.net.SocketTimeoutException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class UdpSender implements ISender {
+public class UdpSender implements INetSender {
 
     protected Queue<UdpSenderEntity> cache;
     protected DatagramPacket mPacket;

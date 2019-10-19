@@ -7,7 +7,7 @@ package connect.network.base.joggle;
  *
  * @author yyz
  */
-public interface ISender {
+public interface INetSender {
 
     /**
      * 发送数据

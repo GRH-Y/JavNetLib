@@ -1,12 +1,12 @@
 package connect.network.nio;
 
 
-import connect.network.base.joggle.ISender;
+import connect.network.base.joggle.INetSender;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
-public class NioSender implements ISender {
+public class NioSender implements INetSender {
 
     protected SocketChannel channel = null;
     protected NioClientTask clientTask = null;

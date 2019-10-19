@@ -1,8 +1,6 @@
 package connect.network.nio;
 
 
-import connect.network.base.BaseNioNetTask;
-
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
@@ -104,9 +102,5 @@ public class NioClientTask extends BaseNioNetTask {
     protected void onCloseSocketChannel() {
     }
 
-    /**
-     * 当前状态链接彻底关闭，可以做资源回收工作
-     */
-    protected void onRecovery() {
-    }
+
 }

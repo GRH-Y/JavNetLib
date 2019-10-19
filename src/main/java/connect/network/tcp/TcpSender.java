@@ -1,6 +1,6 @@
 package connect.network.tcp;
 
-import connect.network.base.joggle.ISender;
+import connect.network.base.joggle.INetSender;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -8,7 +8,7 @@ import java.net.SocketTimeoutException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class TcpSender implements ISender {
+public class TcpSender implements INetSender {
 
     protected Queue<byte[]> cache;
     protected OutputStream stream = null;

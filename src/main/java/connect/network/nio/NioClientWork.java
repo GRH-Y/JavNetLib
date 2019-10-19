@@ -1,7 +1,6 @@
 package connect.network.nio;
 
-import connect.network.base.AbstractNioNetFactory;
-import connect.network.base.NioEngine;
+
 import log.LogDog;
 import util.StringEnvoy;
 
@@ -10,21 +9,29 @@ import java.net.Socket;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
-/**
- * nio客户端工厂(单线程管理多个Socket)
- */
-public class NioSimpleClientFactory extends AbstractNioNetFactory<NioClientTask> {
+public class NioClientWork extends NioNetWork<NioClientTask> {
 
-    protected NioSimpleClientFactory() {
+
+    private NioClientFactory mFactory;
+
+    protected NioClientWork(NioClientFactory factory) {
         super();
+        if (factory == null) {
+            throw new IllegalArgumentException("NioClientWork factory can not be null !");
+        }
+        this.mFactory = factory;
     }
 
-    protected NioSimpleClientFactory(NioEngine engine) {
-        super(engine);
-    }
 
+    //---------------------------------------------------------------------------------------------------------------
+
+    /**
+     * 准备链接
+     *
+     * @param task
+     */
     @Override
-    protected void onConnectTask(NioClientTask task) {
+    public void onConnectTask(NioClientTask task) {
         SocketChannel channel = task.getSocketChannel();
         if (channel == null) {
             channel = createSocketChannel(task);
@@ -32,6 +39,66 @@ public class NioSimpleClientFactory extends AbstractNioNetFactory<NioClientTask>
         if (channel != null) {
             configChannel(task, channel);
             registerChannel(task, channel);
+        }
+    }
+
+    /**
+     * 创建通道
+     *
+     * @param task
+     * @return
+     */
+    private SocketChannel createSocketChannel(NioClientTask task) {
+        if (StringEnvoy.isEmpty(task.getHost()) || task.getPort() < 0) {
+            LogDog.e("## host or port is Illegal = " + task.getHost() + ":" + task.getPort());
+            mFactory.removeTask(task);
+            return null;
+        }
+        SocketChannel channel;
+        try {
+            channel = SocketChannel.open();
+            channel.configureBlocking(false);
+            channel.connect(new InetSocketAddress(task.getHost(), task.getPort()));
+            task.setChannel(channel);
+        } catch (Throwable e) {
+            channel = null;
+            mFactory.removeTask(task);
+            e.printStackTrace();
+        }
+        return channel;
+    }
+
+    /**
+     * 配置通道
+     *
+     * @param task
+     * @param channel
+     */
+    private void configChannel(NioClientTask task, SocketChannel channel) {
+        Socket socket = channel.socket();
+        try {
+            //复用端口
+            socket.setReuseAddress(true);
+            //设置超时时间
+            socket.setSoTimeout(task.getConnectTimeout());
+            //关闭Nagle算法
+//        if (task.getConnectTimeout() > 0 && task.getPort() == 443) {
+//            try {
+//                socket.setTcpNoDelay(true);
+//            } catch (Exception e) {
+//                LogDog.e("The socket does not support setTcpNoDelay() !!! ");
+////                e.printStackTrace();
+//            }
+//        }
+            //执行Socket的close方法，该方法也会立即返回
+            socket.setSoLinger(true, 0);
+            if (channel.isBlocking()) {
+                // 设置为非阻塞
+                channel.configureBlocking(false);
+            }
+        } catch (Throwable e) {
+            mFactory.removeTask(task);
+            e.printStackTrace();
         }
     }
 
@@ -67,62 +134,19 @@ public class NioSimpleClientFactory extends AbstractNioNetFactory<NioClientTask>
                 task.setSelectionKey(selectionKey);
             }
         } catch (Throwable e) {
-            removeTaskInside(task, false);
-            e.printStackTrace();
-        }
-    }
-
-    private SocketChannel createSocketChannel(NioClientTask task) {
-        if (StringEnvoy.isEmpty(task.getHost()) || task.getPort() < 0) {
-            LogDog.e("## host or port is Illegal = " + task.getHost() + ":" + task.getPort());
-            removeTaskInside(task, false);
-            return null;
-        }
-        SocketChannel channel;
-        try {
-            channel = SocketChannel.open();
-            channel.configureBlocking(false);
-            channel.connect(new InetSocketAddress(task.getHost(), task.getPort()));
-            task.setChannel(channel);
-        } catch (Throwable e) {
-            channel = null;
-            removeTaskInside(task, false);
-            e.printStackTrace();
-        }
-        return channel;
-    }
-
-    private void configChannel(NioClientTask task, SocketChannel channel) {
-        Socket socket = channel.socket();
-        try {
-            //复用端口
-            socket.setReuseAddress(true);
-            //设置超时时间
-            socket.setSoTimeout(task.getConnectTimeout());
-            //关闭Nagle算法
-//        if (task.getConnectTimeout() > 0 && task.getPort() == 443) {
-//            try {
-//                socket.setTcpNoDelay(true);
-//            } catch (Exception e) {
-//                LogDog.e("The socket does not support setTcpNoDelay() !!! ");
-////                e.printStackTrace();
-//            }
-//        }
-            //执行Socket的close方法，该方法也会立即返回
-            socket.setSoLinger(true, 0);
-            if (channel.isBlocking()) {
-                // 设置为非阻塞
-                channel.configureBlocking(false);
-            }
-        } catch (Throwable e) {
-            removeTaskInside(task, false);
+            mFactory.removeTask(task);
             e.printStackTrace();
         }
     }
 
 
+    /**
+     * 处理通道事件
+     *
+     * @param selectionKey 选择子
+     */
     @Override
-    protected void onSelectionKey(SelectionKey selectionKey) {
+    public void onSelectionKey(SelectionKey selectionKey) {
         SocketChannel channel = (SocketChannel) selectionKey.channel();
         NioClientTask task = (NioClientTask) selectionKey.attachment();
 
@@ -140,13 +164,13 @@ public class NioSimpleClientFactory extends AbstractNioNetFactory<NioClientTask>
                                 Thread.sleep(100);
                             } else {
                                 LogDog.e("connect " + task.getHost() + ":" + task.getPort() + " timeout !!!");
-                                removeTaskInside(task, false);
+                                mFactory.removeTask(task);
                             }
                         }
                     }
                 }
             } catch (Throwable e) {
-                removeTaskInside(task, false);
+                isConnect = false;
                 e.printStackTrace();
             } finally {
                 if (isConnect) {
@@ -157,6 +181,7 @@ public class NioSimpleClientFactory extends AbstractNioNetFactory<NioClientTask>
                     } catch (Throwable e) {
                         e.printStackTrace();
                     }
+                    mFactory.removeTask(task);
                 }
             }
         } else if (selectionKey.isValid() && selectionKey.isReadable()) {
@@ -165,15 +190,20 @@ public class NioSimpleClientFactory extends AbstractNioNetFactory<NioClientTask>
                 try {
                     receive.onRead();
                 } catch (Throwable e) {
-                    removeTask(task);
+                    mFactory.removeTask(task);
                     e.printStackTrace();
                 }
             }
         }
     }
 
+    /**
+     * 准备断开链接回调
+     *
+     * @param task 网络请求任务
+     */
     @Override
-    protected void onDisconnectTask(NioClientTask task) {
+    public void onDisconnectTask(NioClientTask task) {
         try {
             task.onCloseSocketChannel();
         } catch (Throwable e) {
@@ -183,12 +213,4 @@ public class NioSimpleClientFactory extends AbstractNioNetFactory<NioClientTask>
         }
     }
 
-    @Override
-    protected void onRecoveryTask(NioClientTask task) {
-        try {
-            task.onRecovery();
-        } catch (Throwable e) {
-            e.printStackTrace();
-        }
-    }
 }

@@ -1,13 +1,13 @@
 package connect.network.tcp;
 
 
-import connect.network.base.joggle.IReceive;
+import connect.network.base.joggle.INetReceive;
 import util.IoEnvoy;
 import util.ThreadAnnotation;
 
 import java.io.InputStream;
 
-public class TcpReceive implements IReceive {
+public class TcpReceive implements INetReceive {
 
     protected Object mReceive;
     protected String mReceiveMethodName;

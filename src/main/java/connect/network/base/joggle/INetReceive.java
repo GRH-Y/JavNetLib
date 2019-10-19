@@ -4,7 +4,7 @@ package connect.network.base.joggle;
  * 接收
  * @author yyz
  */
-public interface IReceive {
+public interface INetReceive {
 
     /**
      * 设置接收者

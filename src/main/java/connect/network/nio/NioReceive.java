@@ -1,13 +1,13 @@
 package connect.network.nio;
 
 
-import connect.network.base.joggle.IReceive;
+import connect.network.base.joggle.INetReceive;
 import util.IoEnvoy;
 import util.ThreadAnnotation;
 
 import java.nio.channels.SocketChannel;
 
-public class NioReceive implements IReceive {
+public class NioReceive implements INetReceive {
 
     protected Object mReceive = null;
     protected String mReceiveMethodName = null;

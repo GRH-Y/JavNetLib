@@ -89,10 +89,4 @@ public class UdpTask extends BaseNetTask {
      */
     protected void onCloseSocket() {
     }
-
-    /**
-     * 当前状态链接彻底关闭，可以做资源回收工作
-     */
-    protected void onRecovery() {
-    }
 }

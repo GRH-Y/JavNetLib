@@ -1,13 +1,13 @@
 package connect.network.udp;
 
-import connect.network.base.joggle.IReceive;
+import connect.network.base.joggle.INetReceive;
 import util.ThreadAnnotation;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketTimeoutException;
 
-public class UdpReceive implements IReceive {
+public class UdpReceive implements INetReceive {
 
     protected Object mReceive;
     protected String mReceiveMethodName;

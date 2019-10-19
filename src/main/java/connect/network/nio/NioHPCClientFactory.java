@@ -1,9 +1,9 @@
 package connect.network.nio;
 
-import connect.network.base.NioHighPcEngine;
+import connect.network.base.AbsNetEngine;
 import connect.network.base.joggle.INetFactory;
 
-public class NioHPCClientFactory {
+public class NioHPCClientFactory extends NioClientFactory {
 
 
     private static INetFactory<NioClientTask> mFactory = null;
@@ -11,22 +11,17 @@ public class NioHPCClientFactory {
     private NioHPCClientFactory() {
     }
 
+    private NioHPCClientFactory(int threadCount) {
+        super();
+        NioHighPcEngine engine = getNetEngine();
+        engine.setThreadCount(threadCount);
+    }
+
     public static synchronized INetFactory<NioClientTask> getFactory() {
         if (mFactory == null) {
             synchronized (NioHPCClientFactory.class) {
                 if (mFactory == null) {
-                    mFactory = new NioSyncClientFactory(new NioHighPcEngine());
-                }
-            }
-        }
-        return mFactory;
-    }
-
-    public static synchronized INetFactory<NioClientTask> getFactory(NioHighPcEngine engine) {
-        if (mFactory == null) {
-            synchronized (NioHPCClientFactory.class) {
-                if (mFactory == null && engine != null) {
-                    mFactory = new NioSyncClientFactory(engine);
+                    mFactory = new NioHPCClientFactory();
                 }
             }
         }
@@ -37,9 +32,7 @@ public class NioHPCClientFactory {
         if (mFactory == null) {
             synchronized (NioHPCClientFactory.class) {
                 if (mFactory == null) {
-                    NioHighPcEngine highPcFactoryEngine = new NioHighPcEngine();
-                    highPcFactoryEngine.setThreadCount(threadCount);
-                    mFactory = new NioSyncClientFactory(highPcFactoryEngine);
+                    mFactory = new NioHPCClientFactory(threadCount);
                 }
             }
         }
@@ -51,5 +44,10 @@ public class NioHPCClientFactory {
             mFactory.close();
             mFactory = null;
         }
+    }
+
+    @Override
+    protected AbsNetEngine initNetEngine() {
+        return new NioHighPcEngine(this, getNetWork());
     }
 }

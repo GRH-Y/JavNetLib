@@ -1,21 +1,26 @@
 package connect.network.tcp;
 
+import connect.network.base.AbsNetEngine;
+import connect.network.base.AbsNetFactory;
+import connect.network.base.BaseNetWork;
 import connect.network.base.joggle.ISSLFactory;
 
-import javax.net.ServerSocketFactory;
-import javax.net.ssl.SSLServerSocket;
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketTimeoutException;
-
-public class TcpServerFactory extends AbstractServerNetFactory<TcpServerTask> {
+public class TcpServerFactory extends AbsNetFactory<TcpServerTask> {
     private static TcpServerFactory mFactory;
 
     private ISSLFactory mSslFactory = null;
 
     private TcpServerFactory() {
+    }
+
+    @Override
+    protected AbsNetEngine initNetEngine() {
+        return new BioEngine(this, getNetWork());
+    }
+
+    @Override
+    protected BaseNetWork initNetWork() {
+        return new BioServerWork(this);
     }
 
 
@@ -36,70 +41,7 @@ public class TcpServerFactory extends AbstractServerNetFactory<TcpServerTask> {
         }
     }
 
-    @Override
-    protected boolean onConnectTask(TcpServerTask task) {
-        boolean isOpenServer = false;
-        ServerSocket serverSocket = task.getServerSocket();
-        try {
-            if (serverSocket == null && task.getServerHost() != null && task.getServerPort() > 0) {
-                InetSocketAddress address = new InetSocketAddress(task.getServerHost(), task.getServerPort());
-                if (task.getServerPort() == 443 && mSslFactory != null) {
-                    ServerSocketFactory sslServerSocketFactory = mSslFactory.getSSLServerSocketFactory();
-                    SSLServerSocket sslServerSocket = (SSLServerSocket) sslServerSocketFactory.createServerSocket();
-                    sslServerSocket.bind(address);
-                    sslServerSocket.setUseClientMode(false);
-                    serverSocket = sslServerSocket;
-                } else {
-                    serverSocket = new ServerSocket();
-                    serverSocket.bind(address, task.getMaxConnect());
-                }
-            }
-            if (serverSocket != null) {
-                serverSocket.setReuseAddress(true);
-                serverSocket.setSoTimeout(500);
-                serverSocket.setPerformancePreferences(0, 1, 2);
-                isOpenServer = serverSocket.isBound();
-            }
-        } catch (Throwable e) {
-            isOpenServer = false;
-            removeTask(task);
-            e.printStackTrace();
-        }
-        try {
-            task.onConfigServer(isOpenServer, isOpenServer ? serverSocket : null);
-        } catch (Throwable e) {
-            e.printStackTrace();
-        }
-        return isOpenServer;
-    }
-
-    @Override
-    protected void onAcceptTask(TcpServerTask task) {
-        ServerSocket serverSocket = task.getServerSocket();
-        try {
-            Socket socket = serverSocket.accept();
-            task.onAcceptServer(socket);
-        } catch (IOException e) {
-            if (e instanceof SocketTimeoutException) {
-                task.onAcceptTimeoutServer();
-            } else {
-                e.printStackTrace();
-                removeTask(task);
-            }
-        }
-    }
-
-
-    @Override
-    protected void onDisconnectTask(TcpServerTask task) {
-        task.onCloseServer();
-        ServerSocket serverSocket = task.getServerSocket();
-        if (serverSocket != null) {
-            try {
-                serverSocket.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+    protected ISSLFactory getSslFactory() {
+        return mSslFactory;
     }
 }

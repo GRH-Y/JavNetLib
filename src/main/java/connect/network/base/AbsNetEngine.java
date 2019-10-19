@@ -1,43 +1,46 @@
 package connect.network.base;
 
+import task.executor.BaseLoopTask;
 import task.executor.TaskExecutorPoolManager;
 import task.executor.joggle.ILoopTaskExecutor;
 import task.executor.joggle.ITaskContainer;
 
-public class LowPcEngine extends PcEngine {
+public abstract class AbsNetEngine extends BaseLoopTask {
 
     protected ILoopTaskExecutor mExecutor = null;
     protected ITaskContainer mContainer = null;
 
     @Override
-    protected boolean isRunning() {
+    protected void onRunLoopTask() {
+        //必须重写，不然该方法没有权限访问
+        onEngineRun();
+    }
+
+    abstract protected void onEngineRun();
+
+    protected boolean isEngineRunning() {
         return mExecutor != null ? mExecutor.getLoopState() : false;
     }
 
-    @Override
-    protected void resumeTask() {
+    protected void resumeEngine() {
         if (mExecutor != null) {
             mExecutor.resumeTask();
         }
     }
 
-    @Override
     protected void startEngine() {
         if (mContainer == null) {
             mContainer = TaskExecutorPoolManager.getInstance().createLoopTask(this, null);
             mExecutor = mContainer.getTaskExecutor();
             mExecutor.blockStartTask();
-        } else {
-            TaskExecutorPoolManager.getInstance().runTask(this, null);
         }
     }
 
-    @Override
     protected void stopEngine() {
-        if (mExecutor != null) {
-//            mExecutor.blockStopTask();
-            TaskExecutorPoolManager.getInstance().destroy(mContainer);
+        if (mContainer != null) {
+            mExecutor.blockStopTask();
             mContainer = null;
         }
     }
+
 }
