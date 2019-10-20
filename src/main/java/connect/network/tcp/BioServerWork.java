@@ -26,7 +26,7 @@ public class BioServerWork<T extends TcpServerTask> extends BioNetWork<T> {
     }
 
     @Override
-    public void onConnectTask(TcpServerTask task) {
+    public void onConnectTask(T task) {
         boolean isOpenServer = false;
         ServerSocket serverSocket = task.getServerSocket();
         try {
@@ -61,7 +61,7 @@ public class BioServerWork<T extends TcpServerTask> extends BioNetWork<T> {
         }
     }
 
-    protected void onAcceptTask(TcpServerTask task) {
+    protected void onAcceptTask(T task) {
         ServerSocket serverSocket = task.getServerSocket();
         Socket socket = null;
         try {
@@ -85,7 +85,7 @@ public class BioServerWork<T extends TcpServerTask> extends BioNetWork<T> {
 
 
     @Override
-    public void onDisconnectTask(TcpServerTask task) {
+    public void onDisconnectTask(T task) {
         task.onCloseServer();
         ServerSocket serverSocket = task.getServerSocket();
         if (serverSocket != null) {
@@ -101,10 +101,5 @@ public class BioServerWork<T extends TcpServerTask> extends BioNetWork<T> {
     public void onRecoveryTask(T task) {
         super.onRecoveryTask(task);
         task.setServerSocket(null);
-    }
-
-    @Override
-    public void onRecoveryTaskAll() {
-
     }
 }

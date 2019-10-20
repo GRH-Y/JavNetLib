@@ -1,12 +1,12 @@
 package connect.network.udp;
 
-import connect.network.base.BaseNetWork;
+import connect.network.tcp.BioNetWork;
 
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
 
-public class UdpWork extends BaseNetWork<UdpTask> {
+public class UdpWork<T extends UdpTask> extends BioNetWork<T> {
 
     private UdpFactory mFactory;
 
@@ -15,7 +15,17 @@ public class UdpWork extends BaseNetWork<UdpTask> {
     }
 
     @Override
-    public void onConnectTask(UdpTask task) {
+    protected void onExecuteTask() {
+        for (T task : mExecutorQueue) {
+            //执行读任务
+            onExecRead(task);
+            //执行写任务
+            onExecWrite(task);
+        }
+    }
+
+    @Override
+    public void onConnectTask(T task) {
         InetSocketAddress address = new InetSocketAddress(task.getHost(), task.getPort());
         try {
             DatagramSocket socket;
@@ -61,7 +71,7 @@ public class UdpWork extends BaseNetWork<UdpTask> {
         }
     }
 
-    protected void onExecRead(UdpTask task) {
+    protected void onExecRead(T task) {
         UdpReceive receive = task.getReceive();
         if (receive != null) {
             try {
@@ -73,7 +83,7 @@ public class UdpWork extends BaseNetWork<UdpTask> {
         }
     }
 
-    protected void onExecWrite(UdpTask task) {
+    protected void onExecWrite(T task) {
         UdpSender sender = task.getSender();
         if (sender != null) {
             try {
@@ -86,7 +96,7 @@ public class UdpWork extends BaseNetWork<UdpTask> {
     }
 
     @Override
-    public void onDisconnectTask(UdpTask task) {
+    public void onDisconnectTask(T task) {
         try {
             task.onCloseSocket();
         } catch (Exception e) {
@@ -100,12 +110,9 @@ public class UdpWork extends BaseNetWork<UdpTask> {
     }
 
     @Override
-    public void onRecoveryTask(UdpTask task) {
-
+    public void onRecoveryTask(T task) {
+        super.onRecoveryTask(task);
+        task.setSocket(null);
     }
 
-    @Override
-    public void onRecoveryTaskAll() {
-
-    }
 }

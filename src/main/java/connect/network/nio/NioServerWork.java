@@ -8,7 +8,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
-public class NioServerWork extends NioNetWork<NioServerTask> {
+public class NioServerWork<T extends NioServerTask> extends NioNetWork<T> {
 
 
     private NioServerFactory mFactory;
@@ -22,7 +22,7 @@ public class NioServerWork extends NioNetWork<NioServerTask> {
     }
 
     @Override
-    public void onConnectTask(NioServerTask task) {
+    public void onConnectTask(T task) {
         //创建服务，并注册到selector，监听所有的事件
         ServerSocketChannel channel = task.getServerSocketChannel();
         if (channel == null) {
@@ -44,7 +44,7 @@ public class NioServerWork extends NioNetWork<NioServerTask> {
         }
     }
 
-    private ServerSocketChannel createChannel(NioServerTask task) {
+    private ServerSocketChannel createChannel(T task) {
         if (StringEnvoy.isEmpty(task.getServerHost()) || task.getServerPort() < 0) {
             LogDog.e("## server host or port is Illegal = " + task.getServerHost() + ":" + task.getServerPort());
             mFactory.removeTask(task);
@@ -63,7 +63,7 @@ public class NioServerWork extends NioNetWork<NioServerTask> {
         return channel;
     }
 
-    private void configChannel(NioServerTask task, ServerSocketChannel channel) {
+    private void configChannel(T task, ServerSocketChannel channel) {
         try {
             task.setServerSocketChannel(channel);
             channel.socket().setSoTimeout(task.getAcceptTimeout());
@@ -73,7 +73,7 @@ public class NioServerWork extends NioNetWork<NioServerTask> {
         }
     }
 
-    private void registerChannel(NioServerTask task, ServerSocketChannel channel) {
+    private void registerChannel(T task, ServerSocketChannel channel) {
         try {
             if (channel.isOpen()) {
                 //注册监听链接事件
@@ -101,7 +101,7 @@ public class NioServerWork extends NioNetWork<NioServerTask> {
     }
 
     @Override
-    public void onDisconnectTask(NioServerTask task) {
+    public void onDisconnectTask(T task) {
         try {
             task.onCloseServerChannel();
         } catch (Throwable e) {
