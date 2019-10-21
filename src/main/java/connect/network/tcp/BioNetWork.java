@@ -83,6 +83,4 @@ public class BioNetWork<T extends BaseNetTask> extends BaseNetWork<T> {
         mExecutorQueue.clear();
         mDestroyCache.clear();
     }
-
-    //------------------------------------------------------------------------------------------------------------------
 }

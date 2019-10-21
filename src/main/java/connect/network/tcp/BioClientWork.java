@@ -26,7 +26,7 @@ public class BioClientWork<T extends TcpClientTask> extends BioNetWork<T> {
     }
 
     @Override
-    public void onConnectTask(TcpClientTask task) {
+    public void onConnectTask(T task) {
         boolean isConnect = false;
         Socket socket = task.getSocket();
         try {
@@ -89,7 +89,7 @@ public class BioClientWork<T extends TcpClientTask> extends BioNetWork<T> {
         }
     }
 
-    protected void onExecRead(TcpClientTask task) {
+    protected void onExecRead(T task) {
         TcpReceive receive = task.getReceive();
         if (receive != null) {
             try {
@@ -101,7 +101,7 @@ public class BioClientWork<T extends TcpClientTask> extends BioNetWork<T> {
         }
     }
 
-    protected void onExecWrite(TcpClientTask task) {
+    protected void onExecWrite(T task) {
         TcpSender sender = task.getSender();
         if (sender != null) {
             try {
@@ -115,7 +115,7 @@ public class BioClientWork<T extends TcpClientTask> extends BioNetWork<T> {
 
 
     @Override
-    public void onDisconnectTask(TcpClientTask task) {
+    public void onDisconnectTask(T task) {
         try {
             task.onCloseSocket();
         } catch (Throwable e) {
@@ -139,10 +139,5 @@ public class BioClientWork<T extends TcpClientTask> extends BioNetWork<T> {
     protected void onRecoveryTask(T task) {
         super.onRecoveryTask(task);
         task.setSocket(null);
-    }
-
-    @Override
-    public void onRecoveryTaskAll() {
-
     }
 }

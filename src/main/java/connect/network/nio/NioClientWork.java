@@ -31,7 +31,7 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
      * @param task
      */
     @Override
-    public void onConnectTask(NioClientTask task) {
+    public void onConnectTask(T task) {
         SocketChannel channel = task.getSocketChannel();
         if (channel == null) {
             channel = createSocketChannel(task);
@@ -48,7 +48,7 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
      * @param task
      * @return
      */
-    private SocketChannel createSocketChannel(NioClientTask task) {
+    private SocketChannel createSocketChannel(T task) {
         if (StringEnvoy.isEmpty(task.getHost()) || task.getPort() < 0) {
             LogDog.e("## host or port is Illegal = " + task.getHost() + ":" + task.getPort());
             mFactory.removeTask(task);
@@ -74,7 +74,7 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
      * @param task
      * @param channel
      */
-    private void configChannel(NioClientTask task, SocketChannel channel) {
+    private void configChannel(T task, SocketChannel channel) {
         Socket socket = channel.socket();
         try {
             //复用端口
@@ -108,7 +108,7 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
      * @param task
      * @param channel
      */
-    private void registerChannel(NioClientTask task, SocketChannel channel) {
+    private void registerChannel(T task, SocketChannel channel) {
         if (task.isTaskNeedClose()) {
             return;
         }
@@ -203,7 +203,7 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
      * @param task 网络请求任务
      */
     @Override
-    public void onDisconnectTask(NioClientTask task) {
+    public void onDisconnectTask(T task) {
         try {
             task.onCloseSocketChannel();
         } catch (Throwable e) {
