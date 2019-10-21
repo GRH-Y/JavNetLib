@@ -10,8 +10,8 @@ import task.executor.joggle.ITaskContainer;
 
 import java.nio.channels.SelectionKey;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
+import java.util.Queue;
 
 /**
  * 多线程engine
@@ -51,30 +51,41 @@ public class NioHighPcEngine<T extends BaseNioNetTask> extends NioEngine {
     protected void onEngineRun() {
         if (threadCount == 1) {
             //如果只开启一条线程则不以默认方式运行
-            super.onRunLoopTask();
+            mWork.onCheckConnectTask(false);
+            //检查是否有事件任务
+            mWork.onExecuteTask();
+            //清除要结束的任务
+            mWork.onCheckRemoverTask(false);
         } else {
             //如果是主引擎处理事件分发
             if (Thread.currentThread().getId() == rootEngineTag) {
                 //检测是否有新的任务添加
                 mWork.onCheckConnectTask(false);
                 //检查是否有事件任务
-                LogDog.d("==> 主引擎");
+//                LogDog.d("==> 主引擎");
                 onEventDistribution();
                 //清除要结束的任务
                 mWork.onCheckRemoverTask(false);
             } else {
-                LogDog.d("==> 非主引擎");
+                Queue queue = attribute.getCache();
+                LogDog.d("==> start attribute Queue size = " + queue.size());
+//                LogDog.d("==> 非主引擎");
                 //检测是否有新的任务添加
 //                mFactory.onCheckConnectTask(false);
                 //提取要处理的事件
-                SelectionKey selectionKey = attribute.popCacheData();
-                if (selectionKey != null) {
-                    mWork.onSelectionKey(selectionKey);
-                }
+                do {
+                    SelectionKey selectionKey = attribute.popCacheData();
+                    if (selectionKey != null) {
+                        mWork.onSelectionKey(selectionKey);
+                    }
+                } while (queue.size() > 0);
+                LogDog.d("==> end attribute Queue size = " + queue.size());
                 //清除要结束的任务
 //                mWork.onCheckRemoverTask(false);
                 //引擎休眠
-                waitEngine();
+                if (queue.size() == 0) {
+                    waitEngine();
+                }
             }
         }
     }
@@ -90,13 +101,10 @@ public class NioHighPcEngine<T extends BaseNioNetTask> extends NioEngine {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
         if (count > 0) {
-            for (Iterator<SelectionKey> iterator = mWork.getSelector().selectedKeys().iterator(); iterator.hasNext(); iterator.remove()) {
-                SelectionKey selectionKey = iterator.next();
-                attribute.pushToCache(selectionKey);
-            }
-            wakeUpOtherEngine();
+            Queue queue =attribute.getCache();
+            queue.addAll(mWork.getSelector().selectedKeys());
+            mWork.getSelector().selectedKeys().clear();
         }
     }
 

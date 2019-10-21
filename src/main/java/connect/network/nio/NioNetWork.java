@@ -8,6 +8,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
+import java.util.Queue;
 
 public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T> {
 

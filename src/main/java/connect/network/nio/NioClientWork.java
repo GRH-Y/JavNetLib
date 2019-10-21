@@ -9,7 +9,7 @@ import java.net.Socket;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
-public class NioClientWork extends NioNetWork<NioClientTask> {
+public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
 
 
     private NioClientFactory mFactory;
@@ -148,7 +148,7 @@ public class NioClientWork extends NioNetWork<NioClientTask> {
     @Override
     public void onSelectionKey(SelectionKey selectionKey) {
         SocketChannel channel = (SocketChannel) selectionKey.channel();
-        NioClientTask task = (NioClientTask) selectionKey.attachment();
+        T task = (T) selectionKey.attachment();
 
         if (selectionKey.isValid() && selectionKey.isConnectable()) {
             boolean isConnect = channel.isConnected();

@@ -8,7 +8,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
-public class NioServerWork extends NioNetWork<NioServerTask> {
+public class NioServerWork<T extends NioServerTask> extends NioNetWork<T> {
 
 
     private NioServerFactory mFactory;
@@ -89,7 +89,7 @@ public class NioServerWork extends NioNetWork<NioServerTask> {
     @Override
     public void onSelectionKey(SelectionKey selectionKey) {
         ServerSocketChannel serverSocketChannel = (ServerSocketChannel) selectionKey.channel();
-        NioServerTask task = (NioServerTask) selectionKey.attachment();
+        T task = (T) selectionKey.attachment();
         if (selectionKey.isValid() && selectionKey.isAcceptable()) {
             try {
                 SocketChannel channel = serverSocketChannel.accept();
