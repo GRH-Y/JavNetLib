@@ -127,11 +127,25 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
                 } catch (Throwable e) {
                     e.printStackTrace();
                 }
-                SelectionKey selectionKey = channel.register(mSelector, SelectionKey.OP_READ, task);
-                task.setSelectionKey(selectionKey);
+                SelectionKey selectionKey;
+                synchronized (this) {
+                    selectionKey = channel.register(mSelector, SelectionKey.OP_READ, task);
+                    task.setSelectionKey(selectionKey);
+                }
+                if (!mSelector.selectedKeys().contains(selectionKey)) {
+                    selectionKey = channel.register(mSelector, SelectionKey.OP_READ, task);
+                    task.setSelectionKey(selectionKey);
+                }
             } else {
-                SelectionKey selectionKey = channel.register(mSelector, SelectionKey.OP_CONNECT, task);
-                task.setSelectionKey(selectionKey);
+                SelectionKey selectionKey;
+                synchronized (this) {
+                    selectionKey = channel.register(mSelector, SelectionKey.OP_CONNECT, task);
+                    task.setSelectionKey(selectionKey);
+                }
+                if (!mSelector.selectedKeys().contains(selectionKey)) {
+                    selectionKey = channel.register(mSelector, SelectionKey.OP_READ, task);
+                    task.setSelectionKey(selectionKey);
+                }
             }
         } catch (Throwable e) {
             mFactory.removeTask(task);

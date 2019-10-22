@@ -1,7 +1,6 @@
 package connect.network.nio;
 
 import connect.network.base.AbsNetFactory;
-import log.LogDog;
 import task.executor.ConsumerQueueAttribute;
 import task.executor.TaskContainer;
 import task.executor.TaskExecutorPoolManager;
@@ -22,7 +21,7 @@ public class NioHighPcEngine<T extends BaseNioNetTask> extends NioEngine {
 
     private Map<String, ITaskContainer> engineMap;
 
-    private int threadCount = 4;
+    private int threadCount = 2;
 
     private long rootEngineTag = 0;
 
@@ -68,7 +67,6 @@ public class NioHighPcEngine<T extends BaseNioNetTask> extends NioEngine {
                 mWork.onCheckRemoverTask(false);
             } else {
                 Queue queue = attribute.getCache();
-                LogDog.d("==> start attribute Queue size = " + queue.size());
 //                LogDog.d("==> 非主引擎");
                 //检测是否有新的任务添加
 //                mFactory.onCheckConnectTask(false);
@@ -79,11 +77,11 @@ public class NioHighPcEngine<T extends BaseNioNetTask> extends NioEngine {
                         mWork.onSelectionKey(selectionKey);
                     }
                 } while (queue.size() > 0);
-                LogDog.d("==> end attribute Queue size = " + queue.size());
+//                LogDog.d("==> attribute Queue size = " + queue.size());
                 //清除要结束的任务
 //                mWork.onCheckRemoverTask(false);
                 //引擎休眠
-                if (queue.size() == 0) {
+                if (queue.isEmpty()) {
                     waitEngine();
                 }
             }
@@ -102,9 +100,10 @@ public class NioHighPcEngine<T extends BaseNioNetTask> extends NioEngine {
             e.printStackTrace();
         }
         if (count > 0) {
-            Queue queue =attribute.getCache();
+            Queue queue = attribute.getCache();
             queue.addAll(mWork.getSelector().selectedKeys());
-            mWork.getSelector().selectedKeys().clear();
+            mWork.clearSelectedKeys();
+            wakeUpOtherEngine();
         }
     }
 

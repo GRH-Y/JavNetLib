@@ -8,7 +8,6 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
-import java.util.Queue;
 
 public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T> {
 
@@ -26,6 +25,11 @@ public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T
         return mSelector;
     }
 
+    protected void clearSelectedKeys() {
+        synchronized (this) {
+            getSelector().selectedKeys().clear();
+        }
+    }
 
     /**
      * 检查要链接任务
