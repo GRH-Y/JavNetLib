@@ -9,6 +9,7 @@ import java.nio.channels.SocketChannel;
 public class NioSender implements INetSender {
 
     protected SocketChannel channel = null;
+
     protected NioClientTask clientTask = null;
 
     /**
@@ -29,9 +30,9 @@ public class NioSender implements INetSender {
     @Override
     public void sendDataNow(byte[] data) {
         boolean isError = true;
-        if (data != null && channel != null && channel.isOpen()) {
+        if (data != null && channel != null) {
             try {
-                if (channel.isOpen() && channel.isConnected() && !clientTask.isTaskNeedClose()) {
+                if (!clientTask.isTaskNeedClose()) {
                     isError = channel.write(ByteBuffer.wrap(data)) < 0;
                 }
             } catch (Throwable e) {

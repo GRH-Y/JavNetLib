@@ -39,7 +39,7 @@ public class NioHighPcEngine<T extends BaseNioNetTask> extends NioEngine {
 
     @Override
     protected boolean isEngineRunning() {
-        if (engineMap.isEmpty()) {
+        if (engineMap == null || engineMap.isEmpty()) {
             return false;
         }
         ITaskContainer container = engineMap.get(String.valueOf(rootEngineTag));
@@ -66,22 +66,19 @@ public class NioHighPcEngine<T extends BaseNioNetTask> extends NioEngine {
                 //清除要结束的任务
                 mWork.onCheckRemoverTask(false);
             } else {
-                Queue queue = attribute.getCache();
 //                LogDog.d("==> 非主引擎");
-                //检测是否有新的任务添加
-//                mFactory.onCheckConnectTask(false);
+                Queue queue = attribute.getCache();
                 //提取要处理的事件
+//                LogDog.d("==> start attribute Queue size = " + queue.size());
                 do {
                     SelectionKey selectionKey = attribute.popCacheData();
                     if (selectionKey != null) {
                         mWork.onSelectionKey(selectionKey);
                     }
                 } while (queue.size() > 0);
-//                LogDog.d("==> attribute Queue size = " + queue.size());
-                //清除要结束的任务
-//                mWork.onCheckRemoverTask(false);
-                //引擎休眠
+//                LogDog.d("==> end attribute Queue size = " + queue.size());
                 if (queue.isEmpty()) {
+                    //如果数据为空，非主引擎休眠
                     waitEngine();
                 }
             }
@@ -126,11 +123,11 @@ public class NioHighPcEngine<T extends BaseNioNetTask> extends NioEngine {
         container.getTaskExecutor().waitTask(0);
     }
 
-    @Override
-    protected void resumeEngine() {
-        super.resumeEngine();
-        wakeUpOtherEngine();
-    }
+//    @Override
+//    protected void resumeEngine() {
+//        super.resumeEngine();
+//        wakeUpOtherEngine();
+//    }
 
     @Override
     protected void startEngine() {

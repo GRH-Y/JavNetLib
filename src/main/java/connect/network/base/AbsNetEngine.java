@@ -19,12 +19,19 @@ public abstract class AbsNetEngine extends BaseLoopTask {
     abstract protected void onEngineRun();
 
     protected boolean isEngineRunning() {
-        return mExecutor != null ? mExecutor.getLoopState() : false;
+        return mExecutor != null ? mExecutor.getAliveState() && mExecutor.isStartState() : false;
     }
 
     protected void resumeEngine() {
         if (mExecutor != null) {
             mExecutor.resumeTask();
+        }
+    }
+
+    protected void setNeedStop() {
+        if (mContainer != null) {
+            mExecutor.setMultiplexTask(false);
+            mExecutor.setLoopState(false);
         }
     }
 
@@ -38,7 +45,9 @@ public abstract class AbsNetEngine extends BaseLoopTask {
 
     protected void stopEngine() {
         if (mContainer != null) {
+            mExecutor.setMultiplexTask(false);
             mExecutor.blockStopTask();
+            mExecutor = null;
             mContainer = null;
         }
     }

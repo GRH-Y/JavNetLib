@@ -15,7 +15,6 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
     private NioClientFactory mFactory;
 
     protected NioClientWork(NioClientFactory factory) {
-        super();
         if (factory == null) {
             throw new IllegalArgumentException("NioClientWork factory can not be null !");
         }
@@ -51,7 +50,7 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
     private SocketChannel createSocketChannel(T task) {
         if (StringEnvoy.isEmpty(task.getHost()) || task.getPort() < 0) {
             LogDog.e("## host or port is Illegal = " + task.getHost() + ":" + task.getPort());
-            mFactory.removeTask(task);
+            mFactory.removeTaskInside(task, false);
             return null;
         }
         SocketChannel channel;
@@ -62,7 +61,7 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
             task.setChannel(channel);
         } catch (Throwable e) {
             channel = null;
-            mFactory.removeTask(task);
+            mFactory.removeTaskInside(task, false);
             e.printStackTrace();
         }
         return channel;
@@ -97,7 +96,7 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
                 channel.configureBlocking(false);
             }
         } catch (Throwable e) {
-            mFactory.removeTask(task);
+            mFactory.removeTaskInside(task, false);
             e.printStackTrace();
         }
     }
@@ -127,28 +126,14 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
                 } catch (Throwable e) {
                     e.printStackTrace();
                 }
-                SelectionKey selectionKey;
-                synchronized (this) {
-                    selectionKey = channel.register(mSelector, SelectionKey.OP_READ, task);
-                    task.setSelectionKey(selectionKey);
-                }
-                if (!mSelector.selectedKeys().contains(selectionKey)) {
-                    selectionKey = channel.register(mSelector, SelectionKey.OP_READ, task);
-                    task.setSelectionKey(selectionKey);
-                }
+                SelectionKey selectionKey = channel.register(mSelector, SelectionKey.OP_READ, task);
+                task.setSelectionKey(selectionKey);
             } else {
-                SelectionKey selectionKey;
-                synchronized (this) {
-                    selectionKey = channel.register(mSelector, SelectionKey.OP_CONNECT, task);
-                    task.setSelectionKey(selectionKey);
-                }
-                if (!mSelector.selectedKeys().contains(selectionKey)) {
-                    selectionKey = channel.register(mSelector, SelectionKey.OP_READ, task);
-                    task.setSelectionKey(selectionKey);
-                }
+                SelectionKey selectionKey = channel.register(mSelector, SelectionKey.OP_CONNECT, task);
+                task.setSelectionKey(selectionKey);
             }
         } catch (Throwable e) {
-            mFactory.removeTask(task);
+            mFactory.removeTaskInside(task, false);
             e.printStackTrace();
         }
     }
@@ -178,7 +163,7 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
                                 Thread.sleep(100);
                             } else {
                                 LogDog.e("connect " + task.getHost() + ":" + task.getPort() + " timeout !!!");
-                                mFactory.removeTask(task);
+                                mFactory.removeTaskInside(task, false);
                             }
                         }
                     }
@@ -195,7 +180,7 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
                     } catch (Throwable e) {
                         e.printStackTrace();
                     }
-                    mFactory.removeTask(task);
+                    mFactory.removeTaskInside(task, false);
                 }
             }
         } else if (selectionKey.isValid() && selectionKey.isReadable()) {
@@ -204,7 +189,7 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
                 try {
                     receive.onRead();
                 } catch (Throwable e) {
-                    mFactory.removeTask(task);
+                    mFactory.removeTaskInside(task, false);
                     e.printStackTrace();
                 }
             }

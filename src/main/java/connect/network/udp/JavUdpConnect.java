@@ -134,7 +134,7 @@ public class JavUdpConnect {
         coreTask.getAttribute().setCacheMaxCount(count);
     }
 
-    private class CoreTask extends BaseConsumerTask<TaskEntity> {
+    private class CoreTask extends BaseConsumerTask {
         private DatagramPacket packet = null;
         private DatagramSocket socket = null;
         private InetSocketAddress address = null;
@@ -144,9 +144,9 @@ public class JavUdpConnect {
 
         public CoreTask() {
             container = new TaskContainer(this);
+            container.getTaskExecutor().setAttribute(attribute);
             consumerTaskExecutor = container.getTaskExecutor();
             attribute = new ConsumerQueueAttribute<>();
-            container.setAttribute(attribute);
         }
 
         public TaskContainer getContainer() {

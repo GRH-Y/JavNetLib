@@ -51,35 +51,32 @@ public class NioClientFactory extends AbsNetFactory<NioClientTask> {
 
     @Override
     public void addTask(NioClientTask task) {
-        NioClientWork nioNetWork = getNetWork();
-        if (task == null || nioNetWork == null || nioNetWork.getSelector() == null) {
-            return;
+        if (task != null && task.getSelectionKey() == null && !task.isTaskNeedClose()) {
+            super.addTask(task);
         }
-        if (task.getSelectionKey() != null && !task.isTaskNeedClose()) {
-            return;
-        }
-        super.addTask(task);
     }
 
     @Override
     public void removeTask(NioClientTask task) {
-        NioClientWork nioNetWork = getNetWork();
-        if (task == null || nioNetWork == null || nioNetWork.getSelector() == null) {
-            return;
+        if (task != null && task.getSelectionKey() != null && !task.isTaskNeedClose()) {
+            super.removeTask(task);
         }
-        if (task.getSelectionKey() == null || task.isTaskNeedClose()) {
-            return;
-        }
-        super.removeTask(task);
+    }
+
+    @Override
+    protected void removeTaskInside(NioClientTask task, boolean isNeedWakeup) {
+        super.removeTaskInside(task, isNeedWakeup);
     }
 
     @Override
     public void close() {
-        super.close();
+        NioEngine nioEngine = getNetEngine();
+        nioEngine.setNeedStop();
         NioClientWork nioNetWork = getNetWork();
         if (nioNetWork != null && nioNetWork.getSelector() != null) {
             nioNetWork.getSelector().wakeup();
         }
+        super.close();
     }
 
 }

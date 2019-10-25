@@ -4,9 +4,7 @@ import connect.network.base.BaseNetWork;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.*;
 import java.util.Iterator;
 
 public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T> {
@@ -14,10 +12,16 @@ public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T
     protected Selector mSelector;
 
     protected NioNetWork() {
-        try {
-            mSelector = Selector.open();
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e.getMessage());
+        init();
+    }
+
+    protected void init() {
+        if (mSelector == null) {
+            try {
+                mSelector = Selector.open();
+            } catch (IOException e) {
+                throw new IllegalArgumentException(e.getMessage());
+            }
         }
     }
 
@@ -109,6 +113,7 @@ public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T
             } catch (Exception e) {
                 e.printStackTrace();
             }
+            mSelector = null;
         }
         mConnectCache.clear();
         mDestroyCache.clear();
@@ -120,12 +125,17 @@ public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T
         try {
             if (target.selectionKey != null) {
                 target.selectionKey.cancel();
-                SocketChannel channel = (SocketChannel) target.selectionKey.channel();
-                Socket socket = channel.socket();
-                socket.shutdownInput();
-                socket.shutdownOutput();
+                SelectableChannel channel = target.selectionKey.channel();
+                if (channel instanceof SocketChannel) {
+                    Socket socket = ((SocketChannel) channel).socket();
+                    socket.shutdownInput();
+                    socket.shutdownOutput();
+                    socket.close();
+                } else if (channel instanceof ServerSocketChannel) {
+                    ServerSocketChannel serverSocketChannel = (ServerSocketChannel) channel;
+                    serverSocketChannel.socket().close();
+                }
                 channel.close();
-                socket.close();
             }
         } catch (Throwable e) {
             e.printStackTrace();

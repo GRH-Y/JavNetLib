@@ -21,7 +21,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Map;
 
-public class HttpCoreTask extends BaseConsumerTask<RequestEntity> {
+public class HttpCoreTask extends BaseConsumerTask {
 
     private HttpTaskConfig mConfig;
 

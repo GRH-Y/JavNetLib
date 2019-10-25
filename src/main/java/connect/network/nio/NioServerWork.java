@@ -14,7 +14,6 @@ public class NioServerWork<T extends NioServerTask> extends NioNetWork<T> {
     private NioServerFactory mFactory;
 
     protected NioServerWork(NioServerFactory factory) {
-        super();
         if (factory == null) {
             throw new IllegalArgumentException("NioServerWork factory can not be null !");
         }
@@ -47,7 +46,7 @@ public class NioServerWork<T extends NioServerTask> extends NioNetWork<T> {
     private ServerSocketChannel createChannel(T task) {
         if (StringEnvoy.isEmpty(task.getServerHost()) || task.getServerPort() < 0) {
             LogDog.e("## server host or port is Illegal = " + task.getServerHost() + ":" + task.getServerPort());
-            mFactory.removeTask(task);
+            mFactory.removeTaskInside(task, false);
             return null;
         }
         ServerSocketChannel channel;
@@ -57,7 +56,7 @@ public class NioServerWork<T extends NioServerTask> extends NioNetWork<T> {
             channel.bind(new InetSocketAddress(task.getServerHost(), task.getServerPort()), task.getMaxConnect());
         } catch (Throwable e) {
             channel = null;
-            mFactory.removeTask(task);
+            mFactory.removeTaskInside(task, false);
             e.printStackTrace();
         }
         return channel;
@@ -68,7 +67,7 @@ public class NioServerWork<T extends NioServerTask> extends NioNetWork<T> {
             task.setServerSocketChannel(channel);
             channel.socket().setSoTimeout(task.getAcceptTimeout());
         } catch (Exception e) {
-            mFactory.removeTask(task);
+            mFactory.removeTaskInside(task, false);
             e.printStackTrace();
         }
     }
@@ -81,7 +80,7 @@ public class NioServerWork<T extends NioServerTask> extends NioNetWork<T> {
                 task.setSelectionKey(selectionKey);
             }
         } catch (Throwable e) {
-            mFactory.removeTask(task);
+            mFactory.removeTaskInside(task, false);
             e.printStackTrace();
         }
     }

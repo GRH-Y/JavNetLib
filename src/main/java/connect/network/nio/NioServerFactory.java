@@ -34,7 +34,8 @@ public class NioServerFactory extends AbsNetFactory<NioServerTask> {
         }
     }
 
-    private NioServerFactory(){}
+    private NioServerFactory() {
+    }
 
     @Override
     protected AbsNetEngine initNetEngine() {
@@ -42,8 +43,37 @@ public class NioServerFactory extends AbsNetFactory<NioServerTask> {
     }
 
     @Override
-    protected BaseNetWork<NioServerTask> initNetWork(){
+    protected BaseNetWork<NioServerTask> initNetWork() {
         return new NioServerWork(this);
     }
 
+    @Override
+    public void addTask(NioServerTask task) {
+        if (task != null && task.getSelectionKey() == null && !task.isTaskNeedClose()) {
+            super.addTask(task);
+        }
+    }
+
+    @Override
+    public void removeTask(NioServerTask task) {
+        if (task != null && task.getSelectionKey() != null && !task.isTaskNeedClose()) {
+            super.removeTask(task);
+        }
+    }
+
+    @Override
+    protected void removeTaskInside(NioServerTask task, boolean isNeedWakeup) {
+        super.removeTaskInside(task, isNeedWakeup);
+    }
+
+    @Override
+    public void close() {
+        NioEngine nioEngine = getNetEngine();
+        nioEngine.setNeedStop();
+        NioServerWork nioNetWork = getNetWork();
+        if (nioNetWork != null && nioNetWork.getSelector() != null) {
+            nioNetWork.getSelector().wakeup();
+        }
+        super.close();
+    }
 }
