@@ -115,7 +115,6 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
             if (channel.isConnected()) {
                 if (task.getSender() != null) {
                     task.getSender().setChannel(channel);
-                    task.getSender().setClientTask(task);
 //                  channel.register(mSelector, SelectionKey.OP_WRITE, task);
                 }
                 if (task.getReceive() != null) {

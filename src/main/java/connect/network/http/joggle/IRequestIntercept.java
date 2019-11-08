@@ -16,4 +16,5 @@ public interface IRequestIntercept {
      * @return 返回true则需要拦截
      */
     boolean interceptResult(RequestEntity submitEntity, Throwable e);
+
 }

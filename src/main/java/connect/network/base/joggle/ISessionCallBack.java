@@ -13,21 +13,6 @@ import connect.network.http.RequestEntity;
 public interface ISessionCallBack {
 
     /**
-     * 获取回调监听者
-     *
-     * @return 回调监听者
-     */
-    Object getCallBackTarget();
-
-    /**
-     * 设置回调监听者
-     *
-     * @param target
-     */
-    void setCallBackTarget(Object target);
-
-
-    /**
      * 通知结果
      *
      * @param entity

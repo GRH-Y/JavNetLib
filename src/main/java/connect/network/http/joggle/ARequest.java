@@ -1,6 +1,6 @@
 package connect.network.http.joggle;
 
-import connect.network.http.JavHttpConnect;
+import connect.network.http.RequestEntity;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -48,7 +48,7 @@ public @interface ARequest {
      *
      * @return
      */
-    int taskTag() default JavHttpConnect.DEFAULT_TASK_TAG;
+    int taskTag() default RequestEntity.DEFAULT_TASK_TAG;
 
 
     /**

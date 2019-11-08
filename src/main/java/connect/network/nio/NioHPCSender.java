@@ -6,7 +6,8 @@ package connect.network.nio;
  */
 public class NioHPCSender extends NioSender {
 
-    public NioHPCSender() {
+    public NioHPCSender(NioClientTask clientTask) {
+        super(clientTask);
         SimpleSendTask.getInstance().open();
     }
 

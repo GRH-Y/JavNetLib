@@ -2,6 +2,7 @@ package connect.network.http;
 
 
 import java.net.HttpURLConnection;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -11,10 +12,15 @@ import java.util.Map;
  * @author yyz
  */
 public class RequestEntity {
+
+    /**
+     * 默认的请求tag
+     */
+    public static final int DEFAULT_TASK_TAG = 0;
     /**
      * 任务的tag，区分不同类型请求（用于取消同个tag的任务请求）
      */
-    private int taskTag = JavHttpConnect.DEFAULT_TASK_TAG;
+    private int taskTag = DEFAULT_TASK_TAG;
     private String address = null;
     private String requestMethod = ConnectType.GET.getType();
 
@@ -25,8 +31,8 @@ public class RequestEntity {
 
     private String scbMethodName = null;
     private String ecbMethodName = null;
-    private String processMethod = null;
-    private boolean isAutoSetDataForView = false;
+    private String pMethodName = null;
+
     private boolean isDisableBaseUrl = false;
 
     /**
@@ -37,17 +43,26 @@ public class RequestEntity {
      * 接口回调类
      */
     private Object callBackTarget = null;
-    /**
-     * 自动为控件设置值的类（一般是 activity fragment view windows）
-     */
-    private Object viewTarget = null;
 
+    /**
+     * 请求头参数
+     */
     private Map<String, Object> requestProperty = null;
+
+    /**
+     * 响应头参数
+     */
+    private Map<String, List<String>> responseProperty = null;
 
     /**
      * 是否独立任务（如果是独立任务会单独开启线程处理）
      */
     private boolean isIndependentTask = false;
+
+    /**
+     * 扩展参数
+     */
+    private Object object;
 
     public boolean isDisableBaseUrl() {
         return isDisableBaseUrl;
@@ -109,7 +124,7 @@ public class RequestEntity {
         return respondEntity;
     }
 
-    protected void setRespondEntity(Object respondEntity) {
+    public void setRespondEntity(Object respondEntity) {
         this.respondEntity = respondEntity;
     }
 
@@ -138,7 +153,7 @@ public class RequestEntity {
     }
 
     public String getProcessMethodName() {
-        return processMethod;
+        return pMethodName;
     }
 
     public void setEcbMethodName(String ecbMethodName) {
@@ -146,27 +161,11 @@ public class RequestEntity {
     }
 
     public void setProcessMethodName(String processMethod) {
-        this.processMethod = processMethod;
-    }
-
-    public void setAutoSetDataForView(boolean autoSetDataForView) {
-        isAutoSetDataForView = autoSetDataForView;
-    }
-
-    public boolean isAutoSetDataForView() {
-        return isAutoSetDataForView;
+        this.pMethodName = processMethod;
     }
 
     public void setResultType(Object resultType) {
         this.resultType = resultType;
-    }
-
-    public Object getViewTarget() {
-        return viewTarget;
-    }
-
-    public void setViewTarget(Object viewTarget) {
-        this.viewTarget = viewTarget;
     }
 
     public void setIndependentTask(boolean independentTask) {
@@ -191,5 +190,21 @@ public class RequestEntity {
 
     public int getResponseCode() {
         return responseCode;
+    }
+
+    public void setObject(Object object) {
+        this.object = object;
+    }
+
+    public Object getObject() {
+        return object;
+    }
+
+    protected void setResponseProperty(Map<String, List<String>> responseProperty) {
+        this.responseProperty = responseProperty;
+    }
+
+    public Map<String, List<String>> getResponseProperty() {
+        return responseProperty;
     }
 }

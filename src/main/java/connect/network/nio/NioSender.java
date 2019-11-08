@@ -10,7 +10,11 @@ public class NioSender implements INetSender {
 
     protected SocketChannel channel = null;
 
-    protected NioClientTask clientTask = null;
+    protected NioClientTask clientTask;
+
+    public NioSender(NioClientTask clientTask) {
+        this.clientTask = clientTask;
+    }
 
     /**
      * 发送数据
@@ -48,9 +52,6 @@ public class NioSender implements INetSender {
         this.channel = channel;
     }
 
-    protected void setClientTask(NioClientTask clientTask) {
-        this.clientTask = clientTask;
-    }
 
     public SocketChannel getChannel() {
         return channel;

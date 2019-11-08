@@ -3,6 +3,7 @@ package connect.network.http.tool;
 
 import connect.network.base.joggle.ISessionCallBack;
 import connect.network.http.RequestEntity;
+import log.LogDog;
 import util.ThreadAnnotation;
 
 /**
@@ -13,26 +14,6 @@ import util.ThreadAnnotation;
  */
 public class JavSessionCallBack implements ISessionCallBack {
 
-    protected Object target = null;
-
-    public JavSessionCallBack(Object target) {
-        setCallBackTarget(target);
-    }
-
-    public JavSessionCallBack() {
-    }
-
-    @Override
-    public Object getCallBackTarget() {
-        return target;
-    }
-
-    @Override
-    public void setCallBackTarget(Object target) {
-        this.target = target;
-    }
-
-
     /**
      * 网络请求成功回调
      *
@@ -40,20 +21,33 @@ public class JavSessionCallBack implements ISessionCallBack {
      */
     @Override
     public void notifyData(RequestEntity entity) {
-        String methodName;
-        Object resultData;
-        if (entity.getRespondEntity() == null) {
-            methodName = entity.getErrorMethodName();
-            resultData = entity;
-        } else {
-            methodName = entity.getSuccessMethodName();
-            resultData = entity.getRespondEntity();
-        }
-        ThreadAnnotation.disposeMessage(methodName, entity.getCallBackTarget(), resultData);
+        notifyDataImp(entity);
     }
 
     @Override
     public void notifyProcess(RequestEntity entity, int process, int maxProcess, boolean isOver) {
+        notifyProcessImp(entity, process, maxProcess, isOver);
+    }
+
+    protected void notifyDataImp(RequestEntity entity) {
+        if (entity.getCallBackTarget() == null) {
+            LogDog.w("{JavSessionCallBack} CallBackTarget is null , do not dispose Message !!!");
+            return;
+        }
+        String methodName;
+        Object[] resultData;
+        if (entity.getRespondEntity() == null) {
+            methodName = entity.getErrorMethodName();
+            resultData = new Object[]{entity};
+        } else {
+            methodName = entity.getSuccessMethodName();
+            resultData = new Object[]{entity, entity.getRespondEntity()};
+        }
+        ThreadAnnotation.disposeMessage(methodName, entity.getCallBackTarget(), resultData);
+    }
+
+
+    protected void notifyProcessImp(RequestEntity entity, int process, int maxProcess, boolean isOver) {
         String methodName = entity.getProcessMethodName();
         ThreadAnnotation.disposeMessage(methodName, entity.getCallBackTarget(), process, maxProcess, isOver);
     }

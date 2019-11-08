@@ -16,7 +16,6 @@ import javax.net.ssl.HttpsURLConnection;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Map;
@@ -29,7 +28,14 @@ public class HttpCoreTask extends BaseConsumerTask {
         mConfig = config;
     }
 
-    private HttpURLConnection init(RequestEntity task) throws Exception {
+    /**
+     * 创建链接
+     *
+     * @param task
+     * @return
+     * @throws Exception
+     */
+    private HttpURLConnection createHttpConnect(RequestEntity task) throws Exception {
         HttpURLConnection connection;
         String address = mConfig.getBaseUrl() == null || task.isDisableBaseUrl() ? task.getAddress() : mConfig.getBaseUrl() + task.getAddress();
         URL url = new URL(address);
@@ -49,7 +55,18 @@ public class HttpCoreTask extends BaseConsumerTask {
         } else {
             connection = (HttpURLConnection) url.openConnection();
         }
+        return connection;
+    }
 
+
+    /**
+     * 配置连接
+     *
+     * @param connection
+     * @param task
+     * @throws Exception
+     */
+    private void configHttpConnect(HttpURLConnection connection, RequestEntity task) throws Exception {
         connection.setConnectTimeout(mConfig.getTimeout());
         connection.setReadTimeout(mConfig.getTimeout());
         connection.setRequestMethod(task.getRequestMethod());
@@ -66,12 +83,10 @@ public class HttpCoreTask extends BaseConsumerTask {
             connection.setDoOutput(true);
             connection.setRequestProperty("Content-Type", HttpTaskConfig.CONTENT_TYPE_JSON);
         }
-
         setRequestProperty(connection, mConfig.getGlobalRequestProperty());
         setRequestProperty(connection, task.getRequestProperty());
-
-        return connection;
     }
+
 
     /**
      * 设置协议头
@@ -127,10 +142,19 @@ public class HttpCoreTask extends BaseConsumerTask {
         }
     }
 
+    /**
+     * 结果回调处理
+     *
+     * @param submitEntity
+     * @param e
+     */
     private void onResultCallBack(RequestEntity submitEntity, Throwable e) {
         //拦截结果
-        if (onInterceptResult(submitEntity, e)) {
-            return;
+        IRequestIntercept intercept = mConfig.getInterceptRequest();
+        if (intercept != null) {
+            if (intercept.interceptResult(submitEntity, e)) {
+                return;
+            }
         }
         ISessionCallBack callBack = mConfig.getSessionCallBack();
         if (callBack != null) {
@@ -138,54 +162,69 @@ public class HttpCoreTask extends BaseConsumerTask {
         }
     }
 
+    /**
+     * 拦截请求
+     * @param submitEntity
+     * @return
+     */
     private boolean onInterceptRequest(RequestEntity submitEntity) {
         //拦截请求
         IRequestIntercept intercept = mConfig.getInterceptRequest();
         return intercept != null && intercept.intercept(submitEntity);
     }
 
-    private boolean onInterceptResult(RequestEntity submitEntity, Throwable e) {
-        //拦截结果
-        IRequestIntercept intercept = mConfig.getInterceptRequest();
-        return intercept != null && intercept.interceptResult(submitEntity, e);
-    }
-
-
-    /**
-     * 发送时转换编码，解决编码问题
-     * String sendData = URLEncoder.encode(String.valueOf(enCodeData.sendData), "utf-8");
-     * OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream(), "UTF-8");
-     * writer.write(sendData);
-     * writer.close();
-     */
-
     private void requestData(RequestEntity submitEntity) {
         //拦截请求
         if (onInterceptRequest(submitEntity)) {
             return;
         }
-        HttpURLConnection connection;
+        HttpURLConnection connection = null;
         try {
-            connection = init(submitEntity);
-        } catch (Exception e) {
-            onResultCallBack(submitEntity, e);
-            e.printStackTrace();
-            return;
-        }
-        try {
+            connection = createHttpConnect(submitEntity);
+            configHttpConnect(connection, submitEntity);
             if (submitEntity.getSendData() != null) {
-                OutputStream os = connection.getOutputStream();
 //                byte[] gzip = GZipUtils.compress(submitEntity.getSendData());
-                os.write(submitEntity.getSendData());
-                os.flush();
+                IoEnvoy.writeToFull(connection.getOutputStream(), submitEntity.getSendData(), true);
                 LogDog.d("{HttpCoreTask} Post submitEntity = " + new String(submitEntity.getSendData()));
             }
-
             int code = connection.getResponseCode();
             int length = connection.getContentLength();
             LogDog.w("{HttpCoreTask} Http Response Code = " + code + " length = " + length);
 
-            if (code == HttpURLConnection.HTTP_MOVED_TEMP) {
+            if (code == HttpURLConnection.HTTP_OK) {
+                String encode = connection.getHeaderField("Content-Encoding");
+                InputStream is = connection.getInputStream();
+                Object resultType = submitEntity.getResultType();
+                //保存响应头参数
+                submitEntity.setResponseProperty(connection.getHeaderFields());
+
+                if (resultType.getClass().isAssignableFrom(String.class)) {
+                    //目录结果为字符串说明是下载文件
+                    File file = FileHelper.crateFile((String) resultType);
+                    if (file != null) {
+                        FileOutputStream fileStream = new FileOutputStream(file);
+                        boolean state = ProcessIoUtils.pipReadWrite(is, fileStream, true, length, submitEntity, mConfig.getSessionCallBack());
+                        if (state) {
+                            submitEntity.setRespondEntity(resultType);
+                        }
+                    }
+                    onResultCallBack(submitEntity, null);
+                } else {
+                    byte[] buffer = IoEnvoy.tryRead(is);
+                    submitEntity.setRespondData(buffer);
+                    //转换成对应的数据
+                    Object entity = null;
+                    IResponseConvert convert = mConfig.getConvertResult();
+                    if (convert != null) {
+                        entity = convert.handlerEntity((Class) resultType, buffer, encode);
+                    }
+                    if (entity == null) {
+                        entity = buffer;
+                    }
+                    submitEntity.setRespondEntity(entity);
+                    onResultCallBack(submitEntity, null);
+                }
+            } else if (code == HttpURLConnection.HTTP_MOVED_TEMP) {
                 //重定向
                 String newUrl = connection.getHeaderField("Location");
                 if (StringEnvoy.isNotEmpty(mConfig.getBaseUrl())) {
@@ -193,65 +232,20 @@ public class HttpCoreTask extends BaseConsumerTask {
                 }
                 submitEntity.setAddress(newUrl);
                 mConfig.getAttribute().pushToCache(submitEntity);
-                return;
-            } else if (code != HttpURLConnection.HTTP_OK) {
-                InputStream is = connection.getInputStream();
-                try {
-                    byte[] buffer = IoEnvoy.tryRead(is);
-                    submitEntity.setRespondData(buffer);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                submitEntity.setResponseCode(code);
-                onResultCallBack(submitEntity, null);
-                return;
-            }
-
-            if (submitEntity.getCallBackTarget() == null) {
-                LogDog.w("{HttpCoreTask} CallBackTarget is null , return now !!!");
-                return;
-            }
-
-            String encode = connection.getHeaderField("Content-Encoding");
-            InputStream is = connection.getInputStream();
-            Object resultType = submitEntity.getResultType();
-
-            if (resultType.getClass().isAssignableFrom(String.class)) {
-                //目录结果为字符串说明是下载文件
-                File file = FileHelper.crateFile((String) resultType);
-                if (file != null) {
-                    FileOutputStream outputStream = new FileOutputStream(file);
-                    boolean state = ProcessIoUtils.pipReadWrite(is, outputStream, true, length, submitEntity, mConfig.getSessionCallBack());
-//                    boolean state = IoUtils.pipReadWrite(is, outputStream, false);
-                    if (state) {
-                        submitEntity.setRespondEntity(resultType);
-                    }
-                }
-                onResultCallBack(submitEntity, null);
             } else {
-                byte[] buffer;
-                try {
-                    buffer = IoEnvoy.tryRead(is);
-                    submitEntity.setRespondData(buffer);
-                } catch (Exception e) {
-                    onResultCallBack(submitEntity, e);
-                    e.printStackTrace();
-                    return;
-                }
-                //转换成对应的数据
-                Object entity = buffer;
-                IResponseConvert convert = mConfig.getConvertResult();
-                if (convert != null) {
-                    entity = convert.handlerEntity((Class) resultType, buffer, encode);
-                }
-                submitEntity.setRespondEntity(entity);
+                InputStream is = connection.getInputStream();
+                byte[] buffer = IoEnvoy.tryRead(is);
+                submitEntity.setRespondData(buffer);
+                submitEntity.setResponseCode(code);
                 onResultCallBack(submitEntity, null);
             }
         } catch (Throwable e) {
             e.printStackTrace();
             onResultCallBack(submitEntity, e);
         } finally {
-            connection.disconnect();
+            if (connection != null) {
+                connection.disconnect();
+            }
         }
     }
 }
