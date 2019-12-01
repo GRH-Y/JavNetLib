@@ -1,8 +1,8 @@
-package connect.network.http.joggle;
+package connect.network.xhttp.joggle;
 
 import connect.network.http.RequestEntity;
 
-public interface IRequestIntercept {
+public interface IXHttpIntercept {
     /**
      * 拦截请求(当前状态是准备发起请求)
      *
@@ -16,5 +16,4 @@ public interface IRequestIntercept {
      * @return 返回true则需要拦截
      */
     boolean onRequestInterceptResult(RequestEntity submitEntity);
-
 }

@@ -17,39 +17,31 @@ public class JavSessionCallBack implements ISessionCallBack {
     /**
      * 网络请求成功回调
      *
-     * @param entity 请求任务
+     * @param request 请求任务
      */
     @Override
-    public void notifyData(RequestEntity entity) {
-        notifyDataImp(entity);
+    public void notifyData(RequestEntity request) {
+        notifyDataImp(request);
     }
 
     @Override
-    public void notifyProcess(RequestEntity entity, int process, int maxProcess, boolean isOver) {
-        notifyProcessImp(entity, process, maxProcess, isOver);
+    public void notifyProcess(RequestEntity request, int process, int maxProcess, boolean isOver) {
+        notifyProcessImp(request, process, maxProcess, isOver);
     }
 
-    protected void notifyDataImp(RequestEntity entity) {
-        if (entity.getCallBackTarget() == null) {
+    protected void notifyDataImp(RequestEntity request) {
+        if (request.getCallBackTarget() == null) {
             LogDog.w("{JavSessionCallBack} CallBackTarget is null , do not dispose Message !!!");
             return;
         }
-        String methodName;
-        Object[] resultData;
-        if (entity.getRespondEntity() == null) {
-            methodName = entity.getErrorMethodName();
-            resultData = new Object[]{entity};
-        } else {
-            methodName = entity.getSuccessMethodName();
-            resultData = new Object[]{entity, entity.getRespondEntity()};
-        }
-        ThreadAnnotation.disposeMessage(methodName, entity.getCallBackTarget(), resultData);
+        String methodName = request.getException() != null ? request.getErrorMethod() : request.getSuccessMethod();
+        ThreadAnnotation.disposeMessage(methodName, request.getCallBackTarget(), new Class[]{RequestEntity.class}, request);
     }
 
 
-    protected void notifyProcessImp(RequestEntity entity, int process, int maxProcess, boolean isOver) {
-        String methodName = entity.getProcessMethodName();
-        ThreadAnnotation.disposeMessage(methodName, entity.getCallBackTarget(), process, maxProcess, isOver);
+    protected void notifyProcessImp(RequestEntity request, int process, int maxProcess, boolean isOver) {
+        String methodName = request.getProcessMethod();
+        ThreadAnnotation.disposeMessage(methodName, request.getCallBackTarget(), new Class[]{int.class, int.class, boolean.class}, process, maxProcess, isOver);
     }
 
 }

@@ -10,16 +10,16 @@ import java.nio.channels.SocketChannel;
 public class NioReceive implements INetReceive {
 
     protected Object mReceive = null;
-    protected String mReceiveMethodName = null;
+    protected String mReceiveMethod = null;
 
     protected SocketChannel channel = null;
 
     public NioReceive() {
     }
 
-    public NioReceive(Object receive, String receiveMethodName) {
+    public NioReceive(Object receive, String receiveMethod) {
         this.mReceive = receive;
-        this.mReceiveMethodName = receiveMethodName;
+        this.mReceiveMethod = receiveMethod;
     }
 
 
@@ -35,7 +35,7 @@ public class NioReceive implements INetReceive {
     @Override
     public void setReceive(Object receive, String receiveMethodName) {
         this.mReceive = receive;
-        this.mReceiveMethodName = receiveMethodName;
+        this.mReceiveMethod = receiveMethodName;
     }
 
     /**
@@ -44,9 +44,15 @@ public class NioReceive implements INetReceive {
      * @return 如果返回false则会关闭该链接
      */
     protected void onRead() throws Exception {
-        byte[] data = IoEnvoy.tryRead(channel);
-        if (data != null) {
-            ThreadAnnotation.disposeMessage(mReceiveMethodName, mReceive, data);
+        byte[] data = null;
+        Exception exception = null;
+        try {
+            data = IoEnvoy.tryRead(channel);
+        } catch (Exception e) {
+            exception = e;
+            throw new Exception(e);
+        } finally {
+            ThreadAnnotation.disposeMessage(mReceiveMethod, mReceive, new Class[]{byte[].class, Exception.class}, new Object[]{data, exception});
         }
     }
 }

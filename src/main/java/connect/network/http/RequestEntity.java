@@ -22,16 +22,17 @@ public class RequestEntity {
      */
     private int taskTag = DEFAULT_TASK_TAG;
     private String address = null;
-    private String requestMethod = ConnectType.GET.getType();
+    private int port = 0;
+    private RequestMode requestMode = RequestMode.GET;
 
     private int responseCode = HttpURLConnection.HTTP_OK;
     private byte[] sendData = null;
     private byte[] respondData = null;
     private Object respondEntity = null;
 
-    private String scbMethodName = null;
-    private String ecbMethodName = null;
-    private String pMethodName = null;
+    private String successMethod = null;
+    private String errorMethod = null;
+    private String processMethod = null;
 
     private boolean isDisableBaseUrl = false;
 
@@ -64,6 +65,8 @@ public class RequestEntity {
      */
     private Object object;
 
+    private Throwable exception;
+
     public boolean isDisableBaseUrl() {
         return isDisableBaseUrl;
     }
@@ -92,8 +95,12 @@ public class RequestEntity {
         return address;
     }
 
-    public String getRequestMethod() {
-        return requestMethod;
+    public int getPort() {
+        return port;
+    }
+
+    public RequestMode getRequestMode() {
+        return requestMode;
     }
 
     public byte[] getSendData() {
@@ -112,12 +119,12 @@ public class RequestEntity {
         return resultType;
     }
 
-    public String getSuccessMethodName() {
-        return scbMethodName;
+    public String getSuccessMethod() {
+        return successMethod;
     }
 
-    public String getErrorMethodName() {
-        return ecbMethodName;
+    public String getErrorMethod() {
+        return errorMethod;
     }
 
     public Object getRespondEntity() {
@@ -132,36 +139,34 @@ public class RequestEntity {
         this.address = address;
     }
 
-    public void setRequestMethod(String requestMethod) {
-        this.requestMethod = requestMethod;
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    public void setRequestMode(RequestMode requestMode) {
+        this.requestMode = requestMode;
     }
 
     public void setSendData(byte[] sendData) {
         this.sendData = sendData;
     }
 
-    public String getScbMethodName() {
-        return scbMethodName;
+
+    public void setSuccessMethod(String successMethod) {
+        this.successMethod = successMethod;
     }
 
-    public void setScbMethodName(String scbMethodName) {
-        this.scbMethodName = scbMethodName;
+
+    public String getProcessMethod() {
+        return processMethod;
     }
 
-    public String getEcbMethodName() {
-        return ecbMethodName;
+    public void setErrorMethod(String errorMethod) {
+        this.errorMethod = errorMethod;
     }
 
-    public String getProcessMethodName() {
-        return pMethodName;
-    }
-
-    public void setEcbMethodName(String ecbMethodName) {
-        this.ecbMethodName = ecbMethodName;
-    }
-
-    public void setProcessMethodName(String processMethod) {
-        this.pMethodName = processMethod;
+    public void setProcessMethod(String processMethod) {
+        this.processMethod = processMethod;
     }
 
     public void setResultType(Object resultType) {
@@ -204,7 +209,15 @@ public class RequestEntity {
         this.responseProperty = responseProperty;
     }
 
+    public void setException(Throwable e) {
+        this.exception = e;
+    }
+
     public Map<String, List<String>> getResponseProperty() {
         return responseProperty;
+    }
+
+    public Throwable getException() {
+        return exception;
     }
 }

@@ -1,6 +1,7 @@
 package connect.network.http.joggle;
 
 import connect.network.http.RequestEntity;
+import connect.network.http.RequestMode;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -34,7 +35,7 @@ public @interface ARequest {
      *
      * @return
      */
-    Class requestMethod();
+    RequestMode requestMode();
 
     /**
      * 请求的地址

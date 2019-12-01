@@ -33,8 +33,8 @@ public class NioSender implements INetSender {
      */
     @Override
     public void sendDataNow(byte[] data) {
-        boolean isError = true;
         if (data != null && channel != null) {
+            boolean isError = true;
             try {
                 if (!clientTask.isTaskNeedClose()) {
                     isError = channel.write(ByteBuffer.wrap(data)) < 0;
@@ -42,9 +42,9 @@ public class NioSender implements INetSender {
             } catch (Throwable e) {
                 e.printStackTrace();
             }
-        }
-        if (isError) {
-            onSenderErrorCallBack();
+            if (isError) {
+                onSenderErrorCallBack();
+            }
         }
     }
 

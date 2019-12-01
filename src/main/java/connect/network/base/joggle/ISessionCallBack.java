@@ -15,16 +15,16 @@ public interface ISessionCallBack {
     /**
      * 通知结果
      *
-     * @param entity
+     * @param request
      */
-    void notifyData(RequestEntity entity);
+    void notifyData(RequestEntity request);
 
     /**
      * 通知处理过程状态
-     * @param entity
+     * @param request
      * @param process
      * @param maxProcess
      * @param isOver
      */
-    void notifyProcess(RequestEntity entity,int process, int maxProcess, boolean isOver);
+    void notifyProcess(RequestEntity request,int process, int maxProcess, boolean isOver);
 }

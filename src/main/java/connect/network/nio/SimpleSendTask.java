@@ -79,9 +79,11 @@ public class SimpleSendTask {
             SendEntity sendEntity = attribute.popCacheData();
             SocketChannel channel = sendEntity.getNioSender().getChannel();
             NioClientTask clientTask = sendEntity.getNioSender().clientTask;
-            if (channel == null && clientTask != null && !clientTask.isTaskNeedClose()) {
-                //该任务还没准备就绪，延迟发送数据
-                attribute.pushToCache(sendEntity);
+            if (channel == null) {
+                if (clientTask != null && !clientTask.isTaskNeedClose()) {
+                    //该任务还没准备就绪，延迟发送数据
+                    attribute.pushToCache(sendEntity);
+                }
                 return;
             }
             boolean isError = true;

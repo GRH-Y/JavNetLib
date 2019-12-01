@@ -69,7 +69,7 @@ public class HttpCoreTask extends BaseConsumerTask {
     private void configHttpConnect(HttpURLConnection connection, RequestEntity task) throws Exception {
         connection.setConnectTimeout(mConfig.getTimeout());
         connection.setReadTimeout(mConfig.getTimeout());
-        connection.setRequestMethod(task.getRequestMethod());
+        connection.setRequestMethod(task.getRequestMode().getMode());
         connection.setUseCaches(false);
 
         connection.setRequestProperty("Charset", "utf-8");
@@ -79,7 +79,7 @@ public class HttpCoreTask extends BaseConsumerTask {
         connection.setRequestProperty("Accept-Charset", "utf-8");
         connection.setRequestProperty("Accept-Encoding", "gzip, deflate");
 
-        if (POST.class.getSimpleName().equals(task.getRequestMethod())) {
+        if (POST.class.getSimpleName().equals(task.getRequestMode())) {
             connection.setDoOutput(true);
             connection.setRequestProperty("Content-Type", HttpTaskConfig.CONTENT_TYPE_JSON);
         }
@@ -146,13 +146,12 @@ public class HttpCoreTask extends BaseConsumerTask {
      * 结果回调处理
      *
      * @param submitEntity
-     * @param e
      */
-    private void onResultCallBack(RequestEntity submitEntity, Throwable e) {
+    private void onResultCallBack(RequestEntity submitEntity) {
         //拦截结果
         IRequestIntercept intercept = mConfig.getInterceptRequest();
         if (intercept != null) {
-            if (intercept.interceptResult(submitEntity, e)) {
+            if (intercept.onRequestInterceptResult(submitEntity)) {
                 return;
             }
         }
@@ -164,13 +163,14 @@ public class HttpCoreTask extends BaseConsumerTask {
 
     /**
      * 拦截请求
+     *
      * @param submitEntity
      * @return
      */
     private boolean onInterceptRequest(RequestEntity submitEntity) {
         //拦截请求
         IRequestIntercept intercept = mConfig.getInterceptRequest();
-        return intercept != null && intercept.intercept(submitEntity);
+        return intercept != null && intercept.onStartRequestIntercept(submitEntity);
     }
 
     private void requestData(RequestEntity submitEntity) {
@@ -208,7 +208,7 @@ public class HttpCoreTask extends BaseConsumerTask {
                             submitEntity.setRespondEntity(resultType);
                         }
                     }
-                    onResultCallBack(submitEntity, null);
+                    onResultCallBack(submitEntity);
                 } else {
                     byte[] buffer = IoEnvoy.tryRead(is);
                     submitEntity.setRespondData(buffer);
@@ -222,9 +222,9 @@ public class HttpCoreTask extends BaseConsumerTask {
                         entity = buffer;
                     }
                     submitEntity.setRespondEntity(entity);
-                    onResultCallBack(submitEntity, null);
+                    onResultCallBack(submitEntity);
                 }
-            } else if (code == HttpURLConnection.HTTP_MOVED_TEMP) {
+            } else if (code >= HttpURLConnection.HTTP_MULT_CHOICE && code <= HttpURLConnection.HTTP_USE_PROXY) {
                 //重定向
                 String newUrl = connection.getHeaderField("Location");
                 if (StringEnvoy.isNotEmpty(mConfig.getBaseUrl())) {
@@ -237,11 +237,12 @@ public class HttpCoreTask extends BaseConsumerTask {
                 byte[] buffer = IoEnvoy.tryRead(is);
                 submitEntity.setRespondData(buffer);
                 submitEntity.setResponseCode(code);
-                onResultCallBack(submitEntity, null);
+                onResultCallBack(submitEntity);
             }
         } catch (Throwable e) {
             e.printStackTrace();
-            onResultCallBack(submitEntity, e);
+            submitEntity.setException(e);
+            onResultCallBack(submitEntity);
         } finally {
             if (connection != null) {
                 connection.disconnect();

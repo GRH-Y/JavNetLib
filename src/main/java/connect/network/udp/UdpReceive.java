@@ -39,7 +39,7 @@ public class UdpReceive implements INetReceive {
             DatagramPacket receive = new DatagramPacket(buffer, buffer.length);
             socket.receive(receive);
             //注意接受方法参数是DatagramPacket
-            ThreadAnnotation.disposeMessage(mReceiveMethodName, mReceive, receive);
+            ThreadAnnotation.disposeMessage(mReceiveMethodName, mReceive, new Class[]{DatagramPacket.class}, receive);
         } catch (Exception e) {
             if (!(e instanceof SocketTimeoutException)) {
                 throw new Exception(e);

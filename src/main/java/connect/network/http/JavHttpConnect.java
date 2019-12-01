@@ -1,7 +1,9 @@
 package connect.network.http;
 
 
-import connect.network.http.joggle.*;
+import connect.network.http.joggle.ARequest;
+import connect.network.http.joggle.IHttpTaskConfig;
+import connect.network.http.joggle.IRequestEntity;
 import connect.network.http.tool.JavConvertResult;
 import connect.network.http.tool.JavSessionCallBack;
 import task.executor.TaskExecutorPoolManager;
@@ -76,6 +78,7 @@ public class JavHttpConnect {
 
     public void submitEntity(RequestEntity requestEntity) {
         if (requestEntity != null) {
+            requestEntity.setException(null);
             startTaskAndPushToCache(requestEntity);
         }
     }
@@ -104,7 +107,7 @@ public class JavHttpConnect {
         Class clx = requestEntity.getClass();
         ARequest request = (ARequest) clx.getAnnotation(ARequest.class);
         int atnTaskTag = taskTag != RequestEntity.DEFAULT_TASK_TAG ? taskTag : request.taskTag();
-        Class requestMethod = request.requestMethod();
+        RequestMode requestMode = request.requestMode();
         String address = request.url().trim();
         if (StringEnvoy.isEmpty(address)) {
             throw new NullPointerException("JavHttpConnect submitEntity request.url() is null ");
@@ -113,23 +116,23 @@ public class JavHttpConnect {
         RequestEntity netTaskEntity = new RequestEntity();
         netTaskEntity.setTaskTag(atnTaskTag);
         netTaskEntity.setDisableBaseUrl(request.disableBaseUrl());
-        netTaskEntity.setScbMethodName(request.successMethod());
-        netTaskEntity.setEcbMethodName(request.errorMethod());
-        netTaskEntity.setProcessMethodName(request.processMethod());
+        netTaskEntity.setSuccessMethod(request.successMethod());
+        netTaskEntity.setErrorMethod(request.errorMethod());
+        netTaskEntity.setProcessMethod(request.processMethod());
         netTaskEntity.setCallBackTarget(callBackTarget);
         netTaskEntity.setResultType(request.resultType());
-        netTaskEntity.setRequestMethod(requestMethod.getSimpleName());
+        netTaskEntity.setRequestMode(requestMode);
         netTaskEntity.setIndependentTask(request.isIndependentTask());
 
         Map<String, Object> property = requestEntity.getRequestProperty();
         netTaskEntity.setRequestProperty(property);
         byte[] data = requestEntity.getSendData();
 
-        if (requestMethod == POST.class) {
+        if (requestMode == RequestMode.POST) {
             netTaskEntity.setAddress(address);
             netTaskEntity.setSendData(data);
             startTaskAndPushToCache(netTaskEntity);
-        } else if (requestMethod == GET.class) {
+        } else if (requestMode == RequestMode.GET) {
             StringBuilder builder = new StringBuilder();
             builder.append(address);
             if (data != null) {

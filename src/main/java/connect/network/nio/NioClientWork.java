@@ -81,14 +81,14 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
             //设置超时时间
             socket.setSoTimeout(task.getConnectTimeout());
             //关闭Nagle算法
-//        if (task.getConnectTimeout() > 0 && task.getPort() == 443) {
-//            try {
-//                socket.setTcpNoDelay(true);
-//            } catch (Exception e) {
-//                LogDog.e("The socket does not support setTcpNoDelay() !!! ");
-////                e.printStackTrace();
-//            }
-//        }
+            if (task.getConnectTimeout() > 0) {
+                try {
+                    socket.setTcpNoDelay(true);
+                } catch (Exception e) {
+                    LogDog.e("The socket does not support setTcpNoDelay() !!! " + e.getMessage());
+//                e.printStackTrace();
+                }
+            }
             //执行Socket的close方法，该方法也会立即返回
             socket.setSoLinger(true, 0);
             if (channel.isBlocking()) {

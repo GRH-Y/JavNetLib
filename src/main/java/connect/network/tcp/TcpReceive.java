@@ -35,7 +35,7 @@ public class TcpReceive implements INetReceive {
     protected void onRead(InputStream stream) throws Exception {
         byte[] data = IoEnvoy.tryRead(stream);
         if (data != null) {
-            ThreadAnnotation.disposeMessage(mReceiveMethodName, mReceive, data);
+            ThreadAnnotation.disposeMessage(mReceiveMethodName, mReceive, new Class[]{byte[].class}, data);
         }
     }
 }
