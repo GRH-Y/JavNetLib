@@ -4,9 +4,9 @@ import connect.network.nio.NioClientTask;
 import connect.network.nio.NioHPCClientFactory;
 import connect.network.nio.NioSender;
 
-public class HttpSender extends NioSender {
+public class XHttpSender extends NioSender {
 
-    public HttpSender(NioClientTask clientTask) {
+    public XHttpSender(NioClientTask clientTask) {
         super(clientTask);
     }
 

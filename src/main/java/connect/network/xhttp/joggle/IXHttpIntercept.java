@@ -1,6 +1,6 @@
 package connect.network.xhttp.joggle;
 
-import connect.network.http.RequestEntity;
+import connect.network.xhttp.entity.XHttpRequest;
 
 public interface IXHttpIntercept {
     /**
@@ -8,12 +8,12 @@ public interface IXHttpIntercept {
      *
      * @return 返回true则需要拦截
      */
-    boolean onStartRequestIntercept(RequestEntity submitEntity);
+    boolean onStartRequestIntercept(XHttpRequest submitEntity);
 
     /**
      * 拦截请求回调结果(当前状态是请求完成)
      *
      * @return 返回true则需要拦截
      */
-    boolean onRequestInterceptResult(RequestEntity submitEntity);
+    boolean onRequestInterceptResult(XHttpRequest submitEntity);
 }

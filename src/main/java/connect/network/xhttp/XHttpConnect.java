@@ -1,8 +1,8 @@
 package connect.network.xhttp;
 
-import connect.network.http.RequestEntity;
 import connect.network.nio.NioHPCClientFactory;
 import connect.network.xhttp.config.XHttpDefaultDns;
+import connect.network.xhttp.entity.XHttpRequest;
 
 public class XHttpConnect {
 
@@ -37,7 +37,7 @@ public class XHttpConnect {
         return httpConfig;
     }
 
-    public void submitRequest(RequestEntity entity) {
+    public void submitRequest(XHttpRequest entity) {
         XHttpRequestTask requestTask = new XHttpRequestTask(entity);
         NioHPCClientFactory.getFactory().addTask(requestTask);
     }

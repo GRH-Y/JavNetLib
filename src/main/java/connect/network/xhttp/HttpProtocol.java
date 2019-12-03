@@ -1,8 +1,9 @@
 package connect.network.xhttp;
 
-import connect.network.http.RequestEntity;
+import connect.network.http.RequestMode;
+import connect.network.xhttp.entity.XHttpRequest;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -19,6 +20,7 @@ public class HttpProtocol {
     public static final String XY_CACHE_CONTROL = "Cache-Control";
     public static final String XY_CONNECTION = "Connection";
     public static final String XY_USER_AGENT = "User-Agent";
+    public static final String XY_CONTENT_ENCOD = "Content-Encoding";
 
 
     /**
@@ -50,8 +52,10 @@ public class HttpProtocol {
     private Map<String, String> headParameterMap;
 
 
-    public HttpProtocol(RequestEntity requestEntity) {
-        headParameterMap = new HashMap<>();
+    public HttpProtocol(XHttpRequest requestEntity) {
+        headParameterMap = new LinkedHashMap<>();
+        RequestMode requestMode = requestEntity.getRequestMode();
+        headParameterMap.put(requestMode.getMode(), " / HTTP/1.1\r\n");
         headParameterMap.put(XY_HOST, requestEntity.getAddress());
         headParameterMap.put(XY_ACCEPT, "*/*");
         headParameterMap.put(XY_ACCEPT_LANGUAGE, "*/*");
@@ -59,9 +63,7 @@ public class HttpProtocol {
         headParameterMap.put(XY_USER_AGENT, "XHttp_1.0");
         headParameterMap.put(XY_CONNECTION, "keep-alive");
         byte[] data = requestEntity.getSendData();
-        if (data != null) {
-            headParameterMap.put(XY_CONTENT_LENGTH, String.valueOf(data.length));
-        }
+        headParameterMap.put(XY_CONTENT_LENGTH, data == null ? "0" : String.valueOf(data.length));
     }
 
     public Map<String, String> getHeadParameterMap() {
@@ -83,8 +85,14 @@ public class HttpProtocol {
 
     public byte[] toByte() {
         StringBuilder builder = new StringBuilder();
+        boolean isFirst = true;
         for (Map.Entry<String, String> entry : headParameterMap.entrySet()) {
-            builder.append(entry.getKey()).append(": ").append(entry.getValue()).append("\r\n");
+            if (isFirst) {
+                builder.append(entry.getKey()).append(entry.getValue());
+                isFirst = false;
+            } else {
+                builder.append(entry.getKey()).append(": ").append(entry.getValue()).append("\r\n");
+            }
         }
         builder.append("\r\n\r\n");
         return builder.toString().getBytes();

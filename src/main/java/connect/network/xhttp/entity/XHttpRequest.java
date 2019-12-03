@@ -1,5 +1,7 @@
-package connect.network.http;
+package connect.network.xhttp.entity;
 
+
+import connect.network.http.RequestMode;
 
 import java.net.HttpURLConnection;
 import java.util.List;
@@ -11,7 +13,7 @@ import java.util.Map;
  *
  * @author yyz
  */
-public class RequestEntity {
+public class XHttpRequest {
 
     /**
      * 默认的请求tag
