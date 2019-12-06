@@ -11,7 +11,7 @@ public class XHttpSender extends NioSender {
     }
 
     @Override
-    protected void onSenderErrorCallBack() {
+    protected void onSenderErrorCallBack(Throwable e) {
         NioHPCClientFactory.getFactory().removeTask(clientTask);
     }
 }

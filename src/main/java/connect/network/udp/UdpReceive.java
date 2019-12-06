@@ -1,7 +1,7 @@
 package connect.network.udp;
 
 import connect.network.base.joggle.INetReceive;
-import util.ThreadAnnotation;
+import util.ReflectionCall;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -39,7 +39,7 @@ public class UdpReceive implements INetReceive {
             DatagramPacket receive = new DatagramPacket(buffer, buffer.length);
             socket.receive(receive);
             //注意接受方法参数是DatagramPacket
-            ThreadAnnotation.disposeMessage(mReceiveMethodName, mReceive, new Class[]{DatagramPacket.class}, receive);
+            ReflectionCall.invoke(mReceive, mReceiveMethodName, new Class[]{DatagramPacket.class}, receive);
         } catch (Exception e) {
             if (!(e instanceof SocketTimeoutException)) {
                 throw new Exception(e);

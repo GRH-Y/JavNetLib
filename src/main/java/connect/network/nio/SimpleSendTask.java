@@ -15,16 +15,16 @@ public class SimpleSendTask {
 
     private final class SendEntity {
 
-        private NioSender nioSender;
+        private NioSender sender;
         private byte[] data;
 
-        SendEntity(NioSender nioSender, byte[] data) {
-            this.nioSender = nioSender;
+        SendEntity(NioSender sender, byte[] data) {
+            this.sender = sender;
             this.data = data;
         }
 
-        public NioSender getNioSender() {
-            return nioSender;
+        public NioSender getSender() {
+            return sender;
         }
 
         public byte[] getData() {
@@ -56,9 +56,9 @@ public class SimpleSendTask {
         iConsumerTaskExecutor.setIdleStateSleep(true);
     }
 
-    public void sendData(NioSender nioSender, byte[] data) {
-        if (nioSender != null && data != null) {
-            attribute.pushToCache(new SendEntity(nioSender, data));
+    public void sendData(NioSender sender, byte[] data) {
+        if (sender != null && data != null) {
+            attribute.pushToCache(new SendEntity(sender, data));
             container.getTaskExecutor().resumeTask();
         }
     }
@@ -77,29 +77,18 @@ public class SimpleSendTask {
         @Override
         protected void onProcess() {
             SendEntity sendEntity = attribute.popCacheData();
-            SocketChannel channel = sendEntity.getNioSender().getChannel();
-            NioClientTask clientTask = sendEntity.getNioSender().clientTask;
-            if (channel == null) {
-                if (clientTask != null && !clientTask.isTaskNeedClose()) {
-                    //该任务还没准备就绪，延迟发送数据
-                    attribute.pushToCache(sendEntity);
-                }
-                return;
-            }
-            boolean isError = true;
+            NioSender sender = sendEntity.getSender();
+            SocketChannel channel = sender.getChannel();
             try {
-                if (channel.isOpen() && channel.isConnected() && !clientTask.isTaskNeedClose()) {
+                if (channel != null && channel.isOpen() && channel.isConnected()) {
                     int len = channel.write(ByteBuffer.wrap(sendEntity.getData()));
-                    isError = len < 0;
                     if (len == 0) {
                         attribute.pushToCache(sendEntity);
                     }
                 }
             } catch (Throwable e) {
                 e.printStackTrace();
-            }
-            if (isError) {
-                sendEntity.getNioSender().onSenderErrorCallBack();
+                sender.onSenderErrorCallBack(e);
             }
         }
 

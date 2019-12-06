@@ -3,7 +3,7 @@ package connect.network.nio;
 
 import connect.network.base.joggle.INetReceive;
 import util.IoEnvoy;
-import util.ThreadAnnotation;
+import util.ReflectionCall;
 
 import java.nio.channels.SocketChannel;
 
@@ -52,7 +52,8 @@ public class NioReceive implements INetReceive {
             exception = e;
             throw new Exception(e);
         } finally {
-            ThreadAnnotation.disposeMessage(mReceiveMethod, mReceive, new Class[]{byte[].class, Exception.class}, new Object[]{data, exception});
+            ReflectionCall.invoke(mReceive, mReceiveMethod, new Class[]{byte[].class, Exception.class}, new Object[]{data, exception});
         }
     }
+
 }

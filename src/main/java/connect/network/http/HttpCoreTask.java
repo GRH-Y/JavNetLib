@@ -4,7 +4,6 @@ package connect.network.http;
 import connect.network.base.joggle.ISessionCallBack;
 import connect.network.http.joggle.IRequestIntercept;
 import connect.network.http.joggle.IResponseConvert;
-import connect.network.http.joggle.POST;
 import log.LogDog;
 import storage.FileHelper;
 import task.executor.BaseConsumerTask;
@@ -79,7 +78,7 @@ public class HttpCoreTask extends BaseConsumerTask {
         connection.setRequestProperty("Accept-Charset", "utf-8");
         connection.setRequestProperty("Accept-Encoding", "gzip, deflate");
 
-        if (POST.class.getSimpleName().equals(task.getRequestMode())) {
+        if (RequestMode.POST == task.getRequestMode()) {
             connection.setDoOutput(true);
             connection.setRequestProperty("Content-Type", HttpTaskConfig.CONTENT_TYPE_JSON);
         }
@@ -208,7 +207,6 @@ public class HttpCoreTask extends BaseConsumerTask {
                             submitEntity.setRespondEntity(resultType);
                         }
                     }
-                    onResultCallBack(submitEntity);
                 } else {
                     byte[] buffer = IoEnvoy.tryRead(is);
                     submitEntity.setRespondData(buffer);
@@ -219,11 +217,11 @@ public class HttpCoreTask extends BaseConsumerTask {
                         entity = convert.handlerEntity((Class) resultType, buffer, encode);
                     }
                     if (entity == null) {
-                        entity = buffer;
+                        submitEntity.setRespondData(buffer);
                     }
                     submitEntity.setRespondEntity(entity);
-                    onResultCallBack(submitEntity);
                 }
+                onResultCallBack(submitEntity);
             } else if (code >= HttpURLConnection.HTTP_MULT_CHOICE && code <= HttpURLConnection.HTTP_USE_PROXY) {
                 //重定向
                 String newUrl = connection.getHeaderField("Location");

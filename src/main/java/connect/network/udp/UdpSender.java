@@ -33,12 +33,12 @@ public class UdpSender implements INetSender {
         }
     }
 
-    @Override
-    public void sendDataNow(byte[] data) {
-        if (data != null) {
-            sendDataNow(data, data.length);
-        }
-    }
+//    @Override
+//    public void sendDataNow(byte[] data) {
+//        if (data != null) {
+//            sendDataNow(data, data.length);
+//        }
+//    }
 
     public void sendDataNow(byte[] data, int length) {
         if (data != null) {

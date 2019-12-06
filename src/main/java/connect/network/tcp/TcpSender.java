@@ -2,7 +2,6 @@ package connect.network.tcp;
 
 import connect.network.base.joggle.INetSender;
 
-import java.io.IOException;
 import java.io.OutputStream;
 import java.net.SocketTimeoutException;
 import java.util.Queue;
@@ -24,16 +23,16 @@ public class TcpSender implements INetSender {
         }
     }
 
-    @Override
-    public void sendDataNow(byte[] data) {
-        if (data != null) {
-            try {
-                stream.write(data);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
+//    @Override
+//    public void sendDataNow(byte[] data) {
+//        if (data != null) {
+//            try {
+//                stream.write(data);
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//    }
 
     protected void setStream(OutputStream stream) {
         this.stream = stream;
@@ -43,7 +42,7 @@ public class TcpSender implements INetSender {
         return stream;
     }
 
-    protected void onWrite(OutputStream stream) throws Exception {
+    protected void onWrite() throws Exception {
         while (!cache.isEmpty() && stream != null) {
             byte[] data = cache.remove();
             try {

@@ -3,7 +3,7 @@ package connect.network.tcp;
 
 import connect.network.base.joggle.INetReceive;
 import util.IoEnvoy;
-import util.ThreadAnnotation;
+import util.ReflectionCall;
 
 import java.io.InputStream;
 
@@ -32,10 +32,10 @@ public class TcpReceive implements INetReceive {
         this.mReceiveMethodName = receiveMethodName;
     }
 
-    protected void onRead(InputStream stream) throws Exception {
+    protected void onRead() throws Exception {
         byte[] data = IoEnvoy.tryRead(stream);
         if (data != null) {
-            ThreadAnnotation.disposeMessage(mReceiveMethodName, mReceive, new Class[]{byte[].class}, data);
+            ReflectionCall.invoke(mReceive, mReceiveMethodName, new Class[]{byte[].class}, data);
         }
     }
 }

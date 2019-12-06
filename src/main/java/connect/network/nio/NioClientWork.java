@@ -4,6 +4,7 @@ package connect.network.nio;
 import log.LogDog;
 import util.StringEnvoy;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.channels.SelectionKey;
@@ -114,6 +115,7 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
         try {
             if (channel.isConnected()) {
                 if (task.getSender() != null) {
+                    //不注册发送事件，只要连接成功发送数据事件随时可以发生，也避免了Selector空转
                     task.getSender().setChannel(channel);
 //                  channel.register(mSelector, SelectionKey.OP_WRITE, task);
                 }
@@ -149,31 +151,16 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
         T task = (T) selectionKey.attachment();
 
         if (selectionKey.isValid() && selectionKey.isConnectable()) {
-            boolean isConnect = channel.isConnected();
+            boolean isConnect = false;
             try {
-                //如果通道正在进行连接操作
-                if (channel.isConnectionPending()) {
-                    // 完成连接
-                    isConnect = channel.finishConnect();
-                    if (!isConnect && task.getConnectTimeout() > 0) {
-                        long startTime = System.currentTimeMillis();
-                        while (!channel.finishConnect()) {
-                            if (System.currentTimeMillis() - startTime < task.getConnectTimeout()) {
-                                Thread.sleep(100);
-                            } else {
-                                LogDog.e("connect " + task.getHost() + ":" + task.getPort() + " timeout !!!");
-                                mFactory.removeTaskInside(task, false);
-                            }
-                        }
-                    }
-                }
-            } catch (Throwable e) {
-                isConnect = false;
-                e.printStackTrace();
-            } finally {
+                isConnect = channel.finishConnect();
                 if (isConnect) {
                     registerChannel(task, channel);
-                } else {
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                if (isConnect == false) {
                     try {
                         task.onConfigSocket(false, channel);
                     } catch (Throwable e) {
@@ -182,6 +169,39 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
                     mFactory.removeTaskInside(task, false);
                 }
             }
+
+//            try {
+//                //如果通道正在进行连接操作
+//                if (channel.isConnectionPending()) {
+//                    // 完成连接
+//                    isConnect = channel.finishConnect();
+//                    if (!isConnect && task.getConnectTimeout() > 0) {
+//                        long startTime = System.currentTimeMillis();
+//                        while (!channel.finishConnect()) {
+//                            if (System.currentTimeMillis() - startTime < task.getConnectTimeout()) {
+//                                Thread.sleep(100);
+//                            } else {
+//                                LogDog.e("connect " + task.getHost() + ":" + task.getPort() + " timeout !!!");
+//                                mFactory.removeTaskInside(task, false);
+//                            }
+//                        }
+//                    }
+//                }
+//            } catch (Throwable e) {
+//                isConnect = false;
+//                e.printStackTrace();
+//            } finally {
+//                if (isConnect) {
+//                    registerChannel(task, channel);
+//                } else {
+//                    try {
+//                        task.onConfigSocket(false, channel);
+//                    } catch (Throwable e) {
+//                        e.printStackTrace();
+//                    }
+//                    mFactory.removeTaskInside(task, false);
+//                }
+//            }
         } else if (selectionKey.isValid() && selectionKey.isReadable()) {
             NioReceive receive = task.getReceive();
             if (receive != null) {

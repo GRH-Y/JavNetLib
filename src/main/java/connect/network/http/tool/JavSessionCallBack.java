@@ -4,7 +4,7 @@ package connect.network.http.tool;
 import connect.network.base.joggle.ISessionCallBack;
 import connect.network.http.RequestEntity;
 import log.LogDog;
-import util.ThreadAnnotation;
+import util.ReflectionCall;
 
 /**
  * 网络请求会话回调
@@ -34,14 +34,14 @@ public class JavSessionCallBack implements ISessionCallBack {
             LogDog.w("{JavSessionCallBack} CallBackTarget is null , do not dispose Message !!!");
             return;
         }
-        String methodName = request.getException() != null ? request.getErrorMethod() : request.getSuccessMethod();
-        ThreadAnnotation.disposeMessage(methodName, request.getCallBackTarget(), new Class[]{RequestEntity.class}, request);
+        String methodName = request.getException() == null && request.getRespondEntity() != null ? request.getSuccessMethod() : request.getErrorMethod();
+        ReflectionCall.invoke(request.getCallBackTarget(), methodName, new Class[]{RequestEntity.class}, request);
     }
 
 
     protected void notifyProcessImp(RequestEntity request, int process, int maxProcess, boolean isOver) {
         String methodName = request.getProcessMethod();
-        ThreadAnnotation.disposeMessage(methodName, request.getCallBackTarget(), new Class[]{int.class, int.class, boolean.class}, process, maxProcess, isOver);
+        ReflectionCall.invoke(request.getCallBackTarget(), methodName, new Class[]{int.class, int.class, boolean.class}, process, maxProcess, isOver);
     }
 
 }

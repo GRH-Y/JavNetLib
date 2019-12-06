@@ -23,27 +23,17 @@ public class NioSender implements INetSender {
      */
     @Override
     public void sendData(byte[] data) {
-        sendDataNow(data);
-    }
-
-    /**
-     * 发送数据
-     *
-     * @param data
-     */
-    @Override
-    public void sendDataNow(byte[] data) {
         if (data != null && channel != null) {
-            boolean isError = true;
             try {
                 if (!clientTask.isTaskNeedClose()) {
-                    isError = channel.write(ByteBuffer.wrap(data)) < 0;
+                    int ret;
+                    do {
+                        ret = channel.write(ByteBuffer.wrap(data));
+                    } while (ret == 0);
                 }
             } catch (Throwable e) {
                 e.printStackTrace();
-            }
-            if (isError) {
-                onSenderErrorCallBack();
+                onSenderErrorCallBack(e);
             }
         }
     }
@@ -60,7 +50,7 @@ public class NioSender implements INetSender {
     /**
      * 发送数据失败回调
      */
-    protected void onSenderErrorCallBack() {
+    protected void onSenderErrorCallBack(Throwable e) {
     }
 
 }

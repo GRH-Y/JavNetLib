@@ -127,8 +127,8 @@ public class RequestEntity {
         return errorMethod;
     }
 
-    public Object getRespondEntity() {
-        return respondEntity;
+    public <T> T getRespondEntity() {
+        return (T) respondEntity;
     }
 
     public void setRespondEntity(Object respondEntity) {
