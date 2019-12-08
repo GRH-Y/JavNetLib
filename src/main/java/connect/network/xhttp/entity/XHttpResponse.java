@@ -10,18 +10,17 @@ import java.util.Map;
 
 public class XHttpResponse {
 
-
     private byte[] raw = null;
     private String data = null;
     private Exception exception = null;
-    private Map<String, String> head = null;
+    private Map<String, String> headMap = null;
 
     public void setRaw(byte[] raw) {
         this.raw = raw;
     }
 
-    public void setHead(Map<String, String> head) {
-        this.head = head;
+    public void setHeadMap(Map<String, String> headMap) {
+        this.headMap = headMap;
     }
 
     public void setException(Exception exception) {
@@ -40,12 +39,41 @@ public class XHttpResponse {
         return exception;
     }
 
-    public Map<String, String> getHead() {
-        return head;
+    public Map<String, String> getHeadMap() {
+        return headMap;
     }
 
     public String getData() {
         return data;
+    }
+
+    public String getHeadForKey(String key) {
+        String value = null;
+        if (headMap != null) {
+            value = headMap.get(key);
+        }
+        return value;
+    }
+
+    public static void parsingHead(XHttpResponse response, String headStr) {
+        Map<String, String> headMap;
+        if (StringEnvoy.isNotEmpty(headStr)) {
+            headMap = new LinkedHashMap<>();
+            String[] arrys = headStr.split("\r\n");
+            boolean isFirst = true;
+            for (String str : arrys) {
+                if (isFirst) {
+                    isFirst = false;
+                    headMap.put(HttpProtocol.XY_RESPONSE_CODE, str);
+                } else {
+                    String[] args = str.split(": ");
+                    if (args.length == 2) {
+                        headMap.put(args[0], args[1]);
+                    }
+                }
+            }
+            response.setHeadMap(headMap);
+        }
     }
 
     public static XHttpResponse parsing(byte[] data) {
@@ -67,9 +95,9 @@ public class XHttpResponse {
                     }
                 }
             }
-            response.setHead(head);
+            response.setHeadMap(head);
             String length = head.get(HttpProtocol.XY_CONTENT_LENGTH);
-            String encode = head.get(HttpProtocol.XY_CONTENT_ENCOD);
+            String encode = head.get(HttpProtocol.XY_CONTENT_ENCODING);
 
             if (StringEnvoy.isEmpty(length)) {
                 int dataStartIndex = content[0].length() + 4;

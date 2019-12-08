@@ -53,10 +53,8 @@ public class XHttpRequestTask extends NioClientTask {
                 return;
             }
         }
-        if (response != null) {
-            String methodName = response.getException() != null ? request.getErrorMethod() : request.getSuccessMethod();
-            ReflectionCall.invoke(request.getCallBackTarget(), methodName, new Class[]{XHttpRequest.class, XHttpResponse.class}, request, response);
-        }
+        String methodName = response.getException() != null ? request.getErrorMethod() : request.getSuccessMethod();
+        ReflectionCall.invoke(request.getCallBackTarget(), methodName, new Class[]{XHttpRequest.class, XHttpResponse.class}, request, response);
     }
 
 }

@@ -20,7 +20,9 @@ public class HttpProtocol {
     public static final String XY_CACHE_CONTROL = "Cache-Control";
     public static final String XY_CONNECTION = "Connection";
     public static final String XY_USER_AGENT = "User-Agent";
-    public static final String XY_CONTENT_ENCOD = "Content-Encoding";
+    public static final String XY_CONTENT_ENCODING = "Content-Encoding";
+    public static final String XY_RESPONSE_CODE = "Response-Code";
+
 
 
     /**
