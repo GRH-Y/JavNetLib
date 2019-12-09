@@ -1,7 +1,6 @@
 package connect.network.nio;
 
 import connect.network.base.AbsNetFactory;
-import log.LogDog;
 import task.executor.ConsumerQueueAttribute;
 import task.executor.TaskContainer;
 import task.executor.TaskExecutorPoolManager;
