@@ -24,7 +24,6 @@ public class HttpProtocol {
     public static final String XY_RESPONSE_CODE = "Response-Code";
 
 
-
     /**
      * 常见的媒体格式类型如下：
      * <p>
@@ -47,7 +46,7 @@ public class HttpProtocol {
      * <p>
      * 另外一种常见的媒体格式是上传文件之时使用的：
      * multipart/form-data ： 需要在表单中进行文件上传时，就需要使用该格式
-     *
+     * <p>
      * Location：这个头配合302状态吗，用于告诉客户端找谁
      * Server：服务器通过这个头，告诉浏览器服务器的类型
      * Content-Encoding：告诉浏览器，服务器的数据压缩格式
@@ -61,7 +60,7 @@ public class HttpProtocol {
      * Expries：告诉浏览器回送的资源缓存多长时间。如果是-1或者0，表示不缓存
      * Cache-Control：控制浏览器不要缓存数据   no-cache
      * Pragma：控制浏览器不要缓存数据          no-cache
-     *
+     * <p>
      * Connection：响应完成后，是否断开连接。  close/Keep-Alive
      * Date：告诉浏览器，服务器响应时间
      */
@@ -74,7 +73,11 @@ public class HttpProtocol {
     public HttpProtocol(XHttpRequest requestEntity) {
         headParameterMap = new LinkedHashMap<>();
         RequestMode requestMode = requestEntity.getRequestMode();
-        headParameterMap.put(requestMode.getMode(), " / HTTP/1.1\r\n");
+        if (RequestMode.GET.getMode().equals(requestMode.getMode())) {
+            headParameterMap.put(requestMode.getMode(), " / HTTP/1.1\r\n");
+        } else if (RequestMode.POST.getMode().equals(requestMode.getMode())) {
+            headParameterMap.put(requestMode.getMode(), requestEntity.getAddress());
+        }
         headParameterMap.put(XY_HOST, requestEntity.getAddress());
         headParameterMap.put(XY_ACCEPT, "*/*");
         headParameterMap.put(XY_ACCEPT_LANGUAGE, "*/*");
