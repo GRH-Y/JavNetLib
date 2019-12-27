@@ -1,5 +1,6 @@
 package connect.network.xhttp;
 
+import connect.network.nio.NioClientTask;
 import connect.network.nio.NioReceive;
 import connect.network.xhttp.entity.XHttpResponse;
 import log.LogDog;
@@ -10,7 +11,6 @@ import util.ReflectionCall;
 import util.StringEnvoy;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
@@ -19,8 +19,8 @@ import java.util.Map;
 
 public class XHttpReceive extends NioReceive {
 
-    public XHttpReceive(Object receive, String receiveMethod) {
-        super(receive, receiveMethod);
+    public XHttpReceive(NioClientTask clientTask, Object receive, String receiveMethod) {
+        super(clientTask, receive, receiveMethod);
     }
 
     /**
@@ -29,15 +29,17 @@ public class XHttpReceive extends NioReceive {
      * @return 如果返回false则会关闭该链接
      */
     protected void onRead() throws Exception {
-        XHttpResponse response = new XHttpResponse();
-        try {
-            readHttpHead(response, channel);
-            readHttpContent(response, channel);
-        } catch (Exception e) {
-            response.setException(e);
-            throw e;
-        } finally {
-            ReflectionCall.invoke(mReceive, mReceiveMethod, new Class[]{XHttpResponse.class}, new Object[]{response});
+        if (!clientTask.isTaskNeedClose()) {
+            XHttpResponse response = new XHttpResponse();
+            try {
+                readHttpHead(response, channel);
+                readHttpContent(response, channel);
+            } catch (Exception e) {
+                response.setException(e);
+                throw e;
+            } finally {
+                ReflectionCall.invoke(mReceive, mReceiveMethod, new Class[]{XHttpResponse.class}, new Object[]{response});
+            }
         }
     }
 
@@ -73,72 +75,71 @@ public class XHttpReceive extends NioReceive {
                     DirectBufferCleaner.clean(buffer);
                 }
             }
-            return;
-        }
-
-        ByteBuffer buffer = ByteBuffer.allocate(1);
-        try (ByteArrayOutputStream stream = new ByteArrayOutputStream();
-             ByteArrayOutputStream slicesStream = new ByteArrayOutputStream()) {
-            boolean isExit = false;
-            int isFound = 2;
-            boolean isSlicesData = true;
-            do {
-                int ret = channel.read(buffer);
-                if (ret > 0) {
-                    stream.write(buffer.array(), 0, buffer.position());
-                    if (buffer.get(0) == 13) {
-                        isFound--;
-                    } else if (buffer.get(0) == 10 && isFound == 1) {
-                        if (isSlicesData) {
-                            int slicesDataSize = Integer.parseInt(new String(stream.toByteArray(), 0, stream.size() - 2), 16);
-                            if (slicesDataSize > 0) {
-                                ByteBuffer slicesBuffer = ByteBuffer.allocate(slicesDataSize);
-                                ret = IoEnvoy.readToFull(channel, slicesBuffer);
-                                if (ret != IoEnvoy.FAIL) {
-                                    slicesStream.write(slicesBuffer.array());
-                                    DirectBufferCleaner.clean(slicesBuffer);
-                                }
-                            } else if (slicesDataSize == 0) {
-                                //保存数据
-                                if (slicesStream.size() > 0) {
-                                    if (StringEnvoy.isNotEmpty(encode) && encode.contains("gzip")) {
-                                        //需要解压
-                                        response.setRaw(GZipUtils.unCompress(slicesStream.toByteArray()));
-                                    } else {
-                                        //不需要任何处理，直接保存
-                                        response.setRaw(slicesStream.toByteArray());
+        } else {
+            ByteBuffer buffer = ByteBuffer.allocate(1);
+            try (ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                 ByteArrayOutputStream slicesStream = new ByteArrayOutputStream()) {
+                boolean isExit = false;
+                int isFound = 2;
+                boolean isSlicesData = true;
+                do {
+                    int ret = channel.read(buffer);
+                    if (ret > 0) {
+                        stream.write(buffer.array(), 0, buffer.position());
+                        if (buffer.get(0) == 13) {
+                            isFound--;
+                        } else if (buffer.get(0) == 10 && isFound == 1) {
+                            if (isSlicesData) {
+                                int slicesDataSize = Integer.parseInt(new String(stream.toByteArray(), 0, stream.size() - 2), 16);
+                                if (slicesDataSize > 0) {
+                                    ByteBuffer slicesBuffer = ByteBuffer.allocate(slicesDataSize);
+                                    ret = IoEnvoy.readToFull(channel, slicesBuffer);
+                                    if (ret != IoEnvoy.FAIL) {
+                                        slicesStream.write(slicesBuffer.array());
+                                        DirectBufferCleaner.clean(slicesBuffer);
                                     }
+                                } else if (slicesDataSize == 0) {
+                                    //保存数据
+                                    if (slicesStream.size() > 0) {
+                                        if (StringEnvoy.isNotEmpty(encode) && encode.contains("gzip")) {
+                                            //需要解压
+                                            response.setRaw(GZipUtils.unCompress(slicesStream.toByteArray()));
+                                        } else {
+                                            //不需要任何处理，直接保存
+                                            response.setRaw(slicesStream.toByteArray());
+                                        }
+                                    }
+                                    isSlicesData = false;
                                 }
-                                isSlicesData = false;
+                                //skip 2 byte \r\n
+                                buffer.clear();
+                                channel.read(buffer);
+                                buffer.clear();
+                                channel.read(buffer);
+                                stream.reset();
+                                isFound = 2;
+                            } else {
+                                response.setData(new String(stream.toByteArray()));
+                                isExit = true;
                             }
-                            //skip 2 byte \r\n
-                            buffer.clear();
-                            channel.read(buffer);
-                            buffer.clear();
-                            channel.read(buffer);
-                            stream.reset();
-                            isFound = 2;
                         } else {
-                            response.setData(new String(stream.toByteArray()));
-                            isExit = true;
+                            isFound = 2;
                         }
+                        buffer.clear();
+                    } else if (ret == 0) {
+                        isExit = isSlicesData == false;
                     } else {
-                        isFound = 2;
+                        isExit = true;
                     }
-                    buffer.clear();
-                } else if (ret == 0) {
-                    isExit = isSlicesData == false;
-                } else {
-                    isExit = true;
-                }
-            } while (isExit == false && channel.isConnected());
+                } while (isExit == false && channel.isConnected());
 
-        } catch (Throwable e) {
-            if (!(e instanceof SocketTimeoutException)) {
-                throw e;
+            } catch (Throwable e) {
+                if (!(e instanceof SocketTimeoutException)) {
+                    throw e;
+                }
+            } finally {
+                DirectBufferCleaner.clean(buffer);
             }
-        } finally {
-            DirectBufferCleaner.clean(buffer);
         }
     }
 
@@ -202,51 +203,4 @@ public class XHttpReceive extends NioReceive {
             DirectBufferCleaner.clean(buffer);
         }
     }
-
-    public byte[] readFullHttp(SocketChannel channel) throws Exception {
-        if (channel == null && channel.isConnected()) {
-            return null;
-        }
-        int ret;
-        byte[] data = null;
-        ByteBuffer buffer = ByteBuffer.allocate(1024);
-        try (ByteArrayOutputStream stream = new ByteArrayOutputStream()) {
-            boolean isExit = false;
-            int isFound = 3;
-            do {
-                ret = channel.read(buffer);
-                if (ret > 0) {
-                    stream.write(buffer.array(), 0, buffer.position());
-                    if (buffer.position() > 2 && buffer.get(ret - 2) == 13 && buffer.get(ret - 1) == 10) {
-                        //找到结束标志
-                        isFound--;
-                    } else {
-                        buffer.clear();
-                    }
-                } else if (ret == 0) {
-                    if (stream.size() == 0) {
-                        isExit = true;
-                    } else {
-                        isExit = isFound == 0;
-                    }
-                } else {
-                    if (isFound == 3) {
-                        throw new IOException("SocketChannel read data exception , It could be a disconnection from the server!!!");
-                    } else {
-                        isExit = true;
-                    }
-                }
-            } while (isExit == false && channel.isConnected());
-            if (stream.size() > 0) {
-                data = stream.toByteArray();
-            }
-        } catch (Throwable e) {
-            if (!(e instanceof SocketTimeoutException)) {
-                throw e;
-            }
-        }
-        DirectBufferCleaner.clean(buffer);
-        return data;
-    }
-
 }

@@ -10,7 +10,7 @@ public interface INetFactory<T extends BaseNetTask> {
      *
      * @param task
      */
-    void addTask(T task);
+    boolean addTask(T task);
 
     /**
      * 移除nio任务

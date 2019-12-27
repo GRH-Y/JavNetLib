@@ -50,10 +50,11 @@ public class NioClientFactory extends AbsNetFactory<NioClientTask> {
 
 
     @Override
-    public void addTask(NioClientTask task) {
+    public boolean addTask(NioClientTask task) {
         if (task != null && task.getSelectionKey() == null && !task.isTaskNeedClose()) {
-            super.addTask(task);
+            return super.addTask(task);
         }
+        return false;
     }
 
     @Override

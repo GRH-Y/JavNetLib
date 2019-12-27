@@ -14,4 +14,6 @@ public interface INetReceive {
      * @param receiveMethodName 接收实体类的方法
      */
     void setReceive(Object receive, String receiveMethodName);
+
+//    void onRead() throws Exception;
 }

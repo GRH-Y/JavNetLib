@@ -1,10 +1,12 @@
 package connect.network.xhttp;
 
 import connect.network.nio.NioClientTask;
+import connect.network.nio.NioHPCClientFactory;
 import connect.network.xhttp.entity.XHttpRequest;
 import connect.network.xhttp.entity.XHttpResponse;
 import connect.network.xhttp.joggle.IXHttpDns;
 import connect.network.xhttp.joggle.IXHttpIntercept;
+import log.LogDog;
 import util.ReflectionCall;
 import util.joggle.JavKeep;
 
@@ -16,15 +18,15 @@ public class XHttpRequestTask extends NioClientTask {
     private XHttpRequest request;
     private XHttpConfig httpConfig;
 
+
     public XHttpRequestTask(XHttpRequest request) {
         this.request = request;
         setSender(new XHttpSender(this));
-        setReceive(new XHttpReceive(this, "onReceiveData"));
+        setReceive(new XHttpReceive(this, this, "onReceiveData"));
         httpProtocol = new HttpProtocol(request);
-        httpProtocol.setUserParameter(request.getRequestProperty());
         httpConfig = XHttpConnect.getInstance().getHttpConfig();
         IXHttpDns httpDns = httpConfig.getXHttpDns();
-        String address = httpDns.findCacheDns(request.getAddress());
+        String address = httpDns.findCacheDns(request.getHost());
         setAddress(address, request.getPort());
     }
 
@@ -41,6 +43,7 @@ public class XHttpRequestTask extends NioClientTask {
             byte[] head = httpProtocol.toByte();
             getSender().sendData(head);
             getSender().sendData(request.getSendData());
+            LogDog.d("==> head = " + new String(head));
         }
     }
 
@@ -55,6 +58,13 @@ public class XHttpRequestTask extends NioClientTask {
         }
         String methodName = response.getException() != null ? request.getErrorMethod() : request.getSuccessMethod();
         ReflectionCall.invoke(request.getCallBackTarget(), methodName, new Class[]{XHttpRequest.class, XHttpResponse.class}, request, response);
+        NioHPCClientFactory.getFactory().removeTask(this);
     }
 
+    @Override
+    protected void onRecovery() {
+        super.onRecovery();
+        //移除任务记录
+        XHttpTaskManger.getInstance().removerTask(request.toString());
+    }
 }

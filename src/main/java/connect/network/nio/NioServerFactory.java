@@ -48,10 +48,11 @@ public class NioServerFactory extends AbsNetFactory<NioServerTask> {
     }
 
     @Override
-    public void addTask(NioServerTask task) {
+    public boolean addTask(NioServerTask task) {
         if (task != null && task.getSelectionKey() == null && !task.isTaskNeedClose()) {
-            super.addTask(task);
+            return super.addTask(task);
         }
+        return false;
     }
 
     @Override

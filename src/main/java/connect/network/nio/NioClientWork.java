@@ -82,14 +82,14 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
             //设置超时时间
             socket.setSoTimeout(task.getConnectTimeout());
             //关闭Nagle算法
-            if (task.getConnectTimeout() > 0) {
-                try {
-                    socket.setTcpNoDelay(true);
-                } catch (Exception e) {
-                    LogDog.e("The socket does not support setTcpNoDelay() !!! " + e.getMessage());
-//                e.printStackTrace();
-                }
-            }
+//            if (task.getConnectTimeout() > 0) {
+//                try {
+//                    socket.setTcpNoDelay(true);
+//                } catch (Exception e) {
+//                    LogDog.e("The socket does not support setTcpNoDelay() !!! " + e.getMessage());
+////                e.printStackTrace();
+//                }
+//            }
             //执行Socket的close方法，该方法也会立即返回
             socket.setSoLinger(true, 0);
             if (channel.isBlocking()) {
@@ -169,39 +169,6 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
                     mFactory.removeTaskInside(task, false);
                 }
             }
-
-//            try {
-//                //如果通道正在进行连接操作
-//                if (channel.isConnectionPending()) {
-//                    // 完成连接
-//                    isConnect = channel.finishConnect();
-//                    if (!isConnect && task.getConnectTimeout() > 0) {
-//                        long startTime = System.currentTimeMillis();
-//                        while (!channel.finishConnect()) {
-//                            if (System.currentTimeMillis() - startTime < task.getConnectTimeout()) {
-//                                Thread.sleep(100);
-//                            } else {
-//                                LogDog.e("connect " + task.getHost() + ":" + task.getPort() + " timeout !!!");
-//                                mFactory.removeTaskInside(task, false);
-//                            }
-//                        }
-//                    }
-//                }
-//            } catch (Throwable e) {
-//                isConnect = false;
-//                e.printStackTrace();
-//            } finally {
-//                if (isConnect) {
-//                    registerChannel(task, channel);
-//                } else {
-//                    try {
-//                        task.onConfigSocket(false, channel);
-//                    } catch (Throwable e) {
-//                        e.printStackTrace();
-//                    }
-//                    mFactory.removeTaskInside(task, false);
-//                }
-//            }
         } else if (selectionKey.isValid() && selectionKey.isReadable()) {
             NioReceive receive = task.getReceive();
             if (receive != null) {

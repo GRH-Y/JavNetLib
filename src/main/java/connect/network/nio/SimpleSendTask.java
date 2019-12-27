@@ -8,9 +8,6 @@ import task.executor.joggle.IConsumerAttribute;
 import task.executor.joggle.IConsumerTaskExecutor;
 import task.executor.joggle.ITaskContainer;
 
-import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
-
 public class SimpleSendTask {
 
     private final class SendEntity {
@@ -78,18 +75,7 @@ public class SimpleSendTask {
         protected void onProcess() {
             SendEntity sendEntity = attribute.popCacheData();
             NioSender sender = sendEntity.getSender();
-            SocketChannel channel = sender.getChannel();
-            try {
-                if (channel != null && channel.isOpen() && channel.isConnected()) {
-                    int len = channel.write(ByteBuffer.wrap(sendEntity.getData()));
-                    if (len == 0) {
-                        attribute.pushToCache(sendEntity);
-                    }
-                }
-            } catch (Throwable e) {
-                e.printStackTrace();
-                sender.onSenderErrorCallBack(e);
-            }
+            sender.sendDataImp(sendEntity.getData());
         }
 
     }

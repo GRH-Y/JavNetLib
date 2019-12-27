@@ -23,13 +23,21 @@ public class NioSender implements INetSender {
      */
     @Override
     public void sendData(byte[] data) {
-        if (data != null && channel != null) {
+        sendDataImp(data);
+    }
+
+    protected void sendDataImp(byte[] data) {
+        if (data != null && channel != null && !clientTask.isTaskNeedClose()) {
             try {
-                if (!clientTask.isTaskNeedClose()) {
-                    int ret;
-                    do {
-                        ret = channel.write(ByteBuffer.wrap(data));
-                    } while (ret == 0);
+                int off = 0;
+                int length = data.length;
+                int len = length;
+                ByteBuffer buffer = ByteBuffer.wrap(data);
+                while (off < length) {
+                    buffer.position(off);
+                    buffer.limit(len);
+                    off += channel.write(buffer);
+                    len = length - off;
                 }
             } catch (Throwable e) {
                 e.printStackTrace();

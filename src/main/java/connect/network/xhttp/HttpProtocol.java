@@ -14,15 +14,16 @@ public class HttpProtocol {
 
     public static final String XY_HOST = "Host";
     public static final String XY_ACCEPT = "Accept";
+    public static final String XY_COOKIE = "Cookie";
     public static final String XY_ACCEPT_ENCODING = "Accept-Encoding";
     public static final String XY_ACCEPT_LANGUAGE = "Accept-Language";
     public static final String XY_CONTENT_LENGTH = "Content-Length";
     public static final String XY_CACHE_CONTROL = "Cache-Control";
+    public static final String XY_CONTENT_TYPE = "Content-Type";
     public static final String XY_CONNECTION = "Connection";
     public static final String XY_USER_AGENT = "User-Agent";
     public static final String XY_CONTENT_ENCODING = "Content-Encoding";
     public static final String XY_RESPONSE_CODE = "Response-Code";
-
 
 
     /**
@@ -47,7 +48,7 @@ public class HttpProtocol {
      * <p>
      * 另外一种常见的媒体格式是上传文件之时使用的：
      * multipart/form-data ： 需要在表单中进行文件上传时，就需要使用该格式
-     *
+     * <p>
      * Location：这个头配合302状态吗，用于告诉客户端找谁
      * Server：服务器通过这个头，告诉浏览器服务器的类型
      * Content-Encoding：告诉浏览器，服务器的数据压缩格式
@@ -61,27 +62,42 @@ public class HttpProtocol {
      * Expries：告诉浏览器回送的资源缓存多长时间。如果是-1或者0，表示不缓存
      * Cache-Control：控制浏览器不要缓存数据   no-cache
      * Pragma：控制浏览器不要缓存数据          no-cache
-     *
+     * <p>
      * Connection：响应完成后，是否断开连接。  close/Keep-Alive
      * Date：告诉浏览器，服务器响应时间
      */
     public static final String CONTENT_TYPE_FROM = "application/x-www-form-urlencoded";
     public static final String CONTENT_TYPE_JSON = "application/json";
+    //需要在表单中进行文件上传时，就需要使用该格式
+    public static final String CONTENT_TYPE_DATA = "multipart/form-data";
 
     private Map<String, String> headParameterMap;
 
 
-    public HttpProtocol(XHttpRequest requestEntity) {
+    public HttpProtocol(XHttpRequest request) {
         headParameterMap = new LinkedHashMap<>();
-        RequestMode requestMode = requestEntity.getRequestMode();
-        headParameterMap.put(requestMode.getMode(), " / HTTP/1.1\r\n");
-        headParameterMap.put(XY_HOST, requestEntity.getAddress());
-        headParameterMap.put(XY_ACCEPT, "*/*");
+        RequestMode requestMode = request.getRequestMode();
+        byte[] data = request.getSendData();
+        String path = request.getPath();
+        if (requestMode.getMode() == RequestMode.GET.getMode()) {
+            if (data != null) {
+                path = request.getPath() + new String(data);
+            }
+        }
+        headParameterMap.put(requestMode.getMode(), " " + path + " HTTP/1.1\r\n");
+        headParameterMap.put(XY_HOST, request.getHost());
+        headParameterMap.put(XY_ACCEPT, " */*");
         headParameterMap.put(XY_ACCEPT_LANGUAGE, "*/*");
         headParameterMap.put(XY_ACCEPT_ENCODING, "gzip, deflate");
         headParameterMap.put(XY_USER_AGENT, "XHttp_1.0");
         headParameterMap.put(XY_CONNECTION, "keep-alive");
-        byte[] data = requestEntity.getSendData();
+        Map<String, Object> userParameter = request.getRequestProperty();
+        if (userParameter != null && !userParameter.isEmpty()) {
+            Set<Map.Entry<String, Object>> set = userParameter.entrySet();
+            for (Map.Entry<String, Object> entry : set) {
+                headParameterMap.put(entry.getKey(), String.valueOf(entry.getValue()));
+            }
+        }
         headParameterMap.put(XY_CONTENT_LENGTH, data == null ? "0" : String.valueOf(data.length));
     }
 
@@ -91,15 +107,6 @@ public class HttpProtocol {
 
     public void setHeadParameter(String key, String value) {
         headParameterMap.put(key, value);
-    }
-
-    public void setUserParameter(Map<String, Object> userParameter) {
-        if (userParameter != null && !userParameter.isEmpty()) {
-            Set<Map.Entry<String, Object>> set = userParameter.entrySet();
-            for (Map.Entry<String, Object> entry : set) {
-                headParameterMap.put(entry.getKey(), String.valueOf(entry.getValue()));
-            }
-        }
     }
 
     public byte[] toByte() {

@@ -73,7 +73,11 @@ public class NioHighPcEngine<T extends BaseNioNetTask> extends NioEngine {
                 do {
                     SelectionKey selectionKey = attribute.popCacheData();
                     if (selectionKey != null) {
-                        mWork.onSelectionKey(selectionKey);
+                        try {
+                            mWork.onSelectionKey(selectionKey);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
                 } while (queue.size() > 0);
 //                LogDog.d("==> end attribute Queue size = " + queue.size());

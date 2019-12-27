@@ -22,7 +22,10 @@ public class XHttpRequest {
      * 任务的tag，区分不同类型请求（用于取消同个tag的任务请求）
      */
     private int taskTag = DEFAULT_TASK_TAG;
+
     private String address = null;
+    private String host = null;
+    private String path = null;
     private int port = 80;
     private RequestMode requestMode = RequestMode.GET;
 
@@ -32,8 +35,6 @@ public class XHttpRequest {
     private String successMethod = null;
     private String errorMethod = null;
     private String processMethod = null;
-
-    private boolean isDisableBaseUrl = false;
 
     /**
      * 回调接口返回结果的值
@@ -51,22 +52,9 @@ public class XHttpRequest {
 
 
     /**
-     * 是否独立任务（如果是独立任务会单独开启线程处理）
-     */
-    private boolean isIndependentTask = false;
-
-    /**
      * 扩展参数
      */
     private Object object;
-
-    public boolean isDisableBaseUrl() {
-        return isDisableBaseUrl;
-    }
-
-    public void setDisableBaseUrl(boolean enableBaseUrl) {
-        isDisableBaseUrl = enableBaseUrl;
-    }
 
     public int getTaskTag() {
         return taskTag;
@@ -86,6 +74,14 @@ public class XHttpRequest {
 
     public String getAddress() {
         return address;
+    }
+
+    public String getHost() {
+        return host;
+    }
+
+    public String getPath() {
+        return path;
     }
 
     public int getPort() {
@@ -123,6 +119,14 @@ public class XHttpRequest {
 
     public void setAddress(String address) {
         this.address = address;
+        String tmp = address.replace("http://", "").replace("https://", "");
+        int index = tmp.indexOf("/");
+        if (index > 0) {
+            host = tmp.substring(0, index);
+            path = tmp.substring(index);
+        } else {
+            host = tmp;
+        }
     }
 
     public void setPort(int port) {
@@ -160,14 +164,6 @@ public class XHttpRequest {
 
     public void setResultType(Object resultType) {
         this.resultType = resultType;
-    }
-
-    public void setIndependentTask(boolean independentTask) {
-        isIndependentTask = independentTask;
-    }
-
-    public boolean isIndependentTask() {
-        return isIndependentTask;
     }
 
     protected void setResponseCode(int responseCode) {

@@ -24,7 +24,6 @@ public class XHttpDefaultDns implements IXHttpDns {
             String ip = dnsMpa.get(host);
             if (StringEnvoy.isEmpty(ip)) {
                 try {
-                    host = host.replace("http://", "").replace("https://", "");
                     InetAddress inetAddress = InetAddress.getByName(host);
                     ip = inetAddress.getHostAddress();
                     setCacheDns(host, ip);
