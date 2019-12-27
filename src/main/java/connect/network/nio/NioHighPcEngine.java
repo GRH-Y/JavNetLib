@@ -124,7 +124,9 @@ public class NioHighPcEngine<T extends BaseNioNetTask> extends NioEngine {
      */
     private void waitEngine() {
         ITaskContainer container = engineMap.get(String.valueOf(Thread.currentThread().getId()));
-        container.getTaskExecutor().waitTask(0);
+        if (container != null) {
+            container.getTaskExecutor().waitTask(0);
+        }
     }
 
 //    @Override
