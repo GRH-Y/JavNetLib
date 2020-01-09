@@ -28,13 +28,6 @@ public abstract class AbsNetEngine extends BaseLoopTask {
         }
     }
 
-    protected void setNeedStop() {
-        if (mContainer != null) {
-            mExecutor.setMultiplexTask(false);
-            mExecutor.setLoopState(false);
-        }
-    }
-
     protected void startEngine() {
         if (mContainer == null) {
             mContainer = TaskExecutorPoolManager.getInstance().createLoopTask(this, null);
@@ -45,8 +38,7 @@ public abstract class AbsNetEngine extends BaseLoopTask {
 
     protected void stopEngine() {
         if (mContainer != null) {
-            mExecutor.setMultiplexTask(false);
-            mExecutor.blockStopTask();
+            mExecutor.destroyTask();
             mExecutor = null;
             mContainer = null;
         }

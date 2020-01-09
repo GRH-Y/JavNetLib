@@ -1,6 +1,7 @@
 package connect.network.xhttp;
 
 import connect.network.nio.NioClientTask;
+import connect.network.nio.NioHPCClientFactory;
 import connect.network.nio.NioReceive;
 import connect.network.xhttp.entity.XHttpResponse;
 import log.LogDog;
@@ -13,14 +14,20 @@ import util.StringEnvoy;
 import java.io.ByteArrayOutputStream;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class XHttpReceive extends NioReceive {
 
+    private XHttpResponse response;
+
     public XHttpReceive(NioClientTask clientTask, Object receive, String receiveMethod) {
         super(clientTask, receive, receiveMethod);
+        response = new XHttpResponse();
+    }
+
+    public void reset() {
+        response.reset();
     }
 
     /**
@@ -30,10 +37,9 @@ public class XHttpReceive extends NioReceive {
      */
     protected void onRead() throws Exception {
         if (!clientTask.isTaskNeedClose()) {
-            XHttpResponse response = new XHttpResponse();
             try {
-                readHttpHead(response, channel);
-                readHttpContent(response, channel);
+                readHttpHead();
+                readHttpContent();
             } catch (Exception e) {
                 response.setException(e);
                 throw e;
@@ -46,13 +52,15 @@ public class XHttpReceive extends NioReceive {
     /**
      * 读取http协议数据体
      *
-     * @param response
-     * @param channel
      * @throws Exception
      */
-    public void readHttpContent(XHttpResponse response, SocketChannel channel) throws Exception {
+    private void readHttpContent() throws Exception {
         String length = response.getHeadForKey(HttpProtocol.XY_CONTENT_LENGTH);
         String encode = response.getHeadForKey(HttpProtocol.XY_CONTENT_ENCODING);
+        int code = response.getCode();
+        if (code == 0) {
+            return;
+        }
 
         if (StringEnvoy.isNotEmpty(length)) {
             int dataSize = Integer.parseInt(length);
@@ -68,6 +76,8 @@ public class XHttpReceive extends NioReceive {
                             //不需要任何处理，直接保存
                             response.setRaw(buffer.array());
                         }
+                    } else {
+                        NioHPCClientFactory.getFactory().removeTask(clientTask);
                     }
                 } catch (Exception e) {
                     throw e;
@@ -97,6 +107,8 @@ public class XHttpReceive extends NioReceive {
                                     if (ret != IoEnvoy.FAIL) {
                                         slicesStream.write(slicesBuffer.array());
                                         DirectBufferCleaner.clean(slicesBuffer);
+                                    } else {
+                                        NioHPCClientFactory.getFactory().removeTask(clientTask);
                                     }
                                 } else if (slicesDataSize == 0) {
                                     //保存数据
@@ -130,6 +142,7 @@ public class XHttpReceive extends NioReceive {
                         isExit = isSlicesData == false;
                     } else {
                         isExit = true;
+                        NioHPCClientFactory.getFactory().removeTask(clientTask);
                     }
                 } while (isExit == false && channel.isConnected());
 
@@ -146,13 +159,11 @@ public class XHttpReceive extends NioReceive {
     /**
      * 读取http协议头部数据
      *
-     * @param response
-     * @param channel
      * @throws Exception
      */
-    private void readHttpHead(XHttpResponse response, SocketChannel channel) throws Exception {
+    private void readHttpHead() throws Exception {
         ByteBuffer buffer = ByteBuffer.allocate(1);
-        Map<String, String> headMap = null;
+        Map<String, String> headMap = response.getHeadMap();
         try (ByteArrayOutputStream stream = new ByteArrayOutputStream()) {
             int isFound = 2;
             boolean isExit = false;
@@ -165,6 +176,7 @@ public class XHttpReceive extends NioReceive {
                     } else if (buffer.get(0) == 10 && isFound == 1) {
                         if (headMap == null) {
                             headMap = new LinkedHashMap<>();
+                            response.setHeadMap(headMap);
                         }
                         if (stream.size() == 2) {
                             isExit = true;
@@ -186,14 +198,16 @@ public class XHttpReceive extends NioReceive {
                     }
                 } else if (ret < 0) {
                     isExit = true;
+                    NioHPCClientFactory.getFactory().removeTask(clientTask);
                 }
                 buffer.clear();
             } while (isExit == false && channel.isConnected());
-            response.setHeadMap(headMap);
             if (headMap != null) {
+                LogDog.d("============= http response head start ==========> ");
                 for (Map.Entry<String, String> entry : headMap.entrySet()) {
                     LogDog.d("==> " + entry.getKey() + ":" + entry.getValue());
                 }
+                LogDog.d("============= http response head end ============> \n");
             }
         } catch (Throwable e) {
             if (!(e instanceof SocketTimeoutException)) {

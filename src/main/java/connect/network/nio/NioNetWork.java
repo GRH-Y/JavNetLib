@@ -29,28 +29,21 @@ public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T
         return mSelector;
     }
 
-    protected void clearSelectedKeys() {
-        synchronized (this) {
-            getSelector().selectedKeys().clear();
-        }
-    }
-
     /**
      * 检查要链接任务
      */
-    protected void onCheckConnectTask(boolean isConnectAll) {
-        while (!mConnectCache.isEmpty()) {
+    @Override
+    protected void onCheckConnectTask() {
+        if (!mConnectCache.isEmpty()) {
             T task = mConnectCache.remove();
             onConnectTask(task);
-            if (!isConnectAll) {
-                break;
-            }
         }
     }
 
     /**
      * 获取准备好的任务
      */
+    @Override
     protected void onExecuteTask() {
         int count = 0;
         try {
@@ -71,15 +64,13 @@ public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T
     /**
      * 检查要移除任务
      */
-    protected void onCheckRemoverTask(boolean isRemoveAll) {
-        while (!mDestroyCache.isEmpty()) {
+    @Override
+    protected void onCheckRemoverTask() {
+        if (!mDestroyCache.isEmpty()) {
             //处理要移除的任务
             T target = mDestroyCache.remove();
             onDisconnectTask(target);
             closeConnect(target);
-            if (!isRemoveAll) {
-                break;
-            }
         }
     }
 
@@ -95,8 +86,8 @@ public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T
 
     @Override
     public void onRecoveryTask(T task) {
-        super.onRecoveryTask(task);
         task.setSelectionKey(null);
+        super.onRecoveryTask(task);
     }
 
     @Override
@@ -128,8 +119,8 @@ public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T
                 SelectableChannel channel = target.selectionKey.channel();
                 if (channel instanceof SocketChannel) {
                     Socket socket = ((SocketChannel) channel).socket();
-                    socket.shutdownInput();
                     socket.shutdownOutput();
+                    socket.shutdownInput();
                     socket.close();
                 } else if (channel instanceof ServerSocketChannel) {
                     ServerSocketChannel serverSocketChannel = (ServerSocketChannel) channel;

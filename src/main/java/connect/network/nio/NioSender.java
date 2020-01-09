@@ -31,13 +31,13 @@ public class NioSender implements INetSender {
             try {
                 int off = 0;
                 int length = data.length;
-                int len = length;
                 ByteBuffer buffer = ByteBuffer.wrap(data);
                 while (off < length) {
-                    buffer.position(off);
-                    buffer.limit(len);
                     off += channel.write(buffer);
-                    len = length - off;
+                    if (off != length) {
+                        buffer.position(off);
+                        buffer.limit(length - off);
+                    }
                 }
             } catch (Throwable e) {
                 e.printStackTrace();

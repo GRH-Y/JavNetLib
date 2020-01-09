@@ -71,8 +71,6 @@ public class NioClientFactory extends AbsNetFactory<NioClientTask> {
 
     @Override
     public void close() {
-        NioEngine nioEngine = getNetEngine();
-        nioEngine.setNeedStop();
         NioClientWork nioNetWork = getNetWork();
         if (nioNetWork != null && nioNetWork.getSelector() != null) {
             nioNetWork.getSelector().wakeup();

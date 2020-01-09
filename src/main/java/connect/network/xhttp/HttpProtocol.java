@@ -24,6 +24,8 @@ public class HttpProtocol {
     public static final String XY_USER_AGENT = "User-Agent";
     public static final String XY_CONTENT_ENCODING = "Content-Encoding";
     public static final String XY_RESPONSE_CODE = "Response-Code";
+    public static final String XY_LOCATION = "Location";
+    public static final String XY_REFERER = "Referer";
 
 
     /**
@@ -71,15 +73,13 @@ public class HttpProtocol {
     //需要在表单中进行文件上传时，就需要使用该格式
     public static final String CONTENT_TYPE_DATA = "multipart/form-data";
 
-    private Map<String, String> headParameterMap;
+    private Map<String, String> headParameterMap = new LinkedHashMap<>();
 
-
-    public HttpProtocol(XHttpRequest request) {
-        headParameterMap = new LinkedHashMap<>();
+    public void initHead(XHttpRequest request) {
         RequestMode requestMode = request.getRequestMode();
         byte[] data = request.getSendData();
         String path = request.getPath();
-        if (requestMode.getMode() == RequestMode.GET.getMode()) {
+        if (requestMode == RequestMode.GET) {
             if (data != null) {
                 path = request.getPath() + new String(data);
             }
@@ -91,6 +91,7 @@ public class HttpProtocol {
         headParameterMap.put(XY_ACCEPT_ENCODING, "gzip, deflate");
         headParameterMap.put(XY_USER_AGENT, "XHttp_1.0");
         headParameterMap.put(XY_CONNECTION, "keep-alive");
+        headParameterMap.put(XY_REFERER, request.getReferer());
         Map<String, Object> userParameter = request.getRequestProperty();
         if (userParameter != null && !userParameter.isEmpty()) {
             Set<Map.Entry<String, Object>> set = userParameter.entrySet();
@@ -98,7 +99,9 @@ public class HttpProtocol {
                 headParameterMap.put(entry.getKey(), String.valueOf(entry.getValue()));
             }
         }
-        headParameterMap.put(XY_CONTENT_LENGTH, data == null ? "0" : String.valueOf(data.length));
+        if (data != null && requestMode != RequestMode.GET) {
+            headParameterMap.put(XY_CONTENT_LENGTH, String.valueOf(data.length));
+        }
     }
 
     public Map<String, String> getHeadParameterMap() {
@@ -109,7 +112,18 @@ public class HttpProtocol {
         headParameterMap.put(key, value);
     }
 
+    public void updateHeadParameter(String key, String value) {
+        headParameterMap.replace(key, value);
+    }
+
+    public void updatePath(String requestMode, String path) {
+        headParameterMap.replace(requestMode, " " + path + " HTTP/1.1\r\n");
+    }
+
     public byte[] toByte() {
+        if (headParameterMap.isEmpty()) {
+            return null;
+        }
         StringBuilder builder = new StringBuilder();
         boolean isFirst = true;
         for (Map.Entry<String, String> entry : headParameterMap.entrySet()) {
@@ -120,7 +134,7 @@ public class HttpProtocol {
                 builder.append(entry.getKey()).append(": ").append(entry.getValue()).append("\r\n");
             }
         }
-        builder.append("\r\n\r\n");
+        builder.append("\r\n");
         return builder.toString().getBytes();
     }
 }

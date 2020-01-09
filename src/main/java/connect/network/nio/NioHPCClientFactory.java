@@ -8,11 +8,7 @@ public class NioHPCClientFactory extends NioClientFactory {
 
     private static INetFactory<NioClientTask> mFactory = null;
 
-    private NioHPCClientFactory() {
-    }
-
     private NioHPCClientFactory(int threadCount) {
-        super();
         NioHighPcEngine engine = getNetEngine();
         engine.setThreadCount(threadCount);
     }
@@ -21,13 +17,14 @@ public class NioHPCClientFactory extends NioClientFactory {
         if (mFactory == null) {
             synchronized (NioHPCClientFactory.class) {
                 if (mFactory == null) {
-                    mFactory = new NioHPCClientFactory();
+                    mFactory = new NioHPCClientFactory(2);
                 }
             }
         }
         return mFactory;
     }
 
+    //暂时不开放
     public static synchronized INetFactory<NioClientTask> getFactory(int threadCount) {
         if (mFactory == null) {
             synchronized (NioHPCClientFactory.class) {

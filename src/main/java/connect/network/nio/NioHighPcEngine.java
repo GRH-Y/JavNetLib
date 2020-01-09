@@ -1,16 +1,14 @@
 package connect.network.nio;
 
 import connect.network.base.AbsNetFactory;
-import task.executor.ConsumerQueueAttribute;
 import task.executor.TaskContainer;
 import task.executor.TaskExecutorPoolManager;
-import task.executor.joggle.IConsumerAttribute;
 import task.executor.joggle.ITaskContainer;
 
 import java.nio.channels.SelectionKey;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
-import java.util.Queue;
 
 /**
  * 多线程engine
@@ -24,8 +22,6 @@ public class NioHighPcEngine<T extends BaseNioNetTask> extends NioEngine {
     private int threadCount = 2;
 
     private long rootEngineTag = 0;
-
-    private IConsumerAttribute<SelectionKey> attribute = null;
 
     public NioHighPcEngine(AbsNetFactory factory, NioNetWork<T> work) {
         super(factory, work);
@@ -50,45 +46,46 @@ public class NioHighPcEngine<T extends BaseNioNetTask> extends NioEngine {
     protected void onEngineRun() {
         if (threadCount == 1) {
             //如果只开启一条线程则不以默认方式运行
-            mWork.onCheckConnectTask(false);
+            mWork.onCheckConnectTask();
             //检查是否有事件任务
             mWork.onExecuteTask();
             //清除要结束的任务
-            mWork.onCheckRemoverTask(false);
+            mWork.onCheckRemoverTask();
         } else {
             //如果是主引擎处理事件分发
             if (Thread.currentThread().getId() == rootEngineTag) {
                 //检测是否有新的任务添加
-                mWork.onCheckConnectTask(false);
+                mWork.onCheckConnectTask();
                 //检查是否有事件任务
 //                LogDog.d("==> 主引擎");
                 onEventDistribution();
                 //清除要结束的任务
-                mWork.onCheckRemoverTask(false);
+                mWork.onCheckRemoverTask();
             } else {
 //                LogDog.d("==> 非主引擎");
-                Queue queue = attribute.getCache();
-                //提取要处理的事件
-//                LogDog.d("==> start attribute Queue size = " + queue.size());
-                do {
-                    SelectionKey selectionKey = attribute.popCacheData();
-                    if (selectionKey != null) {
-                        try {
-                            mWork.onSelectionKey(selectionKey);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
+                SelectionKey selectionKey = null;
+                Iterator<SelectionKey> iterator = mWork.getSelector().selectedKeys().iterator();
+                if (iterator.hasNext()) {
+                    try {
+                        selectionKey = iterator.next();
+                        iterator.remove();
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
-                } while (queue.size() > 0);
-//                LogDog.d("==> end attribute Queue size = " + queue.size());
-                if (queue.isEmpty()) {
+                }
+                if (selectionKey != null) {
+                    try {
+                        mWork.onSelectionKey(selectionKey);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                } else {
                     //如果数据为空，非主引擎休眠
                     waitEngine();
                 }
             }
         }
     }
-
 
     /**
      * 分发事件
@@ -101,9 +98,6 @@ public class NioHighPcEngine<T extends BaseNioNetTask> extends NioEngine {
             e.printStackTrace();
         }
         if (count > 0) {
-            Queue queue = attribute.getCache();
-            queue.addAll(mWork.getSelector().selectedKeys());
-            mWork.clearSelectedKeys();
             wakeUpOtherEngine();
         }
     }
@@ -129,19 +123,12 @@ public class NioHighPcEngine<T extends BaseNioNetTask> extends NioEngine {
         }
     }
 
-//    @Override
-//    protected void resumeEngine() {
-//        super.resumeEngine();
-//        wakeUpOtherEngine();
-//    }
-
     @Override
     protected void startEngine() {
         if (engineMap == null) {
             engineMap = new HashMap<>(threadCount);
         }
         if (engineMap.isEmpty()) {
-            attribute = new ConsumerQueueAttribute();
             for (int count = 0; count < threadCount; count++) {
                 ITaskContainer container = new TaskContainer(this);
                 if (count == 0) {

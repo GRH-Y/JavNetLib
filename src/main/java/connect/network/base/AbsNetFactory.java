@@ -40,12 +40,12 @@ public abstract class AbsNetFactory<T extends BaseNetTask> implements INetFactor
 
     @Override
     public boolean addTask(T task) {
+        boolean ret = false;
         if (task != null && mEngine.isEngineRunning()) {
-            mWork.addConnectTask(task);
+            ret = mWork.addConnectTask(task);
             mEngine.resumeEngine();
-            return true;
         }
-        return false;
+        return ret;
     }
 
     @Override

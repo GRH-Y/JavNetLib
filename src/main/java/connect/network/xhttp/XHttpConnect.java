@@ -3,12 +3,13 @@ package connect.network.xhttp;
 import connect.network.nio.NioHPCClientFactory;
 import connect.network.xhttp.config.XHttpDefaultDns;
 import connect.network.xhttp.entity.XHttpRequest;
+import connect.network.xhttp.joggle.IXHttpIntercept;
+
+import java.util.Collection;
 
 public class XHttpConnect {
 
-    private XHttpConfig httpConfig;
-
-    public static long starTime = 0;
+    private XHttpConfig httpConfig = null;
 
     private XHttpTaskManger httpTaskManger;
 
@@ -26,7 +27,7 @@ public class XHttpConnect {
 
     public XHttpConfig init() {
         if (httpConfig == null) {
-            NioHPCClientFactory.getFactory().open();
+            NioHPCClientFactory.getFactory(1).open();
             httpConfig = new XHttpConfig();
             XHttpDefaultDns dns = new XHttpDefaultDns();
             httpConfig.setXHttpDns(dns);
@@ -38,17 +39,31 @@ public class XHttpConnect {
         return httpConfig;
     }
 
-    public void submitRequest(XHttpRequest entity) {
-        starTime = System.currentTimeMillis();
-        XHttpRequestTask requestTask = new XHttpRequestTask(entity);//7ms
+    public void submitRequest(XHttpRequest request) {
+        XHttpRequestTask requestTask = httpTaskManger.obtain(request);
+        IXHttpIntercept intercept = httpConfig.getIntercept();
+        if (intercept != null) {
+            boolean isIntercept = intercept.onStartRequestIntercept(request);
+            if (isIntercept) {
+                return;
+            }
+        }
         boolean ret = NioHPCClientFactory.getFactory().addTask(requestTask);
         if (ret) {
-            httpTaskManger.pushTask(entity.toString(), requestTask);
+            httpTaskManger.pushTask(request.toString(), requestTask);
         }
     }
 
-    public void closeRequest(XHttpRequest entity) {
-        XHttpRequestTask requestTask = httpTaskManger.removerTask(entity.toString());
-        NioHPCClientFactory.getFactory().removeTask(requestTask);
+    public void cancelRequest(XHttpRequest request) {
+        XHttpRequestTask targetRequest = httpTaskManger.getTask(request.toString());
+        NioHPCClientFactory.getFactory().removeTask(targetRequest);
+    }
+
+    public void release() {
+        Collection<XHttpRequestTask> collection = httpTaskManger.getAllTask();
+        for (XHttpRequestTask task : collection) {
+            NioHPCClientFactory.getFactory().removeTask(task);
+        }
+        httpTaskManger.release();
     }
 }

@@ -33,14 +33,11 @@ public abstract class BaseNetWork<T extends BaseNetTask> {
     /**
      * 检查要链接任务
      */
-    protected void onCheckConnectTask(boolean isConnectAll) {
+    protected void onCheckConnectTask() {
         //检测是否有新的任务添加
-        while (!mConnectCache.isEmpty()) {
+        if (!mConnectCache.isEmpty()) {
             T task = mConnectCache.remove();
             onConnectTask(task);
-            if (!isConnectAll) {
-                break;
-            }
         }
     }
 
@@ -50,17 +47,14 @@ public abstract class BaseNetWork<T extends BaseNetTask> {
     /**
      * 检查要移除任务
      */
-    protected void onCheckRemoverTask(boolean isRemoveAll) {
+    protected void onCheckRemoverTask() {
         //销毁链接
-        while (!mDestroyCache.isEmpty()) {
+        if (!mDestroyCache.isEmpty()) {
             T task = mDestroyCache.remove();
             try {
                 onDisconnectTask(task);
             } catch (Throwable e) {
                 e.printStackTrace();
-            }
-            if (!isRemoveAll) {
-                break;
             }
         }
     }
@@ -105,13 +99,15 @@ public abstract class BaseNetWork<T extends BaseNetTask> {
     }
 
 
-    //------------------------------------------------------------------------------------
-
-    protected void addConnectTask(T task) {
+    protected boolean addConnectTask(T task) {
+        boolean ret = false;
         if (task != null && !mConnectCache.contains(task)) {
-            mConnectCache.add(task);
+            ret = mConnectCache.add(task);
         }
+        return ret;
     }
+
+    //------------------------------------------------------------------------------------
 
     protected void addDestroyTask(T task) {
         if (task != null && !mDestroyCache.contains(task)) {

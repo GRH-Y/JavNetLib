@@ -24,9 +24,10 @@ public class XHttpRequest {
     private int taskTag = DEFAULT_TASK_TAG;
 
     private String address = null;
+    private String referer = null;
     private String host = null;
     private String path = null;
-    private int port = 80;
+    private int port = 0;
     private RequestMode requestMode = RequestMode.GET;
 
     private int responseCode = HttpURLConnection.HTTP_OK;
@@ -84,6 +85,10 @@ public class XHttpRequest {
         return path;
     }
 
+    public String getReferer() {
+        return referer;
+    }
+
     public int getPort() {
         return port;
     }
@@ -119,13 +124,21 @@ public class XHttpRequest {
 
     public void setAddress(String address) {
         this.address = address;
-        String tmp = address.replace("http://", "").replace("https://", "");
-        int index = tmp.indexOf("/");
+        int httpIndex = address.indexOf("://") + 3;
+        int index = address.indexOf("/", httpIndex);
         if (index > 0) {
-            host = tmp.substring(0, index);
-            path = tmp.substring(index);
+            path = address.substring(index);
         } else {
-            host = tmp;
+            index = address.length();
+        }
+        host = address.substring(httpIndex, index);
+        referer = address.substring(0, index) + "/";
+        if (port == 0) {
+            if (address.startsWith("https")) {
+                port = 443;
+            } else {
+                port = 80;
+            }
         }
     }
 

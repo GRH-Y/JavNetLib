@@ -8,12 +8,12 @@ public interface IXHttpIntercept {
      *
      * @return 返回true则需要拦截
      */
-    boolean onStartRequestIntercept(XHttpRequest submitEntity);
+    boolean onStartRequestIntercept(XHttpRequest request);
 
     /**
      * 拦截请求回调结果(当前状态是请求完成)
      *
      * @return 返回true则需要拦截
      */
-    boolean onRequestInterceptResult(XHttpRequest submitEntity);
+    boolean onRequestInterceptResult(XHttpRequest request);
 }

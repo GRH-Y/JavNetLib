@@ -22,11 +22,11 @@ public class NioEngine extends AbsNetEngine {
     @Override
     protected void onEngineRun() {
         //检测是否有新的任务添加
-        mWork.onCheckConnectTask(false);
+        mWork.onCheckConnectTask();
         //检查是否有读写任务
         mWork.onExecuteTask();
         //清除要结束的任务
-        mWork.onCheckRemoverTask(false);
+        mWork.onCheckRemoverTask();
     }
 
     @Override
@@ -38,11 +38,6 @@ public class NioEngine extends AbsNetEngine {
         if (isNeedWakeup && mWork.getSelector() != null) {
             mWork.getSelector().wakeup();
         }
-    }
-
-    @Override
-    protected void setNeedStop() {
-        super.setNeedStop();
     }
 
     @Override

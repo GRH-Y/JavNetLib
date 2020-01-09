@@ -54,14 +54,13 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
             mFactory.removeTaskInside(task, false);
             return null;
         }
-        SocketChannel channel;
+        SocketChannel channel = null;
         try {
             channel = SocketChannel.open();
             channel.configureBlocking(false);
             channel.connect(new InetSocketAddress(task.getHost(), task.getPort()));
             task.setChannel(channel);
         } catch (Throwable e) {
-            channel = null;
             mFactory.removeTaskInside(task, false);
             e.printStackTrace();
         }
@@ -112,6 +111,9 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
         if (task.isTaskNeedClose()) {
             return;
         }
+        if (!channel.isOpen()) {
+            return;
+        }
         try {
             if (channel.isConnected()) {
                 if (task.getSender() != null) {
@@ -127,12 +129,9 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
                 } catch (Throwable e) {
                     e.printStackTrace();
                 }
-                SelectionKey selectionKey = channel.register(mSelector, SelectionKey.OP_READ, task);
-                task.setSelectionKey(selectionKey);
-            } else {
-                SelectionKey selectionKey = channel.register(mSelector, SelectionKey.OP_CONNECT, task);
-                task.setSelectionKey(selectionKey);
             }
+            SelectionKey selectionKey = channel.register(mSelector, channel.isConnected() ? SelectionKey.OP_READ : SelectionKey.OP_CONNECT, task);
+            task.setSelectionKey(selectionKey);
         } catch (Throwable e) {
             mFactory.removeTaskInside(task, false);
             e.printStackTrace();
@@ -149,8 +148,13 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
     public void onSelectionKey(SelectionKey selectionKey) {
         SocketChannel channel = (SocketChannel) selectionKey.channel();
         T task = (T) selectionKey.attachment();
+        if (task.isTaskNeedClose()) {
+            return;
+        }
 
-        if (selectionKey.isValid() && selectionKey.isConnectable()) {
+        boolean isConnectable = selectionKey.isValid() && selectionKey.isConnectable();
+        boolean isReadable = selectionKey.isValid() && selectionKey.isReadable();
+        if (isConnectable) {
             boolean isConnect = false;
             try {
                 isConnect = channel.finishConnect();
@@ -169,7 +173,7 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
                     mFactory.removeTaskInside(task, false);
                 }
             }
-        } else if (selectionKey.isValid() && selectionKey.isReadable()) {
+        } else if (isReadable) {
             NioReceive receive = task.getReceive();
             if (receive != null) {
                 try {

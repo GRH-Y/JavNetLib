@@ -41,7 +41,7 @@ public class BioNetWork<T extends BaseNetTask> extends BaseNetWork<T> {
     }
 
     @Override
-    protected void onCheckConnectTask(boolean isConnectAll) {
+    protected void onCheckConnectTask() {
         //检测是否有新的任务添加
         while (!mConnectCache.isEmpty()) {
             T task = mConnectCache.remove();
@@ -49,17 +49,14 @@ public class BioNetWork<T extends BaseNetTask> extends BaseNetWork<T> {
             if (!task.isTaskNeedClose()) {
                 mExecutorQueue.add(task);
             }
-            if (!isConnectAll) {
-                break;
-            }
         }
     }
 
 
     @Override
-    protected void onCheckRemoverTask(boolean isRemoveAll) {
+    protected void onCheckRemoverTask() {
         //销毁链接
-        while (!mDestroyCache.isEmpty()) {
+        if (!mDestroyCache.isEmpty()) {
             T task = mDestroyCache.remove();
             try {
                 onDisconnectTask(task);
@@ -67,20 +64,36 @@ public class BioNetWork<T extends BaseNetTask> extends BaseNetWork<T> {
                 e.printStackTrace();
             }
             mExecutorQueue.remove(task);
-            if (!isRemoveAll) {
-                break;
-            }
         }
     }
 
     @Override
     protected void onRecoveryTaskAll() {
-        //把所有任务加入销毁队列
-        mDestroyCache.addAll(mConnectCache);
-        //清除要结束的任务
-        onCheckRemoverTask(true);
+        for (T task : mExecutorQueue) {
+            try {
+                onDisconnectTask(task);
+            } catch (Throwable e) {
+                e.printStackTrace();
+            }
+        }
         mConnectCache.clear();
         mExecutorQueue.clear();
         mDestroyCache.clear();
+    }
+
+    @Override
+    protected boolean addConnectTask(T task) {
+        boolean ret = false;
+        if (task != null && !mConnectCache.contains(task) && !mExecutorQueue.contains(task)) {
+            ret = mConnectCache.add(task);
+        }
+        return ret;
+    }
+
+    @Override
+    protected void addDestroyTask(T task) {
+        if (task != null && !mDestroyCache.contains(task) && mExecutorQueue.contains(task)) {
+            mDestroyCache.add(task);
+        }
     }
 }
