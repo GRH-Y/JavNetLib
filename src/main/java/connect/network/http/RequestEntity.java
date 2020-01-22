@@ -1,6 +1,8 @@
 package connect.network.http;
 
 
+import connect.network.base.RequestMode;
+
 import java.net.HttpURLConnection;
 import java.util.List;
 import java.util.Map;

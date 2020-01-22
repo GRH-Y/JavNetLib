@@ -9,29 +9,13 @@ import java.nio.channels.SocketChannel;
 
 public class NioReceive implements INetReceive {
 
-    protected Object mReceive = null;
-    protected String mReceiveMethod = null;
+    protected Object mReceive;
+    protected String mReceiveMethod;
 
-    protected SocketChannel channel = null;
-    protected NioClientTask clientTask;
 
-    public NioReceive(NioClientTask clientTask, Object receive, String receiveMethod) {
-        this.clientTask = clientTask;
+    public NioReceive(Object receive, String receiveMethod) {
         this.mReceive = receive;
         this.mReceiveMethod = receiveMethod;
-    }
-
-    public NioReceive(NioClientTask clientTask) {
-        this.clientTask = clientTask;
-    }
-
-
-    protected void setChannel(SocketChannel channel) {
-        this.channel = channel;
-    }
-
-    public SocketChannel getChannel() {
-        return channel;
     }
 
 
@@ -46,18 +30,16 @@ public class NioReceive implements INetReceive {
      *
      * @return 如果返回false则会关闭该链接
      */
-    protected void onRead() throws Exception {
-        if (!clientTask.isTaskNeedClose()) {
-            byte[] data = null;
-            Exception exception = null;
-            try {
-                data = IoEnvoy.tryRead(channel);
-            } catch (Exception e) {
-                exception = e;
-                throw new Exception(e);
-            } finally {
-                ReflectionCall.invoke(mReceive, mReceiveMethod, new Class[]{byte[].class, Exception.class}, new Object[]{data, exception});
-            }
+    protected void onRead(SocketChannel channel) throws Exception {
+        byte[] data = null;
+        Exception exception = null;
+        try {
+            data = IoEnvoy.tryRead(channel);
+        } catch (Exception e) {
+            exception = e;
+            throw new Exception(e);
+        } finally {
+            ReflectionCall.invoke(mReceive, mReceiveMethod, new Class[]{byte[].class, Exception.class}, new Object[]{data, exception});
         }
     }
 

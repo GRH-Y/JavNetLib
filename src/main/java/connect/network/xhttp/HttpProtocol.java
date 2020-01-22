@@ -1,6 +1,6 @@
 package connect.network.xhttp;
 
-import connect.network.http.RequestMode;
+import connect.network.base.RequestMode;
 import connect.network.xhttp.entity.XHttpRequest;
 
 import java.util.LinkedHashMap;

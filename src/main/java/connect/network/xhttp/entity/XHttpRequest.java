@@ -1,9 +1,8 @@
 package connect.network.xhttp.entity;
 
 
-import connect.network.http.RequestMode;
+import connect.network.base.RequestMode;
 
-import java.net.HttpURLConnection;
 import java.util.Map;
 
 /**
@@ -14,14 +13,7 @@ import java.util.Map;
  */
 public class XHttpRequest {
 
-    /**
-     * 默认的请求tag
-     */
-    public static final int DEFAULT_TASK_TAG = 0;
-    /**
-     * 任务的tag，区分不同类型请求（用于取消同个tag的任务请求）
-     */
-    private int taskTag = DEFAULT_TASK_TAG;
+    private boolean isDisableBaseUrl = false;
 
     private String address = null;
     private String referer = null;
@@ -30,7 +22,6 @@ public class XHttpRequest {
     private int port = 0;
     private RequestMode requestMode = RequestMode.GET;
 
-    private int responseCode = HttpURLConnection.HTTP_OK;
     private byte[] sendData = null;
 
     private String successMethod = null;
@@ -57,20 +48,12 @@ public class XHttpRequest {
      */
     private Object object;
 
-    public int getTaskTag() {
-        return taskTag;
+    public boolean isDisableBaseUrl() {
+        return isDisableBaseUrl;
     }
 
-    public void setTaskTag(int taskTag) {
-        this.taskTag = taskTag;
-    }
-
-    public void setRequestProperty(Map<String, Object> property) {
-        this.requestProperty = property;
-    }
-
-    public Map<String, Object> getRequestProperty() {
-        return requestProperty;
+    public void setDisableBaseUrl(boolean enableBaseUrl) {
+        isDisableBaseUrl = enableBaseUrl;
     }
 
     public String getAddress() {
@@ -179,14 +162,6 @@ public class XHttpRequest {
         this.resultType = resultType;
     }
 
-    protected void setResponseCode(int responseCode) {
-        this.responseCode = responseCode;
-    }
-
-    public int getResponseCode() {
-        return responseCode;
-    }
-
     public void setObject(Object object) {
         this.object = object;
     }
@@ -194,4 +169,13 @@ public class XHttpRequest {
     public Object getObject() {
         return object;
     }
+
+    public void setRequestProperty(Map<String, Object> property) {
+        this.requestProperty = property;
+    }
+
+    public Map<String, Object> getRequestProperty() {
+        return requestProperty;
+    }
+
 }

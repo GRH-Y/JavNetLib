@@ -38,11 +38,20 @@ public abstract class AbsNetFactory<T extends BaseNetTask> implements INetFactor
 
     //-----------------------------------------------------------------------------------------
 
+    private void checkException(T task) {
+        if (task == null) {
+            throw new NullPointerException("Task can not be null !!!");
+        }
+        if (!mEngine.isEngineRunning()) {
+            throw new IllegalStateException("Engine not started,Check if the open() method is not called !!!");
+        }
+    }
+
     @Override
     public boolean addTask(T task) {
-        boolean ret = false;
-        if (task != null && mEngine.isEngineRunning()) {
-            ret = mWork.addConnectTask(task);
+        checkException(task);
+        boolean ret = mWork.addConnectTask(task);
+        if (ret) {
             mEngine.resumeEngine();
         }
         return ret;
@@ -53,15 +62,15 @@ public abstract class AbsNetFactory<T extends BaseNetTask> implements INetFactor
         removeTaskInside(task, true);
     }
 
-    protected void removeTaskInside(T task, boolean isNeedWakeup) {
-        if (task != null && mEngine.isEngineRunning()) {
-            task.setTaskNeedClose(true);
-            //该任务在此线程才能添加
-            mWork.addDestroyTask(task);
-            if (isNeedWakeup) {
-                mEngine.resumeEngine();
-            }
+    protected boolean removeTaskInside(T task, boolean isNeedWakeup) {
+        checkException(task);
+        task.setTaskNeedClose(true);
+        //该任务在此线程才能添加
+        boolean ret = mWork.addDestroyTask(task);
+        if (isNeedWakeup && ret) {
+            mEngine.resumeEngine();
         }
+        return ret;
     }
 
     //-----------------------------------------------------------------------------------------

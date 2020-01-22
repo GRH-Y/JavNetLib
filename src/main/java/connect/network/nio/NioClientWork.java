@@ -1,9 +1,6 @@
 package connect.network.nio;
 
 
-import log.LogDog;
-import util.StringEnvoy;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -49,17 +46,11 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
      * @return
      */
     private SocketChannel createSocketChannel(T task) {
-        if (StringEnvoy.isEmpty(task.getHost()) || task.getPort() < 0) {
-            LogDog.e("## host or port is Illegal = " + task.getHost() + ":" + task.getPort());
-            mFactory.removeTaskInside(task, false);
-            return null;
-        }
         SocketChannel channel = null;
         try {
             channel = SocketChannel.open();
             channel.configureBlocking(false);
             channel.connect(new InetSocketAddress(task.getHost(), task.getPort()));
-            task.setChannel(channel);
         } catch (Throwable e) {
             mFactory.removeTaskInside(task, false);
             e.printStackTrace();
@@ -111,24 +102,10 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
         if (task.isTaskNeedClose()) {
             return;
         }
-        if (!channel.isOpen()) {
-            return;
-        }
         try {
             if (channel.isConnected()) {
-                if (task.getSender() != null) {
-                    //不注册发送事件，只要连接成功发送数据事件随时可以发生，也避免了Selector空转
-                    task.getSender().setChannel(channel);
-//                  channel.register(mSelector, SelectionKey.OP_WRITE, task);
-                }
-                if (task.getReceive() != null) {
-                    task.getReceive().setChannel(channel);
-                }
-                try {
-                    task.onConfigSocket(true, channel);
-                } catch (Throwable e) {
-                    e.printStackTrace();
-                }
+                task.setChannel(channel);
+                task.onConfigSocket(true, channel);
             }
             SelectionKey selectionKey = channel.register(mSelector, channel.isConnected() ? SelectionKey.OP_READ : SelectionKey.OP_CONNECT, task);
             task.setSelectionKey(selectionKey);
@@ -151,7 +128,6 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
         if (task.isTaskNeedClose()) {
             return;
         }
-
         boolean isConnectable = selectionKey.isValid() && selectionKey.isConnectable();
         boolean isReadable = selectionKey.isValid() && selectionKey.isReadable();
         if (isConnectable) {
@@ -177,7 +153,7 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
             NioReceive receive = task.getReceive();
             if (receive != null) {
                 try {
-                    receive.onRead();
+                    receive.onRead(channel);
                 } catch (Throwable e) {
                     mFactory.removeTaskInside(task, false);
                     e.printStackTrace();

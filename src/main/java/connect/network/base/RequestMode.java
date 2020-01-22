@@ -1,4 +1,4 @@
-package connect.network.http;
+package connect.network.base;
 
 /**
  * 请求类型

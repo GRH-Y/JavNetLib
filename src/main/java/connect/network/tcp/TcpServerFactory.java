@@ -10,7 +10,7 @@ public class TcpServerFactory extends AbsNetFactory<TcpServerTask> {
 
     private ISSLFactory mSslFactory = null;
 
-    private TcpServerFactory() {
+    public TcpServerFactory() {
     }
 
     @Override

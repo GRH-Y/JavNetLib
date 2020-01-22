@@ -113,9 +113,8 @@ public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T
     //------------------------------------------------------------------------------------------------------------------
 
     protected void closeConnect(T target) {
-        try {
-            if (target.selectionKey != null) {
-                target.selectionKey.cancel();
+        if (target.selectionKey != null) {
+            try {
                 SelectableChannel channel = target.selectionKey.channel();
                 if (channel instanceof SocketChannel) {
                     Socket socket = ((SocketChannel) channel).socket();
@@ -127,12 +126,13 @@ public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T
                     serverSocketChannel.socket().close();
                 }
                 channel.close();
+            } catch (Throwable e) {
+                e.printStackTrace();
+            } finally {
+                target.selectionKey.cancel();
             }
-        } catch (Throwable e) {
-            e.printStackTrace();
-        } finally {
-            onRecoveryTask(target);
         }
+        onRecoveryTask(target);
     }
 
 }

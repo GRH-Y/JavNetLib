@@ -8,7 +8,7 @@ public class NioHPCClientFactory extends NioClientFactory {
 
     private static INetFactory<NioClientTask> mFactory = null;
 
-    private NioHPCClientFactory(int threadCount) {
+    public NioHPCClientFactory(int threadCount) {
         NioHighPcEngine engine = getNetEngine();
         engine.setThreadCount(threadCount);
     }

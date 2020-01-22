@@ -11,7 +11,7 @@ public class TcpClientFactory<T extends TcpClientTask> extends AbsNetFactory<T> 
 
     private static ISSLFactory mSslFactory = null;
 
-    private TcpClientFactory() {
+    public TcpClientFactory() {
     }
 
     @Override

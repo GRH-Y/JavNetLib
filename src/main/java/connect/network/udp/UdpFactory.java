@@ -9,7 +9,7 @@ public class UdpFactory extends AbsNetFactory<UdpTask> {
 
     private static UdpFactory mFactory;
 
-    private UdpFactory() {
+    public UdpFactory() {
     }
 
     @Override

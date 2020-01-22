@@ -1,7 +1,7 @@
 package connect.network.http.joggle;
 
+import connect.network.base.RequestMode;
 import connect.network.http.RequestEntity;
-import connect.network.http.RequestMode;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

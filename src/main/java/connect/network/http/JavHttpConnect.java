@@ -1,6 +1,7 @@
 package connect.network.http;
 
 
+import connect.network.base.RequestMode;
 import connect.network.http.joggle.ARequest;
 import connect.network.http.joggle.IHttpTaskConfig;
 import connect.network.http.joggle.IRequestEntity;

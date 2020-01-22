@@ -16,7 +16,7 @@ public class NioClientFactory extends AbsNetFactory<NioClientTask> {
 
     private static INetFactory<NioClientTask> mFactory = null;
 
-    protected NioClientFactory() {
+    public NioClientFactory() {
     }
 
     public static synchronized INetFactory<NioClientTask> getFactory() {
@@ -65,8 +65,8 @@ public class NioClientFactory extends AbsNetFactory<NioClientTask> {
     }
 
     @Override
-    protected void removeTaskInside(NioClientTask task, boolean isNeedWakeup) {
-        super.removeTaskInside(task, isNeedWakeup);
+    protected boolean removeTaskInside(NioClientTask task, boolean isNeedWakeup) {
+        return super.removeTaskInside(task, isNeedWakeup);
     }
 
     @Override

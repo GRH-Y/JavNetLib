@@ -34,7 +34,7 @@ public class NioServerFactory extends AbsNetFactory<NioServerTask> {
         }
     }
 
-    private NioServerFactory() {
+    public NioServerFactory() {
     }
 
     @Override
@@ -63,8 +63,8 @@ public class NioServerFactory extends AbsNetFactory<NioServerTask> {
     }
 
     @Override
-    protected void removeTaskInside(NioServerTask task, boolean isNeedWakeup) {
-        super.removeTaskInside(task, isNeedWakeup);
+    protected boolean removeTaskInside(NioServerTask task, boolean isNeedWakeup) {
+        return super.removeTaskInside(task, isNeedWakeup);
     }
 
     @Override

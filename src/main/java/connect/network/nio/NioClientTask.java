@@ -1,6 +1,8 @@
 package connect.network.nio;
 
 
+import util.StringEnvoy;
+
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
@@ -32,6 +34,9 @@ public class NioClientTask extends BaseNioNetTask {
     }
 
     public NioClientTask(SocketChannel channel) {
+        if (!channel.isOpen() || !channel.isConnected()) {
+            throw new IllegalStateException("SocketChannel is bed !!! ");
+        }
         mChannel = channel;
     }
 
@@ -50,6 +55,9 @@ public class NioClientTask extends BaseNioNetTask {
     }
 
     public void setAddress(String host, int port) {
+        if (StringEnvoy.isEmpty(host) || port < 0) {
+            throw new IllegalStateException("host or port is invalid !!! ");
+        }
         this.mHost = host;
         this.mPort = port;
     }

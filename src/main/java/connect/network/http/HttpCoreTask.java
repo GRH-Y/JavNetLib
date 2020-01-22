@@ -1,6 +1,7 @@
 package connect.network.http;
 
 
+import connect.network.base.RequestMode;
 import connect.network.base.joggle.ISessionCallBack;
 import connect.network.http.joggle.IRequestIntercept;
 import connect.network.http.joggle.IResponseConvert;

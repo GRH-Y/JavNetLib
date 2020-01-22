@@ -51,11 +51,7 @@ public abstract class BaseNetWork<T extends BaseNetTask> {
         //销毁链接
         if (!mDestroyCache.isEmpty()) {
             T task = mDestroyCache.remove();
-            try {
-                onDisconnectTask(task);
-            } catch (Throwable e) {
-                e.printStackTrace();
-            }
+            onDisconnectTask(task);
         }
     }
 
@@ -109,9 +105,11 @@ public abstract class BaseNetWork<T extends BaseNetTask> {
 
     //------------------------------------------------------------------------------------
 
-    protected void addDestroyTask(T task) {
+    protected boolean addDestroyTask(T task) {
+        boolean ret = false;
         if (task != null && !mDestroyCache.contains(task)) {
-            mDestroyCache.add(task);
+            ret = mDestroyCache.add(task);
         }
+        return ret;
     }
 }

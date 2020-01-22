@@ -1,13 +1,19 @@
 package connect.network.nio;
 
 
+import java.nio.channels.SocketChannel;
+
 /**
  * 高性能的发送者 (独立线程处理发送数据)
  */
 public class NioHPCSender extends NioSender {
 
-    public NioHPCSender(NioClientTask clientTask) {
-        super(clientTask);
+    public NioHPCSender() {
+        SimpleSendTask.getInstance().open();
+    }
+
+    public NioHPCSender(SocketChannel channel) {
+        super(channel);
         SimpleSendTask.getInstance().open();
     }
 

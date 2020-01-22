@@ -91,9 +91,11 @@ public class BioNetWork<T extends BaseNetTask> extends BaseNetWork<T> {
     }
 
     @Override
-    protected void addDestroyTask(T task) {
+    protected boolean addDestroyTask(T task) {
+        boolean ret = false;
         if (task != null && !mDestroyCache.contains(task) && mExecutorQueue.contains(task)) {
-            mDestroyCache.add(task);
+            ret = mDestroyCache.add(task);
         }
+        return ret;
     }
 }

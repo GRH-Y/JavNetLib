@@ -2,18 +2,23 @@ package connect.network.nio;
 
 
 import connect.network.base.joggle.INetSender;
+import util.IoEnvoy;
 
-import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 public class NioSender implements INetSender {
 
-    protected SocketChannel channel = null;
+    private SocketChannel channel;
 
-    protected NioClientTask clientTask;
+    public NioSender() {
+    }
 
-    public NioSender(NioClientTask clientTask) {
-        this.clientTask = clientTask;
+    public NioSender(SocketChannel channel) {
+        this.channel = channel;
+    }
+
+    public void setChannel(SocketChannel channel) {
+        this.channel = channel;
     }
 
     /**
@@ -27,32 +32,12 @@ public class NioSender implements INetSender {
     }
 
     protected void sendDataImp(byte[] data) {
-        if (data != null && channel != null && !clientTask.isTaskNeedClose()) {
-            try {
-                int off = 0;
-                int length = data.length;
-                ByteBuffer buffer = ByteBuffer.wrap(data);
-                while (off < length) {
-                    off += channel.write(buffer);
-                    if (off != length) {
-                        buffer.position(off);
-                        buffer.limit(length - off);
-                    }
-                }
-            } catch (Throwable e) {
-                e.printStackTrace();
-                onSenderErrorCallBack(e);
-            }
+        try {
+            IoEnvoy.writeToFull(channel, data);
+        } catch (Throwable e) {
+            e.printStackTrace();
+            onSenderErrorCallBack(e);
         }
-    }
-
-    protected void setChannel(SocketChannel channel) {
-        this.channel = channel;
-    }
-
-
-    public SocketChannel getChannel() {
-        return channel;
     }
 
     /**

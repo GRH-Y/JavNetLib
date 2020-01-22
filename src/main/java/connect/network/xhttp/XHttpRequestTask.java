@@ -1,11 +1,11 @@
 package connect.network.xhttp;
 
 import connect.network.nio.NioClientTask;
-import connect.network.nio.NioHPCClientFactory;
 import connect.network.xhttp.entity.XHttpRequest;
 import connect.network.xhttp.entity.XHttpResponse;
 import connect.network.xhttp.joggle.IXHttpDns;
 import connect.network.xhttp.joggle.IXHttpIntercept;
+import connect.network.xhttp.joggle.IXHttpResponseConvert;
 import log.LogDog;
 import util.ReflectionCall;
 import util.joggle.JavKeep;
@@ -24,7 +24,6 @@ public class XHttpRequestTask extends NioClientTask {
 
     public XHttpRequestTask(XHttpRequest request) {
         this.request = request;
-        setSender(new XHttpSender(this));
         xHttpReceive = new XHttpReceive(this, this, "onReceiveData");
         setReceive(xHttpReceive);
         httpConfig = XHttpConnect.getInstance().getHttpConfig();
@@ -42,6 +41,7 @@ public class XHttpRequestTask extends NioClientTask {
     @Override
     protected void onConfigSocket(boolean isConnect, SocketChannel channel) {
         if (isConnect) {
+            setSender(new XHttpSender(this, channel));
             byte[] head = httpProtocol.toByte();
             getSender().sendData(head);
             getSender().sendData(request.getSendData());
@@ -55,7 +55,7 @@ public class XHttpRequestTask extends NioClientTask {
         if (intercept != null) {
             boolean isIntercept = intercept.onRequestInterceptResult(request);
             if (isIntercept) {
-                NioHPCClientFactory.getFactory().removeTask(this);
+                httpConfig.getNetFactory().removeTask(this);
                 return;
             }
         }
@@ -69,10 +69,14 @@ public class XHttpRequestTask extends NioClientTask {
             httpProtocol.updatePath(request.getRequestMode().getMode(), request.getPath());
             isRedirect = true;
         } else {
+            IXHttpResponseConvert responseConvert = httpConfig.getResponseConvert();
+            if (responseConvert != null) {
+                responseConvert.handlerEntity(request, response);
+            }
             String methodName = response.getException() != null ? request.getErrorMethod() : request.getSuccessMethod();
             ReflectionCall.invoke(request.getCallBackTarget(), methodName, new Class[]{XHttpRequest.class, XHttpResponse.class}, request, response);
         }
-        NioHPCClientFactory.getFactory().removeTask(this);
+        httpConfig.getNetFactory().removeTask(this);
     }
 
     @Override
@@ -82,7 +86,7 @@ public class XHttpRequestTask extends NioClientTask {
         if (isRedirect) {
             //是否是重定向
             setTaskNeedClose(false);
-            NioHPCClientFactory.getFactory().addTask(this);
+            httpConfig.getNetFactory().addTask(this);
             isRedirect = false;
         } else {
             //移除任务记录

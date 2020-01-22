@@ -9,11 +9,14 @@ import java.util.Collection;
 
 public class XHttpConnect {
 
-    private XHttpConfig httpConfig = null;
+    private XHttpConfig httpConfig;
 
     private XHttpTaskManger httpTaskManger;
 
+    private NioHPCClientFactory netFactory;
+
     private XHttpConnect() {
+        httpConfig = new XHttpConfig();
         httpTaskManger = XHttpTaskManger.getInstance();
     }
 
@@ -25,13 +28,14 @@ public class XHttpConnect {
         return HelperHolder.helper;
     }
 
-    public XHttpConfig init() {
-        if (httpConfig == null) {
-            NioHPCClientFactory.getFactory(1).open();
-            httpConfig = new XHttpConfig();
-            XHttpDefaultDns dns = new XHttpDefaultDns();
-            httpConfig.setXHttpDns(dns);
-        }
+    public XHttpConfig initDefault() {
+        XHttpDefaultDns dns = new XHttpDefaultDns();
+        httpConfig.setXHttpDns(dns);
+        XHttpDefaultResponseConvert convert = new XHttpDefaultResponseConvert();
+        httpConfig.setResponseConvert(convert);
+        netFactory = new NioHPCClientFactory(2);
+        netFactory.open();
+        httpConfig.setNetFactory(netFactory);
         return httpConfig;
     }
 
@@ -48,7 +52,7 @@ public class XHttpConnect {
                 return;
             }
         }
-        boolean ret = NioHPCClientFactory.getFactory().addTask(requestTask);
+        boolean ret = netFactory.addTask(requestTask);
         if (ret) {
             httpTaskManger.pushTask(request.toString(), requestTask);
         }
@@ -56,13 +60,13 @@ public class XHttpConnect {
 
     public void cancelRequest(XHttpRequest request) {
         XHttpRequestTask targetRequest = httpTaskManger.getTask(request.toString());
-        NioHPCClientFactory.getFactory().removeTask(targetRequest);
+        netFactory.removeTask(targetRequest);
     }
 
     public void release() {
         Collection<XHttpRequestTask> collection = httpTaskManger.getAllTask();
         for (XHttpRequestTask task : collection) {
-            NioHPCClientFactory.getFactory().removeTask(task);
+            netFactory.removeTask(task);
         }
         httpTaskManger.release();
     }
