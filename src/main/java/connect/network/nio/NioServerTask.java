@@ -1,6 +1,9 @@
 package connect.network.nio;
 
 
+import util.StringEnvoy;
+
+import javax.net.ssl.SSLEngine;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -15,15 +18,13 @@ public class NioServerTask extends BaseNioNetTask {
 
     private String mHost = null;
     private int mPort = 0;
+    private boolean isTLS = false;
+    private SSLEngine sslEngine = null;
     private ServerSocketChannel mChannel = null;
     private int mMaxConnect = 50;
     private int acceptTimeout = 3000;
 
     public NioServerTask() {
-    }
-
-    public NioServerTask(String host, int port) {
-        setAddress(host, port);
     }
 
     public NioServerTask(ServerSocketChannel channel) {
@@ -32,9 +33,13 @@ public class NioServerTask extends BaseNioNetTask {
 
     //---------------------------- set ---------------------------------------
 
-    public void setAddress(String host, int port) {
+    public void setAddress(String host, int port, boolean isTLS) {
+        if (StringEnvoy.isEmpty(host) || port < 0) {
+            throw new IllegalStateException("host or port is invalid !!! ");
+        }
         this.mHost = host;
         this.mPort = port;
+        this.isTLS = isTLS;
     }
 
     /**
@@ -44,6 +49,10 @@ public class NioServerTask extends BaseNioNetTask {
      */
     public void setServerSocketChannel(ServerSocketChannel channel) {
         this.mChannel = channel;
+    }
+
+    protected void setSslEngine(SSLEngine sslEngine) {
+        this.sslEngine = sslEngine;
     }
 
     public void setMaxConnect(int maxConnect) {
@@ -61,6 +70,10 @@ public class NioServerTask extends BaseNioNetTask {
 
     //---------------------------- get ---------------------------------------
 
+    public boolean isTLS() {
+        return isTLS;
+    }
+
     public int getServerPort() {
         return mPort;
     }
@@ -71,6 +84,10 @@ public class NioServerTask extends BaseNioNetTask {
 
     public ServerSocketChannel getServerSocketChannel() {
         return mChannel;
+    }
+
+    protected SSLEngine getSslEngine() {
+        return sslEngine;
     }
 
     public int getMaxConnect() {
@@ -84,6 +101,10 @@ public class NioServerTask extends BaseNioNetTask {
     //---------------------------- on ---------------------------------------
 
     protected void onBootServerComplete(boolean isSuccess, ServerSocketChannel channel) throws Exception {
+    }
+
+    protected void onConfigSSLEngine(SSLEngine sslEngine) {
+
     }
 
     protected void onAcceptServerChannel(SocketChannel channel) throws Exception {

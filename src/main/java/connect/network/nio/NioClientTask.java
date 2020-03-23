@@ -35,11 +35,12 @@ public class NioClientTask extends BaseNioNetTask {
     public NioClientTask() {
     }
 
-    public NioClientTask(SocketChannel channel) {
+    public NioClientTask(SocketChannel channel, SSLEngine sslEngine) {
         if (!channel.isOpen() || !channel.isConnected()) {
             throw new IllegalStateException("SocketChannel is bed !!! ");
         }
         mChannel = channel;
+        this.sslEngine = sslEngine;
     }
 
     //---------------------------- set ---------------------------------------
@@ -130,6 +131,7 @@ public class NioClientTask extends BaseNioNetTask {
 
     /**
      * TLS 握手回调（只有是TLS通讯才会回调）
+     *
      * @param sslEngine
      * @param channel
      * @throws Exception

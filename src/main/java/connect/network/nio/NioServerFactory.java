@@ -55,6 +55,11 @@ public class NioServerFactory extends AbsNetFactory<NioServerTask> {
     }
 
     @Override
+    protected ISSLFactory getSslFactory() {
+        return super.getSslFactory();
+    }
+
+    @Override
     public boolean addTask(NioServerTask task) {
         if (task != null && task.getSelectionKey() == null && !task.isTaskNeedClose()) {
             return super.addTask(task);

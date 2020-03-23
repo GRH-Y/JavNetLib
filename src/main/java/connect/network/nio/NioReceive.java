@@ -10,6 +10,9 @@ public class NioReceive<T> {
 
     protected INetReceive<T> receive;
 
+    public NioReceive() {
+    }
+
     public NioReceive(INetReceive<T> receive) {
         this.receive = receive;
     }

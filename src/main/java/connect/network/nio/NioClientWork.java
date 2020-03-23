@@ -105,20 +105,18 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
         return channel;
     }
 
-    private SSLEngine initSSLConnect(T task) throws IOException {
-        SSLEngine sslEngine = null;
+    private void initSSLConnect(T task) throws IOException {
         if (task.isTLS()) {
             ISSLFactory sslFactory = mFactory.getSslFactory();
             if (sslFactory != null) {
                 SSLContext sslContext = sslFactory.getSSLContext();
-                sslEngine = sslContext.createSSLEngine(task.getHost(), task.getPort());
+                SSLEngine sslEngine = sslContext.createSSLEngine(task.getHost(), task.getPort());
                 sslEngine.setUseClientMode(true);
                 sslEngine.setEnableSessionCreation(true);
                 sslEngine.beginHandshake();
                 task.setSslEngine(sslEngine);
             }
         }
-        return sslEngine;
     }
 
 
