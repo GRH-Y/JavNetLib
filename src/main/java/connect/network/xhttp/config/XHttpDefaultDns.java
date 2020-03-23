@@ -4,7 +4,6 @@ import connect.network.xhttp.joggle.IXHttpDns;
 import util.StringEnvoy;
 
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,7 +26,7 @@ public class XHttpDefaultDns implements IXHttpDns {
                     InetAddress inetAddress = InetAddress.getByName(host);
                     ip = inetAddress.getHostAddress();
                     setCacheDns(host, ip);
-                } catch (UnknownHostException e) {
+                } catch (Throwable e) {
                     e.printStackTrace();
                 }
             }

@@ -1,4 +1,4 @@
-package connect.network.http.ssl;
+package connect.network.ssl;
 
 
 import connect.network.base.joggle.ISSLFactory;
@@ -20,6 +20,11 @@ public class DefaultHttpSSLFactory implements ISSLFactory, HostnameVerifier {
         }
         this.hostname = hostname.replace("http://", "").replace("https://", "")
                 .replace("/", "");
+    }
+
+    @Override
+    public SSLContext getSSLContext() {
+        return null;
     }
 
     @Override

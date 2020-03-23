@@ -33,7 +33,7 @@ public class BioEngine<T extends BaseNetTask> extends AbsNetEngine {
 
         if (mExecutor.getLoopState() && mWork.getExecutorQueue().isEmpty() && mWork.getConnectCache().isEmpty()
                 && mWork.getDestroyCache().isEmpty()) {
-            mExecutor.waitTask(0);
+            mExecutor.waitTask(100);
         }
     }
 

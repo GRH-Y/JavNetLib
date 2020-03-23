@@ -4,11 +4,12 @@ package connect.network.nio;
 import connect.network.base.joggle.INetSender;
 import util.IoEnvoy;
 
+import java.io.IOException;
 import java.nio.channels.SocketChannel;
 
 public class NioSender implements INetSender {
 
-    private SocketChannel channel;
+    protected SocketChannel channel;
 
     public NioSender() {
     }
@@ -27,23 +28,16 @@ public class NioSender implements INetSender {
      * @param data
      */
     @Override
-    public void sendData(byte[] data) {
+    public void sendData(byte[] data) throws IOException {
         sendDataImp(data);
     }
 
-    protected void sendDataImp(byte[] data) {
-        try {
-            IoEnvoy.writeToFull(channel, data);
-        } catch (Throwable e) {
-            e.printStackTrace();
-            onSenderErrorCallBack(e);
+    protected void sendDataImp(byte[] data) throws IOException {
+        if (data == null) {
+            return;
         }
-    }
-
-    /**
-     * 发送数据失败回调
-     */
-    protected void onSenderErrorCallBack(Throwable e) {
+        channel.socket().setSendBufferSize(data.length);
+        IoEnvoy.writeToFull(channel, data);
     }
 
 }

@@ -1,7 +1,8 @@
 package connect.network.xhttp;
 
 import connect.network.base.RequestMode;
-import connect.network.xhttp.entity.XHttpRequest;
+import connect.network.xhttp.entity.XRequest;
+import connect.network.xhttp.entity.XUrlMedia;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -10,7 +11,7 @@ import java.util.Set;
 /**
  * http 1.0/1.1
  */
-public class HttpProtocol {
+public class XHttpProtocol {
 
     public static final String XY_HOST = "Host";
     public static final String XY_ACCEPT = "Accept";
@@ -23,9 +24,10 @@ public class HttpProtocol {
     public static final String XY_CONNECTION = "Connection";
     public static final String XY_USER_AGENT = "User-Agent";
     public static final String XY_CONTENT_ENCODING = "Content-Encoding";
-    public static final String XY_RESPONSE_CODE = "Response-Code";
+    public static final String XY_FIST_LINE = "Fist-Line";
     public static final String XY_LOCATION = "Location";
     public static final String XY_REFERER = "Referer";
+    public static final String XY_TRANSFER_ENCODING = "Transfer-Encoding";
 
 
     /**
@@ -75,23 +77,24 @@ public class HttpProtocol {
 
     private Map<String, String> headParameterMap = new LinkedHashMap<>();
 
-    public void initHead(XHttpRequest request) {
+    public void init(XRequest request) {
         RequestMode requestMode = request.getRequestMode();
         byte[] data = request.getSendData();
-        String path = request.getPath();
+        XUrlMedia httpUrlMedia = request.getUrl();
+        String path = httpUrlMedia.getPath();
         if (requestMode == RequestMode.GET) {
             if (data != null) {
-                path = request.getPath() + new String(data);
+                path = httpUrlMedia.getPath() + new String(data);
             }
         }
         headParameterMap.put(requestMode.getMode(), " " + path + " HTTP/1.1\r\n");
-        headParameterMap.put(XY_HOST, request.getHost());
+        headParameterMap.put(XY_HOST, httpUrlMedia.getHost());
         headParameterMap.put(XY_ACCEPT, " */*");
         headParameterMap.put(XY_ACCEPT_LANGUAGE, "*/*");
         headParameterMap.put(XY_ACCEPT_ENCODING, "gzip, deflate");
         headParameterMap.put(XY_USER_AGENT, "XHttp_1.0");
         headParameterMap.put(XY_CONNECTION, "keep-alive");
-        headParameterMap.put(XY_REFERER, request.getReferer());
+        headParameterMap.put(XY_REFERER, httpUrlMedia.getReferer());
         Map<String, Object> userParameter = request.getRequestProperty();
         if (userParameter != null && !userParameter.isEmpty()) {
             Set<Map.Entry<String, Object>> set = userParameter.entrySet();
@@ -103,6 +106,7 @@ public class HttpProtocol {
             headParameterMap.put(XY_CONTENT_LENGTH, String.valueOf(data.length));
         }
     }
+
 
     public Map<String, String> getHeadParameterMap() {
         return headParameterMap;
@@ -131,7 +135,10 @@ public class HttpProtocol {
                 builder.append(entry.getKey()).append(entry.getValue());
                 isFirst = false;
             } else {
-                builder.append(entry.getKey()).append(": ").append(entry.getValue()).append("\r\n");
+                builder.append(entry.getKey()).append(": ").append(entry.getValue());
+                if (!entry.getValue().endsWith("\r\n")) {
+                    builder.append("\r\n");
+                }
             }
         }
         builder.append("\r\n");

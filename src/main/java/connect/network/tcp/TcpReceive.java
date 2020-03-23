@@ -3,19 +3,16 @@ package connect.network.tcp;
 
 import connect.network.base.joggle.INetReceive;
 import util.IoEnvoy;
-import util.ReflectionCall;
 
 import java.io.InputStream;
 
-public class TcpReceive implements INetReceive {
+public class TcpReceive {
 
-    protected Object mReceive;
-    protected String mReceiveMethodName;
+    protected INetReceive receive;
     protected InputStream stream = null;
 
-    public TcpReceive(Object receive, String receiveMethodName) {
-        this.mReceive = receive;
-        this.mReceiveMethodName = receiveMethodName;
+    public TcpReceive(INetReceive receive) {
+        this.receive = receive;
     }
 
     protected void setStream(InputStream stream) {
@@ -26,16 +23,25 @@ public class TcpReceive implements INetReceive {
         return stream;
     }
 
-    @Override
-    public void setReceive(Object receive, String receiveMethodName) {
-        this.mReceive = receive;
-        this.mReceiveMethodName = receiveMethodName;
+    protected void onRead() throws Exception {
+        byte[] data = null;
+        Exception exception = null;
+        try {
+            data = IoEnvoy.tryRead(stream);
+        } catch (Exception e) {
+            exception = e;
+        } finally {
+            notifyReceiver(data, exception);
+        }
     }
 
-    protected void onRead() throws Exception {
-        byte[] data = IoEnvoy.tryRead(stream);
-        if (data != null) {
-            ReflectionCall.invoke(mReceive, mReceiveMethodName, new Class[]{byte[].class}, data);
+    protected void notifyReceiver(Object data, Exception exception) throws Exception {
+        if (receive != null) {
+            receive.onReceive(data, exception);
+        } else {
+            if (exception != null) {
+                throw exception;
+            }
         }
     }
 }

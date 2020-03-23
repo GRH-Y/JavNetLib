@@ -1,27 +1,18 @@
 package connect.network.udp;
 
 import connect.network.base.joggle.INetReceive;
-import util.ReflectionCall;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketTimeoutException;
 
-public class UdpReceive implements INetReceive {
+public class UdpReceive {
 
-    protected Object mReceive;
-    protected String mReceiveMethodName;
+    protected INetReceive mReceive;
     protected DatagramSocket socket = null;
 
-    public UdpReceive(Object receive, String receiveMethodName) {
+    public UdpReceive(INetReceive receive) {
         this.mReceive = receive;
-        this.mReceiveMethodName = receiveMethodName;
-    }
-
-    @Override
-    public void setReceive(Object receive, String receiveMethodName) {
-        this.mReceive = receive;
-        this.mReceiveMethodName = receiveMethodName;
     }
 
     protected void setSocket(DatagramSocket socket) {
@@ -32,17 +23,33 @@ public class UdpReceive implements INetReceive {
         return socket;
     }
 
-    protected void onRead(DatagramSocket socket) throws Exception {
+    protected void onRead() throws Exception {
+        DatagramPacket receive = null;
+        Exception exception = null;
         try {
             int size = socket.getReceiveBufferSize();
             byte[] buffer = new byte[size];
-            DatagramPacket receive = new DatagramPacket(buffer, buffer.length);
+            receive = new DatagramPacket(buffer, buffer.length);
             socket.receive(receive);
-            //注意接受方法参数是DatagramPacket
-            ReflectionCall.invoke(mReceive, mReceiveMethodName, new Class[]{DatagramPacket.class}, receive);
         } catch (Exception e) {
-            if (!(e instanceof SocketTimeoutException)) {
-                throw new Exception(e);
+            exception = e;
+        } finally {
+            notifyReceiver(receive, exception);
+        }
+    }
+
+    protected void notifyReceiver(Object data, Exception exception) throws Exception {
+        if (mReceive != null) {
+            try {
+                mReceive.onReceive(data, exception);
+            } catch (Throwable e) {
+                e.printStackTrace();
+            }
+        } else {
+            if (exception != null) {
+                if (!(exception instanceof SocketTimeoutException)) {
+                    throw exception;
+                }
             }
         }
     }

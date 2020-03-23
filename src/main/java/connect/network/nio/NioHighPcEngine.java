@@ -118,9 +118,7 @@ public class NioHighPcEngine<T extends BaseNioNetTask> extends NioEngine {
      */
     private void waitEngine() {
         ITaskContainer container = engineMap.get(String.valueOf(Thread.currentThread().getId()));
-        if (container != null) {
-            container.getTaskExecutor().waitTask(0);
-        }
+        container.getTaskExecutor().waitTask(0);
     }
 
     @Override
@@ -135,8 +133,8 @@ public class NioHighPcEngine<T extends BaseNioNetTask> extends NioEngine {
                     //把第一个线程定为主引擎，只负责事件处理
                     rootEngineTag = container.getThread().getId();
                 }
-                container.getTaskExecutor().startTask();
                 engineMap.put(String.valueOf(container.getThread().getId()), container);
+                container.getTaskExecutor().startTask();
             }
         }
     }

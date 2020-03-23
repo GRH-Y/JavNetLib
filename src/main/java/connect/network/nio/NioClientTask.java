@@ -1,8 +1,10 @@
 package connect.network.nio;
 
 
+import connect.network.ssl.TLSHandler;
 import util.StringEnvoy;
 
+import javax.net.ssl.SSLEngine;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
@@ -14,23 +16,23 @@ import java.nio.channels.SocketChannel;
  */
 public class NioClientTask extends BaseNioNetTask {
 
-    private int connectTimeout = 1000;
-
     private String mHost = null;
 
     private int mPort = -1;
 
+    private boolean isTLS = false;
+
     private SocketChannel mChannel = null;
+
+    private SSLEngine sslEngine = null;
+
+    private TLSHandler tlsHandler = null;
 
     private NioSender sender = null;
 
     private NioReceive receive = null;
 
     public NioClientTask() {
-    }
-
-    public NioClientTask(String host, int port) {
-        setAddress(host, port);
     }
 
     public NioClientTask(SocketChannel channel) {
@@ -54,25 +56,36 @@ public class NioClientTask extends BaseNioNetTask {
         this.mChannel = channel;
     }
 
-    public void setAddress(String host, int port) {
+    protected void setSslEngine(SSLEngine sslEngine) {
+        this.sslEngine = sslEngine;
+    }
+
+    public void setAddress(String host, int port, boolean isTLS) {
         if (StringEnvoy.isEmpty(host) || port < 0) {
             throw new IllegalStateException("host or port is invalid !!! ");
         }
         this.mHost = host;
         this.mPort = port;
+        this.isTLS = isTLS;
     }
 
-
-    public void setConnectTimeout(int connectTimeout) {
-        this.connectTimeout = connectTimeout;
-    }
 
     @Override
     protected void setSelectionKey(SelectionKey selectionKey) {
         super.setSelectionKey(selectionKey);
     }
 
+    @Override
+    protected SelectionKey getSelectionKey() {
+        return super.getSelectionKey();
+    }
+
     //---------------------------- get ---------------------------------------
+
+
+    public boolean isTLS() {
+        return isTLS;
+    }
 
     public int getPort() {
         return mPort;
@@ -82,8 +95,16 @@ public class NioClientTask extends BaseNioNetTask {
         return mHost;
     }
 
-    public SocketChannel getSocketChannel() {
+    protected SocketChannel getSocketChannel() {
         return mChannel;
+    }
+
+    protected SSLEngine getSslEngine() {
+        return sslEngine;
+    }
+
+    protected TLSHandler getTlsHandler() {
+        return tlsHandler;
     }
 
     public <T extends NioSender> T getSender() {
@@ -94,20 +115,34 @@ public class NioClientTask extends BaseNioNetTask {
         return (T) receive;
     }
 
-    public int getConnectTimeout() {
-        return connectTimeout;
-    }
-
 
     //---------------------------- on ---------------------------------------
 
-    protected void onConfigSocket(boolean isConnect, SocketChannel channel) {
+    /**
+     * channel连接状态回调
+     *
+     * @param isConnect
+     * @param channel
+     * @param sslEngine
+     */
+    protected void onConnectCompleteChannel(boolean isConnect, SocketChannel channel, SSLEngine sslEngine) throws Exception {
+    }
+
+    /**
+     * TLS 握手回调（只有是TLS通讯才会回调）
+     * @param sslEngine
+     * @param channel
+     * @throws Exception
+     */
+    protected void onHandshake(SSLEngine sslEngine, SocketChannel channel) throws Exception {
+        tlsHandler = new TLSHandler(sslEngine, channel);
+        tlsHandler.doHandshake();
     }
 
     /**
      * 当前状态链接还没关闭，可以做最后的一次数据传输
      */
-    protected void onCloseSocketChannel() {
+    protected void onCloseClientChannel() throws Exception {
     }
 
 

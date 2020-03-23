@@ -5,15 +5,7 @@ package connect.network.base.joggle;
  *
  * @author yyz
  */
-public interface INetReceive {
+public interface INetReceive<T> {
 
-    /**
-     * 设置接收者
-     *
-     * @param receive           接收者实体类
-     * @param receiveMethodName 接收实体类的方法
-     */
-    void setReceive(Object receive, String receiveMethodName);
-
-//    void onRead() throws Exception;
+    void onReceive(T data, Exception e);
 }

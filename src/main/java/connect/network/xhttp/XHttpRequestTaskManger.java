@@ -1,29 +1,43 @@
 package connect.network.xhttp;
 
-import connect.network.xhttp.entity.XHttpRequest;
+import connect.network.base.AbsNetFactory;
+import connect.network.xhttp.entity.XRequest;
 import util.MultiplexCache;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-public class XHttpTaskManger {
+public class XHttpRequestTaskManger {
 
     private MultiplexCache<XHttpRequestTask> multiplexCache;
 
     private Map<String, XHttpRequestTask> requestTaskMap;
 
-    private XHttpTaskManger() {
+    private XHttpRequestTaskManger() {
         requestTaskMap = new HashMap<>();
         multiplexCache = new MultiplexCache();
     }
 
-    private static class HelperHolder {
-        public static final XHttpTaskManger helper = new XHttpTaskManger();
+    private static XHttpRequestTaskManger sTaskManger = null;
+
+    public static synchronized XHttpRequestTaskManger getInstance() {
+        if (sTaskManger == null) {
+            synchronized (XHttpRequestTaskManger.class) {
+                if (sTaskManger == null) {
+                    sTaskManger = new XHttpRequestTaskManger();
+                }
+            }
+        }
+        return sTaskManger;
     }
 
-    public static XHttpTaskManger getInstance() {
-        return XHttpTaskManger.HelperHolder.helper;
+    public static void destroy() {
+        if (sTaskManger != null) {
+            sTaskManger.requestTaskMap.clear();
+            sTaskManger.multiplexCache.release();
+            sTaskManger = null;
+        }
     }
 
     public void pushTask(String key, XHttpRequestTask task) {
@@ -46,20 +60,14 @@ public class XHttpTaskManger {
         return task;
     }
 
-    public XHttpRequestTask obtain(XHttpRequest request) {
+    public XHttpRequestTask obtain(AbsNetFactory netFactory, XHttpConfig httpConfig, XRequest request) {
         XHttpRequestTask requestTask = multiplexCache.getRepeatData();
         if (requestTask == null) {
-            requestTask = new XHttpRequestTask(request);
+            requestTask = new XHttpRequestTask(netFactory, httpConfig, request);
         } else {
             requestTask.initTask(request);
         }
         return requestTask;
-    }
-
-
-    public void release() {
-        requestTaskMap.clear();
-        multiplexCache.release();
     }
 
 }

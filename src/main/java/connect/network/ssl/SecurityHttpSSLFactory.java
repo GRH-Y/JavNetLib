@@ -1,4 +1,4 @@
-package connect.network.http.ssl;
+package connect.network.ssl;
 
 
 import sun.security.x509.X509CertImpl;

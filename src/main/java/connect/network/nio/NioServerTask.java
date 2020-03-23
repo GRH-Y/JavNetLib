@@ -83,13 +83,13 @@ public class NioServerTask extends BaseNioNetTask {
 
     //---------------------------- on ---------------------------------------
 
-    protected void onConfigServer(boolean isSuccess, ServerSocketChannel channel) {
+    protected void onBootServerComplete(boolean isSuccess, ServerSocketChannel channel) throws Exception {
     }
 
-    protected void onAcceptServerChannel(SocketChannel channel) {
+    protected void onAcceptServerChannel(SocketChannel channel) throws Exception {
     }
 
-    protected void onCloseServerChannel() {
+    protected void onCloseServerChannel() throws Exception {
     }
 
 }

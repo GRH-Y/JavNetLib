@@ -1,73 +1,95 @@
 package connect.network.xhttp;
 
-import connect.network.nio.NioHPCClientFactory;
-import connect.network.xhttp.config.XHttpDefaultDns;
-import connect.network.xhttp.entity.XHttpRequest;
+import connect.network.base.AbsNetFactory;
+import connect.network.nio.NioClientFactory;
+import connect.network.xhttp.entity.XRequest;
 import connect.network.xhttp.joggle.IXHttpIntercept;
 
 import java.util.Collection;
 
 public class XHttpConnect {
 
-    private XHttpConfig httpConfig;
+    private XHttpConfig mHttpConfig;
 
-    private XHttpTaskManger httpTaskManger;
+    private XHttpRequestTaskManger mHttpTaskManger;
 
-    private NioHPCClientFactory netFactory;
+    private AbsNetFactory mNetFactory;
 
     private XHttpConnect() {
-        httpConfig = new XHttpConfig();
-        httpTaskManger = XHttpTaskManger.getInstance();
+        mHttpTaskManger = XHttpRequestTaskManger.getInstance();
+        mNetFactory = new NioClientFactory();
+        mNetFactory.open();
     }
 
-    private static class HelperHolder {
-        public static final XHttpConnect helper = new XHttpConnect();
+    private static XHttpConnect sHttpConnect = null;
+
+    public static synchronized XHttpConnect getInstance() {
+        if (sHttpConnect == null) {
+            synchronized (XHttpConnect.class) {
+                if (sHttpConnect == null) {
+                    sHttpConnect = new XHttpConnect();
+                }
+            }
+        }
+        return sHttpConnect;
     }
 
-    public static XHttpConnect getInstance() {
-        return HelperHolder.helper;
+    public static void destroy() {
+        synchronized (XHttpConnect.class) {
+            if (sHttpConnect != null) {
+                sHttpConnect.mNetFactory.close();
+                XHttpRequestTaskManger.destroy();
+                sHttpConnect = null;
+            }
+        }
     }
 
-    public XHttpConfig initDefault() {
-        XHttpDefaultDns dns = new XHttpDefaultDns();
-        httpConfig.setXHttpDns(dns);
-        XHttpDefaultResponseConvert convert = new XHttpDefaultResponseConvert();
-        httpConfig.setResponseConvert(convert);
-        netFactory = new NioHPCClientFactory(2);
-        netFactory.open();
-        httpConfig.setNetFactory(netFactory);
-        return httpConfig;
+    public void setHttpConfig(XHttpConfig httpConfig) {
+        if (httpConfig == null) {
+            httpConfig = XHttpConfig.getDefaultConfig();
+        }
+        this.mHttpConfig = httpConfig;
     }
 
     public XHttpConfig getHttpConfig() {
-        return httpConfig;
+        return mHttpConfig;
     }
 
-    public void submitRequest(XHttpRequest request) {
-        XHttpRequestTask requestTask = httpTaskManger.obtain(request);
-        IXHttpIntercept intercept = httpConfig.getIntercept();
+    protected AbsNetFactory getNetFactory() {
+        return mNetFactory;
+    }
+
+    public boolean submitRequest(XRequest request) {
+        if (request == null) {
+            return false;
+        }
+        IXHttpIntercept intercept = mHttpConfig.getIntercept();
         if (intercept != null) {
             boolean isIntercept = intercept.onStartRequestIntercept(request);
             if (isIntercept) {
-                return;
+                return false;
             }
         }
-        boolean ret = netFactory.addTask(requestTask);
+        XHttpRequestTask requestTask = mHttpTaskManger.obtain(mNetFactory, mHttpConfig, request);
+        boolean ret = mNetFactory.addTask(requestTask);
         if (ret) {
-            httpTaskManger.pushTask(request.toString(), requestTask);
+            mHttpTaskManger.pushTask(request.toString(), requestTask);
         }
+        return ret;
     }
 
-    public void cancelRequest(XHttpRequest request) {
-        XHttpRequestTask targetRequest = httpTaskManger.getTask(request.toString());
-        netFactory.removeTask(targetRequest);
+    public void cancelRequest(XRequest request) {
+        if (request == null) {
+            return;
+        }
+        XHttpRequestTask targetRequest = mHttpTaskManger.getTask(request.toString());
+        mNetFactory.removeTask(targetRequest);
     }
 
-    public void release() {
-        Collection<XHttpRequestTask> collection = httpTaskManger.getAllTask();
+    public void cancelAllRequest() {
+        Collection<XHttpRequestTask> collection = mHttpTaskManger.getAllTask();
         for (XHttpRequestTask task : collection) {
-            netFactory.removeTask(task);
+            mNetFactory.removeTask(task);
         }
-        httpTaskManger.release();
     }
 }

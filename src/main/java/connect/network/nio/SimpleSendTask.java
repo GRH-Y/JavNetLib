@@ -8,6 +8,8 @@ import task.executor.joggle.IConsumerAttribute;
 import task.executor.joggle.IConsumerTaskExecutor;
 import task.executor.joggle.ITaskContainer;
 
+import java.io.IOException;
+
 public class SimpleSendTask {
 
     private final class SendEntity {
@@ -75,7 +77,11 @@ public class SimpleSendTask {
         protected void onProcess() {
             SendEntity sendEntity = attribute.popCacheData();
             NioSender sender = sendEntity.getSender();
-            sender.sendDataImp(sendEntity.getData());
+            try {
+                sender.sendDataImp(sendEntity.getData());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
 
     }

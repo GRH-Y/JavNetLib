@@ -5,6 +5,8 @@ import connect.network.base.AbsNetEngine;
 import connect.network.base.AbsNetFactory;
 import connect.network.base.BaseNetWork;
 import connect.network.base.joggle.INetFactory;
+import connect.network.base.joggle.ISSLFactory;
+import connect.network.ssl.NioSSLFactory;
 
 /**
  * nio服务端工厂(单线程管理多个ServerSocket)
@@ -45,6 +47,11 @@ public class NioServerFactory extends AbsNetFactory<NioServerTask> {
     @Override
     protected BaseNetWork<NioServerTask> initNetWork() {
         return new NioServerWork(this);
+    }
+
+    @Override
+    protected ISSLFactory initSSLFactory() throws Exception {
+        return new NioSSLFactory();
     }
 
     @Override

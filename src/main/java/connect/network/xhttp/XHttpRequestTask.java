@@ -1,96 +1,132 @@
 package connect.network.xhttp;
 
+import connect.network.base.AbsNetFactory;
+import connect.network.base.joggle.INetReceive;
 import connect.network.nio.NioClientTask;
-import connect.network.xhttp.entity.XHttpRequest;
-import connect.network.xhttp.entity.XHttpResponse;
+import connect.network.nio.NioSender;
+import connect.network.xhttp.entity.XRequest;
+import connect.network.xhttp.entity.XResponse;
+import connect.network.xhttp.entity.XResponseHelper;
+import connect.network.xhttp.entity.XUrlMedia;
 import connect.network.xhttp.joggle.IXHttpDns;
 import connect.network.xhttp.joggle.IXHttpIntercept;
 import connect.network.xhttp.joggle.IXHttpResponseConvert;
 import log.LogDog;
 import util.ReflectionCall;
-import util.joggle.JavKeep;
 
+import javax.net.ssl.SSLEngine;
+import java.io.IOException;
 import java.nio.channels.SocketChannel;
 
 public class XHttpRequestTask extends NioClientTask {
 
-    private XHttpReceive xHttpReceive;
-    private HttpProtocol httpProtocol;
-    private XHttpRequest request;
+    private XRequest request;
     private XHttpConfig httpConfig;
+    private AbsNetFactory netFactory;
+    private XHttpProtocol httpProtocol;
 
     private boolean isRedirect = false;
 
 
-    public XHttpRequestTask(XHttpRequest request) {
+    XHttpRequestTask(AbsNetFactory netFactory, XHttpConfig httpConfig, XRequest request) {
+        if (request == null) {
+            throw new NullPointerException("request is null !!!");
+        }
         this.request = request;
-        xHttpReceive = new XHttpReceive(this, this, "onReceiveData");
-        setReceive(xHttpReceive);
-        httpConfig = XHttpConnect.getInstance().getHttpConfig();
-        httpProtocol = new HttpProtocol();
+        this.httpConfig = httpConfig;
+        this.netFactory = netFactory;
+
+        httpProtocol = new XHttpProtocol();
         initTask(request);
     }
 
-    public void initTask(XHttpRequest request) {
-        httpProtocol.initHead(request);
+    protected void initTask(XRequest request) {
+        httpProtocol.init(request);
         IXHttpDns httpDns = httpConfig.getXHttpDns();
-        String address = httpDns.findCacheDns(request.getHost());
-        setAddress(address, request.getPort());
+        XUrlMedia httpUrlMedia = request.getUrl();
+        String host = httpUrlMedia.getHost();
+        if (httpDns != null) {
+            host = httpDns.findCacheDns(httpUrlMedia.getHost());
+        }
+        setAddress(host, httpUrlMedia.getPort(), httpUrlMedia.isTSL());
+    }
+
+
+    class ReceiveCallBack implements INetReceive<XResponse> {
+
+        @Override
+        public void onReceive(XResponse response, Exception e) {
+            if (e != null) {
+                ReflectionCall.invoke(request.getCallBackTarget(), request.getErrorMethod(),
+                        new Class[]{XRequest.class, XResponse.class}, request, response);
+                netFactory.removeTask(XHttpRequestTask.this);
+                return;
+            }
+            IXHttpIntercept intercept = httpConfig.getIntercept();
+            if (intercept != null) {
+                boolean isIntercept = intercept.onRequestInterceptResult(request);
+                if (isIntercept) {
+                    netFactory.removeTask(XHttpRequestTask.this);
+                    return;
+                }
+            }
+            int code = XResponseHelper.getCode(response);
+            if (code >= 300 && code < 400) {
+                //重定向
+                String location = response.getHeadForKey(XHttpProtocol.XY_LOCATION);
+                request.setUrl(location);
+                initTask(request);
+                isRedirect = true;
+            } else {
+                IXHttpResponseConvert responseConvert = httpConfig.getResponseConvert();
+                if (responseConvert != null) {
+                    responseConvert.handlerEntity(request, response);
+                }
+                ReflectionCall.invoke(request.getCallBackTarget(), request.getSuccessMethod(),
+                        new Class[]{XRequest.class, XResponse.class}, request, response);
+            }
+            netFactory.removeTask(XHttpRequestTask.this);
+        }
     }
 
     @Override
-    protected void onConfigSocket(boolean isConnect, SocketChannel channel) {
+    protected void onConnectCompleteChannel(boolean isConnect, SocketChannel channel, SSLEngine sslEngine) {
         if (isConnect) {
-            setSender(new XHttpSender(this, channel));
+            ReceiveCallBack receiveCallBack = new ReceiveCallBack();
+            XUrlMedia httpUrlMedia = request.getUrl();
+            if (httpUrlMedia.isTSL()) {
+                setSender(new XHttpsSender(getTlsHandler()));
+                setReceive(new XHttpsReceive(getTlsHandler(), receiveCallBack));
+            } else {
+                setSender(new NioSender(channel));
+                setReceive(new XHttpReceive(receiveCallBack));
+            }
             byte[] head = httpProtocol.toByte();
-            getSender().sendData(head);
-            getSender().sendData(request.getSendData());
+            try {
+                getSender().sendData(head);
+                getSender().sendData(request.getSendData());
+            } catch (IOException e) {
+                netFactory.removeTask(this);
+            }
             LogDog.d("==> head = " + new String(head));
         }
     }
 
-    @JavKeep
-    private void onReceiveData(XHttpResponse response) {
-        IXHttpIntercept intercept = httpConfig.getIntercept();
-        if (intercept != null) {
-            boolean isIntercept = intercept.onRequestInterceptResult(request);
-            if (isIntercept) {
-                httpConfig.getNetFactory().removeTask(this);
-                return;
-            }
-        }
-        int code = response.getCode();
-        if (code >= 300 && code < 400) {
-            //重定向
-            String location = response.getHeadForKey(HttpProtocol.XY_LOCATION);
-            request.setAddress(location);
-            httpProtocol.updateHeadParameter(HttpProtocol.XY_HOST, request.getHost());
-            httpProtocol.updateHeadParameter(HttpProtocol.XY_REFERER, request.getReferer());
-            httpProtocol.updatePath(request.getRequestMode().getMode(), request.getPath());
-            isRedirect = true;
-        } else {
-            IXHttpResponseConvert responseConvert = httpConfig.getResponseConvert();
-            if (responseConvert != null) {
-                responseConvert.handlerEntity(request, response);
-            }
-            String methodName = response.getException() != null ? request.getErrorMethod() : request.getSuccessMethod();
-            ReflectionCall.invoke(request.getCallBackTarget(), methodName, new Class[]{XHttpRequest.class, XHttpResponse.class}, request, response);
-        }
-        httpConfig.getNetFactory().removeTask(this);
-    }
 
     @Override
     protected void onRecovery() {
-        super.onRecovery();
-        xHttpReceive.reset();
         if (isRedirect) {
             //是否是重定向
             setTaskNeedClose(false);
-            httpConfig.getNetFactory().addTask(this);
+            netFactory.addTask(this);
             isRedirect = false;
         } else {
+            XHttpReceive receive = getReceive();
+            if (receive != null) {
+                receive.reset();
+            }
             //移除任务记录
-            XHttpTaskManger.getInstance().removerTask(request.toString());
+            XHttpRequestTaskManger.getInstance().removerTask(request.toString());
         }
     }
 }

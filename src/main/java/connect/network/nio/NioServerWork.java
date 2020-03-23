@@ -31,7 +31,7 @@ public class NioServerWork<T extends NioServerTask> extends NioNetWork<T> {
             //配置通道
             configChannel(task, channel);
             try {
-                task.onConfigServer(!task.isTaskNeedClose(), task.isTaskNeedClose() ? null : channel);
+                task.onBootServerComplete(!task.isTaskNeedClose(), task.isTaskNeedClose() ? null : channel);
             } catch (Throwable e) {
                 e.printStackTrace();
             }

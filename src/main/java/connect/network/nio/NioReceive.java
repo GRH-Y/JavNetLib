@@ -3,26 +3,21 @@ package connect.network.nio;
 
 import connect.network.base.joggle.INetReceive;
 import util.IoEnvoy;
-import util.ReflectionCall;
 
 import java.nio.channels.SocketChannel;
 
-public class NioReceive implements INetReceive {
+public class NioReceive<T> {
 
-    protected Object mReceive;
-    protected String mReceiveMethod;
+    protected INetReceive<T> receive;
 
-
-    public NioReceive(Object receive, String receiveMethod) {
-        this.mReceive = receive;
-        this.mReceiveMethod = receiveMethod;
+    public NioReceive(INetReceive<T> receive) {
+        this.receive = receive;
     }
 
-
-    @Override
-    public void setReceive(Object receive, String receiveMethodName) {
-        this.mReceive = receive;
-        this.mReceiveMethod = receiveMethodName;
+    protected void notifyReceiver(T data, Exception exception) {
+        if (receive != null) {
+            receive.onReceive(data, exception);
+        }
     }
 
     /**
@@ -37,10 +32,16 @@ public class NioReceive implements INetReceive {
             data = IoEnvoy.tryRead(channel);
         } catch (Exception e) {
             exception = e;
-            throw new Exception(e);
+            throw exception;
         } finally {
-            ReflectionCall.invoke(mReceive, mReceiveMethod, new Class[]{byte[].class, Exception.class}, new Object[]{data, exception});
+            if (data != null) {
+                onResponse((T) data);
+            }
+            notifyReceiver((T) data, exception);
         }
     }
 
+    protected void onResponse(T response) throws Exception {
+
+    }
 }

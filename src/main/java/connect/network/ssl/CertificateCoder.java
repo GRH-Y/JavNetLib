@@ -1,4 +1,4 @@
-package connect.network.base;
+package connect.network.ssl;
 
 import javax.crypto.Cipher;
 import java.io.FileInputStream;

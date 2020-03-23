@@ -118,12 +118,16 @@ public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T
                 SelectableChannel channel = target.selectionKey.channel();
                 if (channel instanceof SocketChannel) {
                     Socket socket = ((SocketChannel) channel).socket();
-                    socket.shutdownOutput();
-                    socket.shutdownInput();
-                    socket.close();
+                    if (socket.isConnected()) {
+                        socket.shutdownOutput();
+                        socket.shutdownInput();
+                        socket.close();
+                    }
                 } else if (channel instanceof ServerSocketChannel) {
                     ServerSocketChannel serverSocketChannel = (ServerSocketChannel) channel;
-                    serverSocketChannel.socket().close();
+                    if (serverSocketChannel.isOpen()) {
+                        serverSocketChannel.socket().close();
+                    }
                 }
                 channel.close();
             } catch (Throwable e) {

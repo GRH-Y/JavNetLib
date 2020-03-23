@@ -5,6 +5,8 @@ import connect.network.base.AbsNetEngine;
 import connect.network.base.AbsNetFactory;
 import connect.network.base.BaseNetWork;
 import connect.network.base.joggle.INetFactory;
+import connect.network.base.joggle.ISSLFactory;
+import connect.network.ssl.NioSSLFactory;
 
 /**
  * nio客户端工厂接口创建者
@@ -48,6 +50,15 @@ public class NioClientFactory extends AbsNetFactory<NioClientTask> {
         return new NioClientWork(this);
     }
 
+    @Override
+    protected ISSLFactory initSSLFactory() throws Exception {
+        return new NioSSLFactory();
+    }
+
+    @Override
+    protected ISSLFactory getSslFactory() {
+        return super.getSslFactory();
+    }
 
     @Override
     public boolean addTask(NioClientTask task) {

@@ -1,4 +1,4 @@
-package connect.network.nio;
+package connect.network.ssl;
 
 import connect.network.base.joggle.ISSLFactory;
 import log.LogDog;
@@ -8,6 +8,7 @@ import javax.net.ssl.*;
 import java.io.FileInputStream;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 
 public class NioSSLFactory implements ISSLFactory {
@@ -17,10 +18,17 @@ public class NioSSLFactory implements ISSLFactory {
         sslContext = SSLContext.getDefault();
     }
 
+    /**
+     * TLS
+     *
+     * @param protocol TLSv1.2
+     * @throws Exception
+     */
     public NioSSLFactory(String protocol) throws Exception {
         sslContext = SSLContext.getInstance(protocol);
-        sslContext.init(null, new TrustManager[]{x509m}, null);
-
+        KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), new SecureRandom());
     }
 
     /**
@@ -43,6 +51,11 @@ public class NioSSLFactory implements ISSLFactory {
         kmf.init(ks, password);
 //        tmf.init(tks);
         sslContext.init(kmf.getKeyManagers(), null, null);//tmf.getTrustManagers()
+    }
+
+    @Override
+    public SSLContext getSSLContext() {
+        return sslContext;
     }
 
     @Override

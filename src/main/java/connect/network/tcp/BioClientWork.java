@@ -44,7 +44,7 @@ public class BioClientWork<T extends TcpClientTask> extends BioNetWork<T> {
             if (socket != null) {
                 socket.setSoTimeout(task.getConnectTimeout());
                 //复用端口
-                socket.setReuseAddress(true);
+//                socket.setReuseAddress(true);
                 if (!(socket instanceof SSLSocket)) {
                     //关闭接收紧急数据
                     socket.setOOBInline(false);

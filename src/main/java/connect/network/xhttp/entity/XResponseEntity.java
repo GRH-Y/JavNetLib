@@ -1,14 +1,14 @@
 package connect.network.xhttp.entity;
 
-public enum XHttpResponseEntity {
+public enum XResponseEntity {
     FILE, BEAN();
 
     private Object entity;
 
-    XHttpResponseEntity() {
+    XResponseEntity() {
     }
 
-    public XHttpResponseEntity setEntity(Object entity) {
+    public XResponseEntity setEntity(Object entity) {
         this.entity = entity;
         return this;
     }

@@ -75,7 +75,7 @@ public class UdpWork<T extends UdpTask> extends BioNetWork<T> {
         UdpReceive receive = task.getReceive();
         if (receive != null) {
             try {
-                receive.onRead(task.getSocket());
+                receive.onRead();
             } catch (Throwable e) {
                 mFactory.removeTask(task);
                 e.printStackTrace();

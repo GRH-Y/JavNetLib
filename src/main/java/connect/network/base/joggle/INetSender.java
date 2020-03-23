@@ -1,6 +1,8 @@
 package connect.network.base.joggle;
 
 
+import java.io.IOException;
+
 /**
  * 发送者接口
  *
@@ -13,6 +15,6 @@ public interface INetSender {
      *
      * @param data
      */
-    void sendData(byte[] data);
+    void sendData(byte[] data) throws IOException;
 
 }

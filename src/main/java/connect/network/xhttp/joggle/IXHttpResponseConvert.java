@@ -1,7 +1,7 @@
 package connect.network.xhttp.joggle;
 
-import connect.network.xhttp.entity.XHttpRequest;
-import connect.network.xhttp.entity.XHttpResponse;
+import connect.network.xhttp.entity.XRequest;
+import connect.network.xhttp.entity.XResponse;
 
 public interface IXHttpResponseConvert {
 
@@ -12,5 +12,5 @@ public interface IXHttpResponseConvert {
      * @param response 请求返回的数据
      * @return
      */
-    Object handlerEntity(XHttpRequest request, XHttpResponse response);
+    void handlerEntity(XRequest request, XResponse response);
 }

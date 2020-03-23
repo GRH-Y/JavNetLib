@@ -3,6 +3,8 @@ package connect.network.udp;
 import connect.network.base.AbsNetEngine;
 import connect.network.base.AbsNetFactory;
 import connect.network.base.BaseNetWork;
+import connect.network.base.joggle.ISSLFactory;
+import connect.network.ssl.NioSSLFactory;
 import connect.network.tcp.BioEngine;
 
 public class UdpFactory extends AbsNetFactory<UdpTask> {
@@ -20,6 +22,11 @@ public class UdpFactory extends AbsNetFactory<UdpTask> {
     @Override
     protected BaseNetWork initNetWork() {
         return new UdpWork(this);
+    }
+
+    @Override
+    protected ISSLFactory initSSLFactory() throws Exception {
+        return new NioSSLFactory();
     }
 
     public synchronized static UdpFactory getFactory() {

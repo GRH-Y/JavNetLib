@@ -11,15 +11,9 @@ import java.util.Map;
  *
  * @author yyz
  */
-public class XHttpRequest {
+public class XRequest {
 
-    private boolean isDisableBaseUrl = false;
-
-    private String address = null;
-    private String referer = null;
-    private String host = null;
-    private String path = null;
-    private int port = 0;
+    private XUrlMedia httpUrlMedia;
     private RequestMode requestMode = RequestMode.GET;
 
     private byte[] sendData = null;
@@ -48,32 +42,8 @@ public class XHttpRequest {
      */
     private Object object;
 
-    public boolean isDisableBaseUrl() {
-        return isDisableBaseUrl;
-    }
-
-    public void setDisableBaseUrl(boolean enableBaseUrl) {
-        isDisableBaseUrl = enableBaseUrl;
-    }
-
-    public String getAddress() {
-        return address;
-    }
-
-    public String getHost() {
-        return host;
-    }
-
-    public String getPath() {
-        return path;
-    }
-
-    public String getReferer() {
-        return referer;
-    }
-
-    public int getPort() {
-        return port;
+    public XUrlMedia getUrl() {
+        return httpUrlMedia;
     }
 
     public RequestMode getRequestMode() {
@@ -104,29 +74,16 @@ public class XHttpRequest {
         return errorMethod;
     }
 
-
-    public void setAddress(String address) {
-        this.address = address;
-        int httpIndex = address.indexOf("://") + 3;
-        int index = address.indexOf("/", httpIndex);
-        if (index > 0) {
-            path = address.substring(index);
-        } else {
-            index = address.length();
-        }
-        host = address.substring(httpIndex, index);
-        referer = address.substring(0, index) + "/";
-        if (port == 0) {
-            if (address.startsWith("https")) {
-                port = 443;
-            } else {
-                port = 80;
-            }
-        }
+    public void setUrl(String url) {
+        setUrl(url, -1);
     }
 
-    public void setPort(int port) {
-        this.port = port;
+    public void setUrl(String url, int port) {
+        if (httpUrlMedia == null) {
+            httpUrlMedia = new XUrlMedia(url, port);
+        } else {
+            httpUrlMedia.reset(url, port);
+        }
     }
 
     public void setRequestMode(RequestMode requestMode) {
