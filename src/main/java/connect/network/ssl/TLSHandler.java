@@ -1,5 +1,6 @@
 package connect.network.ssl;
 
+import connect.network.base.joggle.ITLSHandler;
 import log.LogDog;
 
 import javax.net.ssl.SSLEngine;
@@ -9,7 +10,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
-public class TLSHandler {
+public class TLSHandler implements ITLSHandler {
 
     protected SSLEngine sslEngine;
     protected SocketChannel channel;
@@ -55,6 +56,7 @@ public class TLSHandler {
         return channel;
     }
 
+    @Override
     public void doHandshake() throws IOException {
 //        LogDog.d("==> getApplicationBufferSize = " + sslEngine.getSession().getApplicationBufferSize());
         SSLEngineResult.HandshakeStatus hsStatus = sslEngine.getHandshakeStatus();
@@ -85,6 +87,7 @@ public class TLSHandler {
         }
     }
 
+    @Override
     public ByteBuffer wrapAndWrite(ByteBuffer needWarp, ByteBuffer result) throws IOException {
         SSLEngineResult.Status status;
         result.clear();
@@ -118,6 +121,7 @@ public class TLSHandler {
         }
     }
 
+    @Override
     public void readAndUnwrap(ByteArrayOutputStream result, ByteBuffer unwrap, boolean isDoHandshake) throws IOException {
         SSLEngineResult.Status status;
         boolean isNotOk = true;

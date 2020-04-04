@@ -1,7 +1,7 @@
 package connect.network.xhttp;
 
 import connect.network.base.AbsNetFactory;
-import connect.network.base.joggle.INetReceive;
+import connect.network.base.joggle.INetReceiver;
 import connect.network.nio.NioClientTask;
 import connect.network.nio.NioSender;
 import connect.network.xhttp.entity.XRequest;
@@ -14,7 +14,6 @@ import connect.network.xhttp.joggle.IXHttpResponseConvert;
 import log.LogDog;
 import util.ReflectionCall;
 
-import javax.net.ssl.SSLEngine;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 
@@ -52,7 +51,7 @@ public class XHttpRequestTask extends NioClientTask {
     }
 
 
-    class ReceiveCallBack implements INetReceive<XResponse> {
+    class ReceiverCallBack implements INetReceiver<XResponse> {
 
         @Override
         public void onReceive(XResponse response, Exception e) {
@@ -90,26 +89,24 @@ public class XHttpRequestTask extends NioClientTask {
     }
 
     @Override
-    protected void onConnectCompleteChannel(boolean isConnect, SocketChannel channel, SSLEngine sslEngine) {
-        if (isConnect) {
-            ReceiveCallBack receiveCallBack = new ReceiveCallBack();
-            XUrlMedia httpUrlMedia = request.getUrl();
-            if (httpUrlMedia.isTSL()) {
-                setSender(new XHttpsSender(getTlsHandler()));
-                setReceive(new XHttpsReceive(getTlsHandler(), receiveCallBack));
-            } else {
-                setSender(new NioSender(channel));
-                setReceive(new XHttpReceive(receiveCallBack));
-            }
-            byte[] head = httpProtocol.toByte();
-            try {
-                getSender().sendData(head);
-                getSender().sendData(request.getSendData());
-            } catch (IOException e) {
-                netFactory.removeTask(this);
-            }
-            LogDog.d("==> head = " + new String(head));
+    protected void onConnectCompleteChannel(SocketChannel channel) {
+        ReceiverCallBack receiveCallBack = new ReceiverCallBack();
+        XUrlMedia httpUrlMedia = request.getUrl();
+        if (httpUrlMedia.isTSL()) {
+            setSender(new XHttpsSender(getTlsHandler()));
+            setReceive(new XHttpsReceiver(getTlsHandler(), receiveCallBack));
+        } else {
+            setSender(new NioSender(channel));
+            setReceive(new XHttpReceiver(receiveCallBack));
         }
+        byte[] head = httpProtocol.toByte();
+        try {
+            getSender().sendData(head);
+            getSender().sendData(request.getSendData());
+        } catch (IOException e) {
+            netFactory.removeTask(this);
+        }
+        LogDog.d("==> head = " + new String(head));
     }
 
 
@@ -121,7 +118,7 @@ public class XHttpRequestTask extends NioClientTask {
             netFactory.addTask(this);
             isRedirect = false;
         } else {
-            XHttpReceive receive = getReceive();
+            XHttpReceiver receive = getReceive();
             if (receive != null) {
                 receive.reset();
             }

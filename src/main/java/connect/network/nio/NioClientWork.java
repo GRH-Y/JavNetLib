@@ -77,19 +77,22 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
             //在没有注册过的情况下而且连接失败
             return;
         }
-        if (task.isTLS()) {
-            task.onHandshake(task.getSslEngine(), task.getSocketChannel());
-        }
-        try {
-            task.onConnectCompleteChannel(isConnect, task.getSocketChannel(), task.getSslEngine());
-        } catch (Throwable e) {
-            e.printStackTrace();
+        if (isConnect) {
+            if (task.isTLS()) {
+                task.onHandshake(task.getSslEngine(), task.getSocketChannel());
+            }
+            try {
+                task.onConnectCompleteChannel(task.getSocketChannel());
+            } catch (Throwable e) {
+                e.printStackTrace();
+            }
         }
         if (isReg && !isConnect) {
             //连接失败则移除任务
             mFactory.removeTaskInside(task, false);
         }
     }
+
 
     /**
      * 创建通道
@@ -129,9 +132,6 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
     public void onSelectionKey(SelectionKey selectionKey) {
         SocketChannel channel = (SocketChannel) selectionKey.channel();
         T task = (T) selectionKey.attachment();
-//        if (task.isTaskNeedClose()) {
-//            return;
-//        }
         boolean isCanConnect = selectionKey.isValid() && selectionKey.isConnectable();
         boolean isCanRead = selectionKey.isValid() && selectionKey.isReadable();
         if (isCanConnect) {
@@ -144,18 +144,20 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
                 try {
                     notifyConnect(isConnect, true, task);
                 } catch (Throwable e) {
-                    e.printStackTrace();
                     mFactory.removeTaskInside(task, false);
+                    e.printStackTrace();
                 }
             }
         } else if (isCanRead) {
-            NioReceive receive = task.getReceive();
+            NioReceiver receive = task.getReceive();
             if (receive != null) {
                 try {
                     receive.onRead(channel);
                 } catch (Throwable e) {
                     mFactory.removeTaskInside(task, false);
-                    LogDog.e("==> receive data has error = " + e.getMessage());
+                    if (!"java.io.IOException: SocketChannel close !!!".equals(e.getMessage())) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }
@@ -173,7 +175,6 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
         } catch (Throwable e) {
             e.printStackTrace();
         } finally {
-            task.setChannel(null);
             SSLEngine sslEngine = task.getSslEngine();
             if (sslEngine != null) {
                 try {

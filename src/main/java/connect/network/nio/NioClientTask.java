@@ -30,7 +30,7 @@ public class NioClientTask extends BaseNioNetTask {
 
     private NioSender sender = null;
 
-    private NioReceive receive = null;
+    private NioReceiver receive = null;
 
     public NioClientTask() {
     }
@@ -39,7 +39,7 @@ public class NioClientTask extends BaseNioNetTask {
         if (!channel.isOpen() || !channel.isConnected()) {
             throw new IllegalStateException("SocketChannel is bed !!! ");
         }
-        mChannel = channel;
+        this.mChannel = channel;
         this.sslEngine = sslEngine;
     }
 
@@ -49,7 +49,7 @@ public class NioClientTask extends BaseNioNetTask {
         this.sender = sender;
     }
 
-    public void setReceive(NioReceive receive) {
+    public void setReceive(NioReceiver receive) {
         this.receive = receive;
     }
 
@@ -112,7 +112,7 @@ public class NioClientTask extends BaseNioNetTask {
         return (T) sender;
     }
 
-    public <T extends NioReceive> T getReceive() {
+    public <T extends NioReceiver> T getReceive() {
         return (T) receive;
     }
 
@@ -122,11 +122,9 @@ public class NioClientTask extends BaseNioNetTask {
     /**
      * channel连接状态回调
      *
-     * @param isConnect
      * @param channel
-     * @param sslEngine
      */
-    protected void onConnectCompleteChannel(boolean isConnect, SocketChannel channel, SSLEngine sslEngine) throws Exception {
+    protected void onConnectCompleteChannel(SocketChannel channel) throws Exception {
     }
 
     /**

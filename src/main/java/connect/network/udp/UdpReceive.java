@@ -1,6 +1,6 @@
 package connect.network.udp;
 
-import connect.network.base.joggle.INetReceive;
+import connect.network.base.joggle.INetReceiver;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -8,10 +8,10 @@ import java.net.SocketTimeoutException;
 
 public class UdpReceive {
 
-    protected INetReceive mReceive;
+    protected INetReceiver mReceive;
     protected DatagramSocket socket = null;
 
-    public UdpReceive(INetReceive receive) {
+    public UdpReceive(INetReceiver receive) {
         this.mReceive = receive;
     }
 

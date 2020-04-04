@@ -33,11 +33,9 @@ public class NioSender implements INetSender {
     }
 
     protected void sendDataImp(byte[] data) throws IOException {
-        if (data == null) {
-            return;
+        if (channel != null && data != null) {
+            IoEnvoy.writeToFull(channel, data);
         }
-        channel.socket().setSendBufferSize(data.length);
-        IoEnvoy.writeToFull(channel, data);
     }
 
 }

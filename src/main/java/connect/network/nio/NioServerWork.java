@@ -32,18 +32,22 @@ public class NioServerWork<T extends NioServerTask> extends NioNetWork<T> {
         try {
             if (channel == null) {
                 channel = createChannel(task);
-            }
-            if (channel != null) {
-                //配置通道
-//                configChannel(task, channel);
-                try {
-                    task.onBootServerComplete(!task.isTaskNeedClose(), task.isTaskNeedClose() ? null : channel);
-                } catch (Throwable e) {
-                    e.printStackTrace();
+            } else {
+                if (!channel.isOpen() && channel.isRegistered()) {
+                    throw new IllegalStateException("channel is unavailable !!! ");
                 }
-                //注册通道
-                registerChannel(task, channel);
+                if (channel.isBlocking()) {
+                    // 设置为非阻塞
+                    channel.configureBlocking(false);
+                }
             }
+            try {
+                task.onBootServerComplete(channel);
+            } catch (Throwable e) {
+                e.printStackTrace();
+            }
+            //注册通道
+            registerChannel(task, channel);
         } catch (Throwable e) {
             LogDog.e("url = " + task.getServerHost() + " port = " + task.getServerHost());
             e.printStackTrace();
@@ -76,19 +80,10 @@ public class NioServerWork<T extends NioServerTask> extends NioNetWork<T> {
         }
     }
 
-//    private void configChannel(T task, ServerSocketChannel channel) throws SocketException {
-//        task.setServerSocketChannel(channel);
-//        channel.socket().setSoTimeout(task.getAcceptTimeout());
-//    }
-
     private void registerChannel(T task, ServerSocketChannel channel) throws ClosedChannelException {
-        if (channel.isOpen()) {
-            //注册监听链接事件
-            SelectionKey selectionKey = channel.register(mSelector, SelectionKey.OP_ACCEPT, task);
-            task.setSelectionKey(selectionKey);
-        } else {
-            mFactory.removeTaskInside(task, false);
-        }
+        //注册监听链接事件
+        SelectionKey selectionKey = channel.register(mSelector, SelectionKey.OP_ACCEPT, task);
+        task.setSelectionKey(selectionKey);
     }
 
     @Override

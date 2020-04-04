@@ -100,7 +100,7 @@ public class NioServerTask extends BaseNioNetTask {
 
     //---------------------------- on ---------------------------------------
 
-    protected void onBootServerComplete(boolean isSuccess, ServerSocketChannel channel) throws Exception {
+    protected void onBootServerComplete(ServerSocketChannel channel) throws Exception {
     }
 
     protected void onConfigSSLEngine(SSLEngine sslEngine) {

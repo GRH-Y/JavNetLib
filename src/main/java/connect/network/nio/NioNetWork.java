@@ -3,8 +3,9 @@ package connect.network.nio;
 import connect.network.base.BaseNetWork;
 
 import java.io.IOException;
-import java.net.Socket;
-import java.nio.channels.*;
+import java.nio.channels.SelectableChannel;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 import java.util.Iterator;
 
 public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T> {
@@ -116,20 +117,9 @@ public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T
         if (target.selectionKey != null) {
             try {
                 SelectableChannel channel = target.selectionKey.channel();
-                if (channel instanceof SocketChannel) {
-                    Socket socket = ((SocketChannel) channel).socket();
-                    if (socket.isConnected()) {
-                        socket.shutdownOutput();
-                        socket.shutdownInput();
-                        socket.close();
-                    }
-                } else if (channel instanceof ServerSocketChannel) {
-                    ServerSocketChannel serverSocketChannel = (ServerSocketChannel) channel;
-                    if (serverSocketChannel.isOpen()) {
-                        serverSocketChannel.socket().close();
-                    }
+                if (channel != null) {
+                    channel.close();
                 }
-                channel.close();
             } catch (Throwable e) {
                 e.printStackTrace();
             } finally {

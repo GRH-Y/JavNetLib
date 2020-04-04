@@ -5,7 +5,7 @@ package connect.network.base.joggle;
  *
  * @author yyz
  */
-public interface INetReceive<T> {
+public interface INetReceiver<T> {
 
     void onReceive(T data, Exception e);
 }

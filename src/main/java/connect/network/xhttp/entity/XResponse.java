@@ -1,23 +1,26 @@
 package connect.network.xhttp.entity;
 
-import connect.network.xhttp.XHttpProtocol;
+import connect.network.xhttp.ByteCacheStream;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class XResponse {
 
     private byte[] httpData = null;
-    private Map<String, String> httpHead = null;
+    private ByteCacheStream raw;
+
+    private Map<String, String> httpHead;
     private Object result = null;
+
+
+    public XResponse() {
+        raw = new ByteCacheStream();
+        httpHead = new LinkedHashMap<>();
+    }
 
     public void setHttpData(byte[] httpData) {
         this.httpData = httpData;
-    }
-
-    public void setHttpHead(Map<String, String> headMap) {
-        this.httpHead = headMap;
     }
 
     public byte[] getHttpData() {
@@ -28,51 +31,20 @@ public class XResponse {
         this.result = result;
     }
 
-    public byte[] getRawData() {
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        if (httpHead != null && !httpHead.isEmpty()) {
-            StringBuilder builder = new StringBuilder();
-            boolean isFirst = true;
-            for (Map.Entry<String, String> entry : httpHead.entrySet()) {
-                if (isFirst) {
-                    if (!XHttpProtocol.XY_FIST_LINE.equals(entry.getKey())) {
-                        builder.append(entry.getKey());
-                    }
-                    builder.append(entry.getValue());
-                    if (!entry.getValue().endsWith("\r\n")) {
-                        builder.append("\r\n");
-                    }
-                    isFirst = false;
-                } else {
-                    builder.append(entry.getKey()).append(": ").append(entry.getValue());
-                    if (!entry.getValue().endsWith("\r\n")) {
-                        builder.append("\r\n");
-                    }
-                }
-            }
-            builder.append("\r\n");
-            try {
-                stream.write(builder.toString().getBytes());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+    public void appendRawData(byte[] data) {
+        if (data != null) {
+            appendRawData(data, 0, data.length);
         }
-        byte[] data = null;
-        try {
-            if (httpData != null) {
-                stream.write(httpData);
-            }
-            data = stream.toByteArray();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                stream.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+    }
+
+    public void appendRawData(byte[] data, int off, int len) {
+        if (data != null) {
+            raw.write(data, off, len);
         }
-        return data;
+    }
+
+    public ByteCacheStream getRawData() {
+        return raw;
     }
 
     public <T> T getResult() {
@@ -95,6 +67,8 @@ public class XResponse {
         if (httpHead != null) {
             httpHead.clear();
         }
+        raw.reset();
+        result = null;
         httpData = null;
     }
 }

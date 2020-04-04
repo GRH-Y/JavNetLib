@@ -1,17 +1,17 @@
 package connect.network.tcp;
 
 
-import connect.network.base.joggle.INetReceive;
+import connect.network.base.joggle.INetReceiver;
 import util.IoEnvoy;
 
 import java.io.InputStream;
 
 public class TcpReceive {
 
-    protected INetReceive receive;
+    protected INetReceiver receive;
     protected InputStream stream = null;
 
-    public TcpReceive(INetReceive receive) {
+    public TcpReceive(INetReceiver receive) {
         this.receive = receive;
     }
 
