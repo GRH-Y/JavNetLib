@@ -94,6 +94,7 @@ public abstract class BaseNetWork<T extends BaseNetTask> {
     protected void onRecoveryTaskAll() {
     }
 
+    //------------------------------------------------------------------------------------
 
     protected boolean addConnectTask(T task) {
         boolean ret = false;
@@ -103,11 +104,10 @@ public abstract class BaseNetWork<T extends BaseNetTask> {
         return ret;
     }
 
-    //------------------------------------------------------------------------------------
-
     protected boolean addDestroyTask(T task) {
         boolean ret = false;
         if (task != null && !mDestroyCache.contains(task)) {
+            task.setTaskNeedClose(true);
             ret = mDestroyCache.add(task);
         }
         return ret;

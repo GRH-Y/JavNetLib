@@ -15,14 +15,10 @@ import java.nio.channels.SocketChannel;
 
 public class NioServerWork<T extends NioServerTask> extends NioNetWork<T> {
 
+    private ISSLFactory mSslFactory;
 
-    private NioServerFactory mFactory;
-
-    protected NioServerWork(NioServerFactory factory) {
-        if (factory == null) {
-            throw new IllegalArgumentException("NioServerWork factory can not be null !");
-        }
-        this.mFactory = factory;
+    protected NioServerWork(ISSLFactory factory) {
+        this.mSslFactory = factory;
     }
 
     @Override
@@ -51,7 +47,7 @@ public class NioServerWork<T extends NioServerTask> extends NioNetWork<T> {
         } catch (Throwable e) {
             LogDog.e("url = " + task.getServerHost() + " port = " + task.getServerHost());
             e.printStackTrace();
-            mFactory.removeTaskInside(task, false);
+            addDestroyTask(task);
         }
     }
 
@@ -64,9 +60,8 @@ public class NioServerWork<T extends NioServerTask> extends NioNetWork<T> {
     }
 
     private void initSSLConnect(T task) throws SSLException {
-        ISSLFactory sslFactory = mFactory.getSslFactory();
-        if (sslFactory != null) {
-            SSLContext sslContext = sslFactory.getSSLContext();
+        if (mSslFactory != null) {
+            SSLContext sslContext = mSslFactory.getSSLContext();
             SSLEngine sslEngine = sslContext.createSSLEngine();
             sslEngine.setUseClientMode(false);
             sslEngine.setEnableSessionCreation(true);

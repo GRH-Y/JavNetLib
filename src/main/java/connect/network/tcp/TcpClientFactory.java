@@ -10,10 +10,6 @@ public class TcpClientFactory<T extends TcpClientTask> extends AbsNetFactory<T> 
 
     private static TcpClientFactory mFactory;
 
-
-    public TcpClientFactory() {
-    }
-
     @Override
     protected AbsNetEngine initNetEngine() {
         return new BioEngine(this, getNetWork());
@@ -25,13 +21,8 @@ public class TcpClientFactory<T extends TcpClientTask> extends AbsNetFactory<T> 
     }
 
     @Override
-    protected ISSLFactory initSSLFactory() throws Exception {
+    protected ISSLFactory initSSLFactory() {
         return new NioSSLFactory();
-    }
-
-    @Override
-    protected ISSLFactory getSslFactory() {
-        return super.getSslFactory();
     }
 
     public synchronized static TcpClientFactory getFactory() {

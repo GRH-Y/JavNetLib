@@ -1,16 +1,12 @@
 package connect.network.nio;
 
 import connect.network.base.AbsNetEngine;
-import connect.network.base.AbsNetFactory;
 
 public class NioEngine extends AbsNetEngine {
 
-    protected AbsNetFactory mFactory;
-
     protected NioNetWork mWork;
 
-    public NioEngine(AbsNetFactory factory, NioNetWork work) {
-        this.mFactory = factory;
+    public NioEngine(NioNetWork work) {
         this.mWork = work;
     }
 
@@ -31,11 +27,7 @@ public class NioEngine extends AbsNetEngine {
 
     @Override
     protected void resumeEngine() {
-        resumeEngine(true);
-    }
-
-    protected void resumeEngine(boolean isNeedWakeup) {
-        if (isNeedWakeup && mWork.getSelector() != null) {
+        if (mWork.getSelector() != null) {
             mWork.getSelector().wakeup();
         }
     }
@@ -45,4 +37,9 @@ public class NioEngine extends AbsNetEngine {
         mWork.onRecoveryTaskAll();
     }
 
+    @Override
+    protected void stopEngine() {
+        resumeEngine();
+        super.stopEngine();
+    }
 }

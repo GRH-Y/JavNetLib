@@ -25,7 +25,7 @@ public class UdpFactory extends AbsNetFactory<UdpTask> {
     }
 
     @Override
-    protected ISSLFactory initSSLFactory() throws Exception {
+    protected ISSLFactory initSSLFactory(){
         return new NioSSLFactory();
     }
 

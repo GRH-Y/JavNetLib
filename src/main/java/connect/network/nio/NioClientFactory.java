@@ -40,25 +40,24 @@ public class NioClientFactory extends AbsNetFactory<NioClientTask> {
     }
 
 
+    //--------------------------- start init-----------------------------------------------
     @Override
-    protected AbsNetEngine initNetEngine() {
-        return new NioEngine(this, getNetWork());
-    }
-
-    @Override
-    protected BaseNetWork initNetWork() {
-        return new NioClientWork(this);
-    }
-
-    @Override
-    protected ISSLFactory initSSLFactory() throws Exception {
+    protected ISSLFactory initSSLFactory() {
         return new NioSSLFactory();
     }
 
     @Override
-    protected ISSLFactory getSslFactory() {
-        return super.getSslFactory();
+    protected BaseNetWork initNetWork() {
+        return new NioClientWork(getSslFactory());
     }
+
+    @Override
+    protected AbsNetEngine initNetEngine() {
+        return new NioEngine(getNetWork());
+    }
+
+    //--------------------------- end init-----------------------------------------------
+
 
     @Override
     public boolean addTask(NioClientTask task) {
@@ -74,19 +73,4 @@ public class NioClientFactory extends AbsNetFactory<NioClientTask> {
             super.removeTask(task);
         }
     }
-
-    @Override
-    protected boolean removeTaskInside(NioClientTask task, boolean isNeedWakeup) {
-        return super.removeTaskInside(task, isNeedWakeup);
-    }
-
-    @Override
-    public void close() {
-        NioClientWork nioNetWork = getNetWork();
-        if (nioNetWork != null && nioNetWork.getSelector() != null) {
-            nioNetWork.getSelector().wakeup();
-        }
-        super.close();
-    }
-
 }

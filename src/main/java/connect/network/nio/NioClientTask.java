@@ -5,7 +5,6 @@ import connect.network.ssl.TLSHandler;
 import util.StringEnvoy;
 
 import javax.net.ssl.SSLEngine;
-import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
 /**
@@ -68,17 +67,6 @@ public class NioClientTask extends BaseNioNetTask {
         this.mHost = host;
         this.mPort = port;
         this.isTLS = isTLS;
-    }
-
-
-    @Override
-    protected void setSelectionKey(SelectionKey selectionKey) {
-        super.setSelectionKey(selectionKey);
-    }
-
-    @Override
-    protected SelectionKey getSelectionKey() {
-        return super.getSelectionKey();
     }
 
     //---------------------------- get ---------------------------------------

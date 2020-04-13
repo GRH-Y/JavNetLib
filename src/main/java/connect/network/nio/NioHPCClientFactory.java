@@ -45,6 +45,6 @@ public class NioHPCClientFactory extends NioClientFactory {
 
     @Override
     protected AbsNetEngine initNetEngine() {
-        return new NioHighPcEngine(this, getNetWork());
+        return new NioHighPcEngine(getNetWork());
     }
 }

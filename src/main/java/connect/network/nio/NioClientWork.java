@@ -14,14 +14,10 @@ import java.nio.channels.SocketChannel;
 
 public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
 
+    private ISSLFactory mSslFactory;
 
-    private NioClientFactory mFactory;
-
-    protected NioClientWork(NioClientFactory factory) {
-        if (factory == null) {
-            throw new IllegalArgumentException("NioClientWork factory can not be null !");
-        }
-        this.mFactory = factory;
+    protected NioClientWork(ISSLFactory factory) {
+        this.mSslFactory = factory;
     }
 
 
@@ -54,7 +50,8 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
         } catch (Throwable e) {
             LogDog.e("url = " + task.getHost() + " port = " + task.getPort());
             e.printStackTrace();
-            mFactory.removeTaskInside(task, false);
+            //该通道有异常，结束任务
+            addDestroyTask(task);
         }
     }
 
@@ -88,8 +85,8 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
             }
         }
         if (isReg && !isConnect) {
-            //连接失败则移除任务
-            mFactory.removeTaskInside(task, false);
+            //连接失败则结束任务
+            addDestroyTask(task);
         }
     }
 
@@ -110,9 +107,8 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
 
     private void initSSLConnect(T task) throws IOException {
         if (task.isTLS()) {
-            ISSLFactory sslFactory = mFactory.getSslFactory();
-            if (sslFactory != null) {
-                SSLContext sslContext = sslFactory.getSSLContext();
+            if (mSslFactory != null) {
+                SSLContext sslContext = mSslFactory.getSSLContext();
                 SSLEngine sslEngine = sslContext.createSSLEngine(task.getHost(), task.getPort());
                 sslEngine.setUseClientMode(true);
                 sslEngine.setEnableSessionCreation(true);
@@ -144,7 +140,7 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
                 try {
                     notifyConnect(isConnect, true, task);
                 } catch (Throwable e) {
-                    mFactory.removeTaskInside(task, false);
+                    addDestroyTask(task);
                     e.printStackTrace();
                 }
             }
@@ -154,7 +150,7 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
                 try {
                     receive.onRead(channel);
                 } catch (Throwable e) {
-                    mFactory.removeTaskInside(task, false);
+                    addDestroyTask(task);
                     if (!"java.io.IOException: SocketChannel close !!!".equals(e.getMessage())) {
                         e.printStackTrace();
                     }

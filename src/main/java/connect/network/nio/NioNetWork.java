@@ -12,16 +12,12 @@ public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T
 
     protected Selector mSelector;
 
-    protected NioNetWork() {
-        init();
-    }
-
     protected void init() {
         if (mSelector == null) {
             try {
                 mSelector = Selector.open();
             } catch (IOException e) {
-                throw new IllegalArgumentException(e.getMessage());
+                throw new IllegalArgumentException(e);
             }
         }
     }
@@ -128,5 +124,4 @@ public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T
         }
         onRecoveryTask(target);
     }
-
 }

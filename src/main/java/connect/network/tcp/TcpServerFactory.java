@@ -7,12 +7,8 @@ import connect.network.base.joggle.ISSLFactory;
 import connect.network.ssl.NioSSLFactory;
 
 public class TcpServerFactory extends AbsNetFactory<TcpServerTask> {
+
     private static TcpServerFactory mFactory;
-
-    private ISSLFactory mSslFactory = null;
-
-    public TcpServerFactory() {
-    }
 
     @Override
     protected AbsNetEngine initNetEngine() {
@@ -25,7 +21,7 @@ public class TcpServerFactory extends AbsNetFactory<TcpServerTask> {
     }
 
     @Override
-    protected ISSLFactory initSSLFactory() throws Exception {
+    protected ISSLFactory initSSLFactory() {
         return new NioSSLFactory();
     }
 
@@ -39,15 +35,5 @@ public class TcpServerFactory extends AbsNetFactory<TcpServerTask> {
             }
         }
         return mFactory;
-    }
-
-    public void setSSlFactory(ISSLFactory sslFactory) {
-        if (sslFactory != null) {
-            this.mSslFactory = sslFactory;
-        }
-    }
-
-    protected ISSLFactory getSslFactory() {
-        return mSslFactory;
     }
 }

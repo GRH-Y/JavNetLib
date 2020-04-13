@@ -29,6 +29,7 @@ public class NioReceiver<T> {
      * @return 如果返回false则会关闭该链接
      */
     protected void onRead(SocketChannel channel) throws Exception {
+
         byte[] data = null;
         Exception exception = null;
         try {

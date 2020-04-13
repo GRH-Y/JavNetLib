@@ -1,6 +1,5 @@
 package connect.network.nio;
 
-import connect.network.base.AbsNetFactory;
 import task.executor.TaskContainer;
 import task.executor.TaskExecutorPoolManager;
 import task.executor.joggle.ITaskContainer;
@@ -23,8 +22,8 @@ public class NioHighPcEngine<T extends BaseNioNetTask> extends NioEngine {
 
     private long rootEngineTag = 0;
 
-    public NioHighPcEngine(AbsNetFactory factory, NioNetWork<T> work) {
-        super(factory, work);
+    public NioHighPcEngine(NioNetWork<T> work) {
+        super(work);
     }
 
     public void setThreadCount(int threadCount) {

@@ -4,7 +4,6 @@ package connect.network.nio;
 import util.StringEnvoy;
 
 import javax.net.ssl.SSLEngine;
-import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
@@ -61,11 +60,6 @@ public class NioServerTask extends BaseNioNetTask {
 
     public void setAcceptTimeout(int acceptTimeout) {
         this.acceptTimeout = acceptTimeout;
-    }
-
-    @Override
-    protected void setSelectionKey(SelectionKey selectionKey) {
-        super.setSelectionKey(selectionKey);
     }
 
     //---------------------------- get ---------------------------------------

@@ -7,15 +7,18 @@ import javax.net.ServerSocketFactory;
 import javax.net.ssl.*;
 import java.io.FileInputStream;
 import java.security.KeyStore;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 
 public class NioSSLFactory implements ISSLFactory {
     private SSLContext sslContext;
 
-    public NioSSLFactory() throws NoSuchAlgorithmException {
-        sslContext = SSLContext.getDefault();
+    public NioSSLFactory(){
+        try {
+            sslContext = SSLContext.getDefault();
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     /**

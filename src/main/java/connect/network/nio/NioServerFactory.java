@@ -41,21 +41,21 @@ public class NioServerFactory extends AbsNetFactory<NioServerTask> {
 
     @Override
     protected AbsNetEngine initNetEngine() {
-        return new NioEngine(this, getNetWork());
+        return new NioEngine(getNetWork());
     }
 
     @Override
     protected BaseNetWork<NioServerTask> initNetWork() {
-        return new NioServerWork(this);
+        return new NioServerWork(getSslFactory());
     }
 
     @Override
-    protected ISSLFactory initSSLFactory() throws Exception {
+    protected ISSLFactory initSSLFactory() {
         return new NioSSLFactory();
     }
 
     @Override
-    protected ISSLFactory getSslFactory() {
+    public ISSLFactory getSslFactory() {
         return super.getSslFactory();
     }
 
@@ -74,10 +74,6 @@ public class NioServerFactory extends AbsNetFactory<NioServerTask> {
         }
     }
 
-    @Override
-    protected boolean removeTaskInside(NioServerTask task, boolean isNeedWakeup) {
-        return super.removeTaskInside(task, isNeedWakeup);
-    }
 
     @Override
     public void close() {
