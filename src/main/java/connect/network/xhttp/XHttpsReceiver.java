@@ -3,16 +3,12 @@ package connect.network.xhttp;
 import connect.network.base.joggle.INetReceiver;
 import connect.network.ssl.TLSHandler;
 
-import javax.net.ssl.SSLEngine;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 public class XHttpsReceiver extends XHttpReceiver {
 
     protected TLSHandler tlsHandler;
-    protected SSLEngine sslEngine;
-    protected ByteBuffer receiveBuffer;
-    protected ByteCacheStream result;
 
     public XHttpsReceiver(TLSHandler tlsHandler, INetReceiver receive) {
         super(receive);
@@ -20,22 +16,37 @@ public class XHttpsReceiver extends XHttpReceiver {
             throw new IllegalArgumentException("tlsHandler is null !!!");
         }
         this.tlsHandler = tlsHandler;
-        this.sslEngine = tlsHandler.getSslEngine();
-        this.receiveBuffer = tlsHandler.newApplicationBuffer();
-        this.result = new ByteCacheStream();
+    }
+
+    @Override
+    protected void init() {
     }
 
     @Override
     protected void onRead(SocketChannel channel) throws Exception {
-        result.reset();
-        receiveBuffer.clear();
         Exception exception = null;
+        ByteBuffer buffer = null;
         try {
-            tlsHandler.readAndUnwrap(result, receiveBuffer, false);
+            buffer = tlsHandler.readAndUnwrap(channel, false);
         } catch (Exception e) {
             exception = e;
+            throw e;
         } finally {
-            onHttpReceive(result.getBuf(), result.size(), exception);
+            byte[] data = null;
+            if (buffer != null && buffer.position() > 0) {
+                buffer.flip();
+                data = new byte[buffer.limit()];
+                buffer.get(data, 0, data.length);
+            }
+            try {
+                onHttpReceive(data, data != null ? data.length : -1, exception);
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                if (buffer != null) {
+                    buffer.clear();
+                }
+            }
         }
     }
 

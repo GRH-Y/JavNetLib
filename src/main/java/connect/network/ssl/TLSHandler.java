@@ -1,11 +1,11 @@
 package connect.network.ssl;
 
 import connect.network.base.joggle.ITLSHandler;
-import log.LogDog;
+import util.DirectBufferCleaner;
+import util.IoEnvoy;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
@@ -13,57 +13,32 @@ import java.nio.channels.SocketChannel;
 public class TLSHandler implements ITLSHandler {
 
     protected SSLEngine sslEngine;
-    protected SocketChannel channel;
 
-    private ByteBuffer netSendBuffer;
-    private ByteBuffer netReceiveBuffer;
-    private ByteBuffer netAppDataBuffer;
+    protected ByteBuffer sendBuffer;
+    protected ByteBuffer receiveBuffer;
+    protected ByteBuffer appDataBuffer;
 
-    public TLSHandler(SSLEngine engine, SocketChannel channel) {
-        this.channel = channel;
+    public TLSHandler(SSLEngine engine) {
         this.sslEngine = engine;
-        this.netSendBuffer = newPacketBuffer();
-        this.netReceiveBuffer = newPacketBuffer();
-        this.netAppDataBuffer = newApplicationBuffer();
-//        LogDog.d("==> getPacketBufferSize = " + sslEngine.getSession().getPacketBufferSize());
+        this.sendBuffer = newPacketBuffer();
+        this.receiveBuffer = newPacketBuffer();
+        this.appDataBuffer = newApplicationBuffer(0);
     }
 
-    protected ByteBuffer getNetSendBuffer() {
-        return netSendBuffer;
+    private ByteBuffer newPacketBuffer() {
+        return ByteBuffer.allocateDirect(sslEngine.getSession().getPacketBufferSize());
     }
 
-    protected ByteBuffer getNetReceiveBuffer() {
-        return netReceiveBuffer;
-    }
-
-    protected ByteBuffer getNetAppDataBuffer() {
-        return netAppDataBuffer;
-    }
-
-    public ByteBuffer newPacketBuffer() {
-        return ByteBuffer.allocate(sslEngine.getSession().getPacketBufferSize());
-    }
-
-    public ByteBuffer newApplicationBuffer() {
-        return ByteBuffer.allocate(sslEngine.getSession().getApplicationBufferSize());
-    }
-
-    public SSLEngine getSslEngine() {
-        return sslEngine;
-    }
-
-    public SocketChannel getChannel() {
-        return channel;
+    private ByteBuffer newApplicationBuffer(int exSize) {
+        return ByteBuffer.allocateDirect(sslEngine.getSession().getApplicationBufferSize() + exSize);
     }
 
     @Override
-    public void doHandshake() throws IOException {
-//        LogDog.d("==> getApplicationBufferSize = " + sslEngine.getSession().getApplicationBufferSize());
+    public void doHandshake(SocketChannel channel) throws IOException {
         SSLEngineResult.HandshakeStatus hsStatus = sslEngine.getHandshakeStatus();
         while (hsStatus != SSLEngineResult.HandshakeStatus.FINISHED && hsStatus != SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING) {
             switch (hsStatus) {
                 case NEED_TASK:
-//                    LogDog.d("==> doHandshake NEED_TASK !!! ");
                     do {
                         Runnable task = sslEngine.getDelegatedTask();
                         if (task == null) {
@@ -73,144 +48,85 @@ public class TLSHandler implements ITLSHandler {
                     } while (true);
                     break;
                 case NEED_WRAP:
-//                    LogDog.d("==> doHandshake NEED_WRAP !!! ");
-                    netSendBuffer = wrapAndWrite(netAppDataBuffer, netSendBuffer);
-                    netAppDataBuffer.clear();
+//                    LogDog.d("doHandshake NEED_WRAP");
+                    wrapAndWrite(channel, appDataBuffer);
                     break;
                 case NEED_UNWRAP:
-//                    LogDog.d("==> doHandshake NEED_UNWRAP !!! ");
-                    readAndUnwrap(null, netAppDataBuffer, true);
-                    netAppDataBuffer.clear();
+//                    LogDog.d("doHandshake NEED_UNWRAP");
+                    readAndUnwrap(channel, true);
                     break;
             }
             hsStatus = sslEngine.getHandshakeStatus();
         }
+        receiveBuffer.clear();
     }
 
     @Override
-    public ByteBuffer wrapAndWrite(ByteBuffer needWarp, ByteBuffer result) throws IOException {
-        SSLEngineResult.Status status;
-        result.clear();
-        boolean isNotOk = true;
+    public void wrapAndWrite(SocketChannel channel, ByteBuffer warp) throws IOException {
         do {
-            status = sslEngine.wrap(needWarp, result).getStatus();
-//            if (status == SSLEngineResult.Status.BUFFER_OVERFLOW) {
-//                LogDog.d("==> SSLEngineResult = BUFFER_OVERFLOW ");
-//                //SSLEngine无法处理操作，result 缓冲区中没有足够的可用字节来保存结果,则需要创建更大result缓冲区
-//                DirectBufferCleaner.clean(result);
-//                result = enlargePacketBuffer(sslEngine, result);
-//            } else
-            if (status == SSLEngineResult.Status.CLOSED) {
-                LogDog.d("==> SSLEngineResult = CLOSED ");
-                throw new IOException("SSLEngine Closed");
-            } else if (status == SSLEngineResult.Status.OK) {
-                isNotOk = false;
-                flush(result);
+            SSLEngineResult.Status status = sslEngine.wrap(warp, sendBuffer).getStatus();
+            switch (status) {
+                case CLOSED:
+                    throw new IOException("SSLEngine Closed");
+                case BUFFER_OVERFLOW:
+                    ByteBuffer newBuffer = newApplicationBuffer(sendBuffer.position());
+                    sendBuffer.flip();
+                    newBuffer.put(sendBuffer);
+                    DirectBufferCleaner.clean(sendBuffer);
+                    sendBuffer = newBuffer;
+                    break;
+                case OK:
+                    sendBuffer.flip();
+                    IoEnvoy.writeToFull(channel, sendBuffer);
+                    sendBuffer.clear();
+                    return;
             }
-        } while (isNotOk);
-        return result;
-    }
-
-    private void flush(ByteBuffer des) throws IOException {
-        des.flip();
-        while (des.hasRemaining()) {
-            int ret = channel.write(des);
-            if (ret < 0) {
-                throw new IOException(" SSL Channel is close !!! ");
-            }
-        }
+        } while (true);
     }
 
     @Override
-    public void readAndUnwrap(ByteArrayOutputStream result, ByteBuffer unwrap, boolean isDoHandshake) throws IOException {
-        SSLEngineResult.Status status;
-        boolean isNotOk = true;
+    public ByteBuffer readAndUnwrap(SocketChannel channel, boolean isDoHandshake) throws IOException {
         do {
-            int ret = channel.read(netReceiveBuffer);
+            int ret = channel.read(receiveBuffer);
             if (ret < 0) {
-                if (result != null) {
-                    result.write(unwrap.array(), 0, unwrap.position());
-                }
-                break;
+                throw new IOException("SocketChannel close !!!");
             }
-            netReceiveBuffer.flip();
-            status = sslEngine.unwrap(netReceiveBuffer, unwrap).getStatus();
-            netReceiveBuffer.compact();
-
-            if (status == SSLEngineResult.Status.BUFFER_OVERFLOW) {
-//                LogDog.d("==> SSLEngineResult = BUFFER_OVERFLOW ");
-                if (result != null) {
-                    result.write(unwrap.array(), 0, unwrap.position());
-                }
-                unwrap.clear();
-            }
-//            else if (status == SSLEngineResult.Status.BUFFER_UNDERFLOW) {
-//                //没有足够的数据从通道读取需要从套接字读取更多
-//                //SSLEngine无法解开传入的数据，因为没有足够的源字节可用来创建完整的数据包。
-//                if (!isDoHandshake) {
-//                    LogDog.d("==> SSLEngineResult = BUFFER_UNDERFLOW ");
-//                }
-////                netReceiveBuffer = handleBufferUnderflow(sslEngine, netReceiveBuffer);
-////                unwrap.clear();
+//            else if (ret == 0 && receiveBuffer.position() == 0) {
+//                return appDataBuffer;
 //            }
-            else if (status == SSLEngineResult.Status.CLOSED) {
-                LogDog.d("==> SSLEngineResult = CLOSED ");
-                throw new IOException("SSLEngine Closed");
-            } else if (status == SSLEngineResult.Status.OK && isDoHandshake || netReceiveBuffer.position() == 0) {
-                if (result != null) {
-                    result.write(unwrap.array(), 0, unwrap.position());
-                }
-                isNotOk = false;
+            receiveBuffer.flip();
+            SSLEngineResult.Status status = sslEngine.unwrap(receiveBuffer, appDataBuffer).getStatus();
+            receiveBuffer.compact();
+            // case BUFFER_UNDERFLOW:
+            //不能对传入的数据解包，因为没有足够的源字节可以用来生成一个完整的包。
+            switch (status) {
+                case CLOSED:
+                    throw new IOException("SSLEngine Closed");
+                case BUFFER_OVERFLOW:
+                    //SSLEngine 不能进行该操作，因为在目标缓冲区没有足够的字节空间可以容纳结果。
+//                    LogDog.d("==> readAndUnwrap BUFFER_OVERFLOW !!! ");
+                    ByteBuffer newBuffer = newApplicationBuffer(appDataBuffer.position());
+                    appDataBuffer.flip();
+                    newBuffer.put(appDataBuffer);
+                    DirectBufferCleaner.clean(appDataBuffer);
+                    appDataBuffer = newBuffer;
+                    break;
+                case OK:
+                    if (isDoHandshake || receiveBuffer.position() == 0) {
+                        return appDataBuffer;
+                    }
+                    break;
             }
-        } while (isNotOk);
+        } while (true);
+    }
+
+    public void release() {
+        DirectBufferCleaner.clean(sendBuffer);
+        DirectBufferCleaner.clean(receiveBuffer);
+        DirectBufferCleaner.clean(appDataBuffer);
+        sslEngine = null;
     }
 
     //-------------------------------------------------------------------------------------------------------------------------
 
-//    protected ByteBuffer enlargePacketBuffer(SSLEngine engine, ByteBuffer buffer) {
-//        return enlargeBuffer(buffer, engine.getSession().getPacketBufferSize());
-//    }
-//
-//    protected ByteBuffer enlargeApplicationBuffer(SSLEngine engine, ByteBuffer buffer) {
-//        return enlargeBuffer(buffer, engine.getSession().getApplicationBufferSize());
-//    }
-//
-//    /**
-//     * Compares <code> sessionProposedCapacity <code> with buffer's capacity. If buffer's capacity is smaller,
-//     * returns a buffer with the proposed capacity. If it's equal or larger, returns a buffer
-//     * with capacity twice the size of the initial one.
-//     *
-//     * @param buffer                  - the buffer to be enlarged.
-//     * @param sessionProposedCapacity - the minimum size of the new buffer
-//     * @return A new buffer with a larger capacity.
-//     */
-//    protected ByteBuffer enlargeBuffer(ByteBuffer buffer, int sessionProposedCapacity) {
-//        if (sessionProposedCapacity > buffer.capacity()) {
-//            buffer = ByteBuffer.allocate(sessionProposedCapacity);
-//        } else {
-//            buffer = ByteBuffer.allocate(buffer.capacity() * 2);
-//        }
-//        return buffer;
-//    }
-//
-//    /**
-//     * Handles {@link SSLEngineResult.Status#BUFFER_UNDERFLOW}. Will check if the buffer is already filled, and if there is no space problem
-//     * will return the same buffer, so the client tries to read again. If the buffer is already filled will try to enlarge the buffer either to
-//     * session's proposed size or to a larger capacity. A buffer underflow can happen only after an unwrap, so the buffer will always be a
-//     * peerNetData buffer.
-//     *
-//     * @param buffer - will always be peerNetData buffer.
-//     * @param engine - the engine used for encryption/decryption of the data exchanged between the two peers.
-//     * @return The same buffer if there is no space problem or a new buffer with the same data but more space.
-//     */
-//    protected ByteBuffer handleBufferUnderflow(SSLEngine engine, ByteBuffer buffer) {
-//        if (engine.getSession().getPacketBufferSize() < buffer.limit()) {
-//            return buffer;
-//        } else {
-//            ByteBuffer replaceBuffer = enlargePacketBuffer(engine, buffer);
-//            buffer.flip();
-//            replaceBuffer.put(buffer);
-//            return replaceBuffer;
-//        }
-//    }
 }

@@ -2,33 +2,39 @@ package connect.network.xhttp;
 
 import connect.network.nio.NioSender;
 import connect.network.ssl.TLSHandler;
+import util.DirectBufferCleaner;
 
-import javax.net.ssl.SSLEngine;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 
 public class XHttpsSender extends NioSender {
 
     protected TLSHandler tlsHandler;
-    protected SSLEngine sslEngine;
-    protected ByteBuffer sendBuffer;
 
-    public XHttpsSender(TLSHandler tlsHandler) {
+    public XHttpsSender(TLSHandler tlsHandler, SocketChannel channel) {
         if (tlsHandler == null) {
             throw new IllegalArgumentException("tlsHandler is null !!!");
         }
         this.tlsHandler = tlsHandler;
-        this.sslEngine = tlsHandler.getSslEngine();
-        this.channel = tlsHandler.getChannel();
-        sendBuffer = tlsHandler.newPacketBuffer();
+        this.channel = channel;
     }
 
     @Override
     protected void sendDataImp(byte[] data) throws IOException {
-        if (data == null) {
+        if (data == null || data.length == 0) {
             return;
         }
-        ByteBuffer appDataBuffer = ByteBuffer.wrap(data);
-        sendBuffer = tlsHandler.wrapAndWrite(appDataBuffer, sendBuffer);
+        ByteBuffer appDataBuffer = ByteBuffer.allocateDirect(data.length);
+        appDataBuffer.put(data);
+        appDataBuffer.flip();
+        try {
+            tlsHandler.wrapAndWrite(channel, appDataBuffer);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        } finally {
+            DirectBufferCleaner.clean(appDataBuffer);
+        }
     }
 }

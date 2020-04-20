@@ -93,7 +93,7 @@ public class XHttpRequestTask extends NioClientTask {
         ReceiverCallBack receiveCallBack = new ReceiverCallBack();
         XUrlMedia httpUrlMedia = request.getUrl();
         if (httpUrlMedia.isTSL()) {
-            setSender(new XHttpsSender(getTlsHandler()));
+            setSender(new XHttpsSender(getTlsHandler(), channel));
             setReceive(new XHttpsReceiver(getTlsHandler(), receiveCallBack));
         } else {
             setSender(new NioSender(channel));
@@ -112,16 +112,16 @@ public class XHttpRequestTask extends NioClientTask {
 
     @Override
     protected void onRecovery() {
+        XHttpReceiver receive = getReceive();
+        if (receive != null) {
+            receive.reset();
+        }
         if (isRedirect) {
             //是否是重定向
             setTaskNeedClose(false);
             netFactory.addTask(this);
             isRedirect = false;
         } else {
-            XHttpReceiver receive = getReceive();
-            if (receive != null) {
-                receive.reset();
-            }
             //移除任务记录
             XHttpRequestTaskManger.getInstance().removerTask(request.toString());
         }

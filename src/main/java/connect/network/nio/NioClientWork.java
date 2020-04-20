@@ -2,11 +2,11 @@ package connect.network.nio;
 
 
 import connect.network.base.joggle.ISSLFactory;
+import connect.network.ssl.TLSHandler;
 import log.LogDog;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLSession;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
@@ -38,7 +38,7 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
                 //如果是TLS初始化SSLEngine
                 initSSLConnect(task);
             } else {
-                if (!channel.isOpen() && channel.isRegistered()) {
+                if (!channel.isOpen() || channel.isRegistered()) {
                     throw new IllegalStateException("channel is unavailable !!! ");
                 }
                 if (channel.isBlocking()) {
@@ -112,8 +112,8 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
                 SSLEngine sslEngine = sslContext.createSSLEngine(task.getHost(), task.getPort());
                 sslEngine.setUseClientMode(true);
                 sslEngine.setEnableSessionCreation(true);
-                sslEngine.beginHandshake();
                 task.setSslEngine(sslEngine);
+//                sslEngine.beginHandshake();
             }
         }
     }
@@ -151,7 +151,7 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
                     receive.onRead(channel);
                 } catch (Throwable e) {
                     addDestroyTask(task);
-                    if (!"java.io.IOException: SocketChannel close !!!".equals(e.getMessage())) {
+                    if (!"SocketChannel close !!!".equals(e.getMessage())) {
                         e.printStackTrace();
                     }
                 }
@@ -171,23 +171,15 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
         } catch (Throwable e) {
             e.printStackTrace();
         } finally {
-            SSLEngine sslEngine = task.getSslEngine();
-            if (sslEngine != null) {
-                try {
-                    SSLSession handSession = sslEngine.getHandshakeSession();
-                    if (handSession != null) {
-                        handSession.invalidate();
-                    }
-                    SSLSession sslSession = sslEngine.getSession();
-                    if (sslSession != null) {
-                        sslSession.invalidate();
-                    }
-                    sslEngine.closeOutbound();
-//                    sslEngine.closeInbound();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+            TLSHandler tlsHandler = task.getTlsHandler();
+            if (tlsHandler != null) {
+                tlsHandler.release();
             }
+            NioReceiver receiver = task.getReceive();
+            if (receiver != null) {
+                receiver.onRelease();
+            }
+            task.setChannel(null);
         }
     }
 

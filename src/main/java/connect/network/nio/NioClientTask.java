@@ -23,8 +23,6 @@ public class NioClientTask extends BaseNioNetTask {
 
     private SocketChannel mChannel = null;
 
-    private SSLEngine sslEngine = null;
-
     private TLSHandler tlsHandler = null;
 
     private NioSender sender = null;
@@ -39,7 +37,7 @@ public class NioClientTask extends BaseNioNetTask {
             throw new IllegalStateException("SocketChannel is bed !!! ");
         }
         this.mChannel = channel;
-        this.sslEngine = sslEngine;
+        setSslEngine(sslEngine);
     }
 
     //---------------------------- set ---------------------------------------
@@ -56,9 +54,6 @@ public class NioClientTask extends BaseNioNetTask {
         this.mChannel = channel;
     }
 
-    protected void setSslEngine(SSLEngine sslEngine) {
-        this.sslEngine = sslEngine;
-    }
 
     public void setAddress(String host, int port, boolean isTLS) {
         if (StringEnvoy.isEmpty(host) || port < 0) {
@@ -86,10 +81,6 @@ public class NioClientTask extends BaseNioNetTask {
 
     protected SocketChannel getSocketChannel() {
         return mChannel;
-    }
-
-    protected SSLEngine getSslEngine() {
-        return sslEngine;
     }
 
     protected TLSHandler getTlsHandler() {
@@ -123,8 +114,9 @@ public class NioClientTask extends BaseNioNetTask {
      * @throws Exception
      */
     protected void onHandshake(SSLEngine sslEngine, SocketChannel channel) throws Exception {
-        tlsHandler = new TLSHandler(sslEngine, channel);
-        tlsHandler.doHandshake();
+        tlsHandler = new TLSHandler(sslEngine);
+        sslEngine.beginHandshake();
+        tlsHandler.doHandshake(channel);
     }
 
     /**
@@ -132,6 +124,5 @@ public class NioClientTask extends BaseNioNetTask {
      */
     protected void onCloseClientChannel() throws Exception {
     }
-
 
 }

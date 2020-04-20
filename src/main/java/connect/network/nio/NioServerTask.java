@@ -18,7 +18,6 @@ public class NioServerTask extends BaseNioNetTask {
     private String mHost = null;
     private int mPort = 0;
     private boolean isTLS = false;
-    private SSLEngine sslEngine = null;
     private ServerSocketChannel mChannel = null;
     private int mMaxConnect = 50;
     private int acceptTimeout = 3000;
@@ -50,10 +49,6 @@ public class NioServerTask extends BaseNioNetTask {
         this.mChannel = channel;
     }
 
-    protected void setSslEngine(SSLEngine sslEngine) {
-        this.sslEngine = sslEngine;
-    }
-
     public void setMaxConnect(int maxConnect) {
         this.mMaxConnect = mMaxConnect;
     }
@@ -78,10 +73,6 @@ public class NioServerTask extends BaseNioNetTask {
 
     public ServerSocketChannel getServerSocketChannel() {
         return mChannel;
-    }
-
-    protected SSLEngine getSslEngine() {
-        return sslEngine;
     }
 
     public int getMaxConnect() {

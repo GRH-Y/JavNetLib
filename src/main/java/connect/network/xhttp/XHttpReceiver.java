@@ -2,6 +2,7 @@ package connect.network.xhttp;
 
 import connect.network.base.joggle.INetReceiver;
 import connect.network.nio.NioReceiver;
+import connect.network.nio.buf.MultilevelBuf;
 import connect.network.xhttp.entity.XReceiverMode;
 import connect.network.xhttp.entity.XReceiverStatus;
 import connect.network.xhttp.entity.XResponse;
@@ -43,7 +44,11 @@ public class XHttpReceiver extends NioReceiver<XResponse> {
         response = new XResponse();
     }
 
+
+    @Override
     public void reset() {
+        super.reset();
+        headEndIndex = -1;
         status = XReceiverStatus.HEAD;
         response.reset();
     }
@@ -62,7 +67,9 @@ public class XHttpReceiver extends NioReceiver<XResponse> {
 
 
     @Override
-    protected void onInterceptReceive(byte[] data, Exception e) throws Exception {
+    protected void onInterceptReceive(MultilevelBuf buf, Exception e) throws Exception {
+        buf.flip();
+        byte[] data = buf.array();
         onHttpReceive(data, data != null ? data.length : -1, e);
     }
 
@@ -86,6 +93,7 @@ public class XHttpReceiver extends NioReceiver<XResponse> {
 
     protected void onResponse(byte[] data, int len, Exception e) throws Exception {
         if (data != null) {
+//            LogDog.d("==> data = " + new String(data));
             response.appendRawData(data);
             processHttpHead(data, len);
             processResponseBody(data, len);
@@ -140,8 +148,9 @@ public class XHttpReceiver extends NioReceiver<XResponse> {
         if (status == XReceiverStatus.BODY) {
             ByteCacheStream raw = response.getRawData();
             byte[] body = null;
+            //分段传输方式
             if (isSubsection) {
-                //分段传输方式
+                //查找0\r\n结束标志
                 int index = findBodyEndTag(data, len);
                 if (index != -1) {
                     body = new byte[raw.size() - 5 - headEndIndex];
@@ -184,12 +193,15 @@ public class XHttpReceiver extends NioReceiver<XResponse> {
         String[] arrays = headStr.split("\r\n");
         //第一行不是键值对
         headMap.put(XHttpProtocol.XY_FIST_LINE, arrays[0]);
+//        LogDog.d("============== head start =====================");
         for (int tmp = 1; tmp < arrays.length; tmp++) {
             String[] kv = arrays[tmp].split(": ");
             if (kv.length == 2) {
                 headMap.put(kv[0], kv[1]);
+//                LogDog.d(kv[0] + ":" + kv[1]);
             }
         }
+//        LogDog.d("=============== head end ====================\r\n");
     }
 
     private int findHeadEndTag(byte[] data, int len) {

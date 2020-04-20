@@ -2,6 +2,8 @@ package connect.network.nio;
 
 import connect.network.base.BaseNetWork;
 
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLSession;
 import java.io.IOException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
@@ -48,7 +50,6 @@ public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T
         } catch (Exception e) {
             e.printStackTrace();
         }
-
         if (count > 0) {
             for (Iterator<SelectionKey> iterator = mSelector.selectedKeys().iterator(); iterator.hasNext(); iterator.remove()) {
                 SelectionKey selectionKey = iterator.next();
@@ -84,6 +85,7 @@ public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T
     @Override
     public void onRecoveryTask(T task) {
         task.setSelectionKey(null);
+        task.setSslEngine(null);
         super.onRecoveryTask(task);
     }
 
@@ -120,6 +122,23 @@ public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T
                 e.printStackTrace();
             } finally {
                 target.selectionKey.cancel();
+            }
+        }
+        SSLEngine sslEngine = target.getSslEngine();
+        if (sslEngine != null) {
+            try {
+                SSLSession handSession = sslEngine.getHandshakeSession();
+                if (handSession != null) {
+                    handSession.invalidate();
+                }
+                SSLSession sslSession = sslEngine.getSession();
+                if (sslSession != null) {
+                    sslSession.invalidate();
+                }
+                sslEngine.closeOutbound();
+//                    sslEngine.closeInbound();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
         onRecoveryTask(target);
