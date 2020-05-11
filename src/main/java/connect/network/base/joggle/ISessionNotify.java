@@ -10,7 +10,7 @@ import connect.network.http.RequestEntity;
  * @author yyz
  */
 
-public interface ISessionCallBack {
+public interface ISessionNotify {
 
     /**
      * 通知结果
@@ -21,10 +21,10 @@ public interface ISessionCallBack {
 
     /**
      * 通知处理过程状态
+     *
      * @param request
-     * @param process
-     * @param maxProcess
-     * @param isOver
+     * @param bytesRead     已读内容大小
+     * @param contentLength 内容的大小
      */
-    void notifyProcess(RequestEntity request,int process, int maxProcess, boolean isOver);
+    void notifyProcess(RequestEntity request, int bytesRead, int contentLength);
 }

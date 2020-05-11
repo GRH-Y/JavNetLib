@@ -61,7 +61,7 @@ public class XHttpRequestTaskManger {
     }
 
     public XHttpRequestTask obtain(AbsNetFactory netFactory, XHttpConfig httpConfig, XRequest request) {
-        XHttpRequestTask requestTask = multiplexCache.getRepeatData();
+        XHttpRequestTask requestTask = multiplexCache.getCanUseData();
         if (requestTask == null) {
             requestTask = new XHttpRequestTask(netFactory, httpConfig, request);
         } else {

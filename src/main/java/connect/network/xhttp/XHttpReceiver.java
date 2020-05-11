@@ -122,6 +122,11 @@ public class XHttpReceiver extends NioReceiver<XResponse> {
         }
     }
 
+    /**
+     * 处理请求数据里面body数据
+     * @param data
+     * @param len
+     */
     protected void processRequestBody(byte[] data, int len) {
         if (status == XReceiverStatus.BODY) {
             if (bodySize != -1) {
@@ -144,6 +149,11 @@ public class XHttpReceiver extends NioReceiver<XResponse> {
         }
     }
 
+    /**
+     * 处理接收数据里面的body数据
+     * @param data
+     * @param len
+     */
     protected void processResponseBody(byte[] data, int len) {
         if (status == XReceiverStatus.BODY) {
             ByteCacheStream raw = response.getRawData();

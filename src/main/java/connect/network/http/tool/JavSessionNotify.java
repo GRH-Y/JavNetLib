@@ -1,7 +1,7 @@
 package connect.network.http.tool;
 
 
-import connect.network.base.joggle.ISessionCallBack;
+import connect.network.base.joggle.ISessionNotify;
 import connect.network.http.RequestEntity;
 import log.LogDog;
 import util.ReflectionCall;
@@ -12,7 +12,7 @@ import util.ReflectionCall;
  *
  * @author yyz
  */
-public class JavSessionCallBack implements ISessionCallBack {
+public class JavSessionNotify implements ISessionNotify {
 
     /**
      * 网络请求成功回调
@@ -25,8 +25,8 @@ public class JavSessionCallBack implements ISessionCallBack {
     }
 
     @Override
-    public void notifyProcess(RequestEntity request, int process, int maxProcess, boolean isOver) {
-        notifyProcessImp(request, process, maxProcess, isOver);
+    public void notifyProcess(RequestEntity request, int bytesRead, int contentLength) {
+        notifyProcessImp(request, bytesRead, contentLength);
     }
 
     protected void notifyDataImp(RequestEntity request) {
@@ -39,9 +39,9 @@ public class JavSessionCallBack implements ISessionCallBack {
     }
 
 
-    protected void notifyProcessImp(RequestEntity request, int process, int maxProcess, boolean isOver) {
+    protected void notifyProcessImp(RequestEntity request, int process, int maxProcess) {
         String methodName = request.getProcessMethod();
-        ReflectionCall.invoke(request.getCallBackTarget(), methodName, new Class[]{int.class, int.class, boolean.class}, process, maxProcess, isOver);
+        ReflectionCall.invoke(request.getCallBackTarget(), methodName, new Class[]{RequestEntity.class, int.class, int.class}, request, process, maxProcess);
     }
 
 }

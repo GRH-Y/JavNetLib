@@ -6,7 +6,7 @@ import connect.network.http.joggle.ARequest;
 import connect.network.http.joggle.IHttpTaskConfig;
 import connect.network.http.joggle.IRequestEntity;
 import connect.network.http.tool.JavConvertResult;
-import connect.network.http.tool.JavSessionCallBack;
+import connect.network.http.tool.JavSessionNotify;
 import task.executor.TaskExecutorPoolManager;
 import task.executor.joggle.IConsumerAttribute;
 import task.executor.joggle.ILoopTaskExecutor;
@@ -48,11 +48,11 @@ public class JavHttpConnect {
 
     protected void init() {
         mHttpTaskManage = new HttpTaskConfig();
-        JavSessionCallBack callBack = initJavSessionCallBack();
-        if (callBack == null) {
-            callBack = new JavSessionCallBack();
+        JavSessionNotify sessionNotify = initJavSessionCallBack();
+        if (sessionNotify == null) {
+            sessionNotify = new JavSessionNotify();
         }
-        mHttpTaskManage.setSessionCallBack(callBack);
+        mHttpTaskManage.setSessionNotify(sessionNotify);
         JavConvertResult convertResult = initJavConvertResult();
         if (convertResult == null) {
             convertResult = new JavConvertResult();
@@ -64,7 +64,7 @@ public class JavHttpConnect {
         mHttpTaskManage.setTaskContainer(container);
     }
 
-    protected JavSessionCallBack initJavSessionCallBack() {
+    protected JavSessionNotify initJavSessionCallBack() {
         return null;
     }
 

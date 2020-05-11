@@ -2,7 +2,7 @@ package connect.network.http;
 
 
 import connect.network.base.RequestMode;
-import connect.network.base.joggle.ISessionCallBack;
+import connect.network.base.joggle.ISessionNotify;
 import connect.network.http.joggle.IRequestIntercept;
 import connect.network.http.joggle.IResponseConvert;
 import log.LogDog;
@@ -155,7 +155,7 @@ public class HttpCoreTask extends BaseConsumerTask {
                 return;
             }
         }
-        ISessionCallBack callBack = mConfig.getSessionCallBack();
+        ISessionNotify callBack = mConfig.getSessionNotify();
         if (callBack != null) {
             callBack.notifyData(submitEntity);
         }
@@ -203,7 +203,7 @@ public class HttpCoreTask extends BaseConsumerTask {
                     File file = FileHelper.crateFile((String) resultType);
                     if (file != null) {
                         FileOutputStream fileStream = new FileOutputStream(file);
-                        boolean state = ProcessIoUtils.pipReadWrite(is, fileStream, true, length, submitEntity, mConfig.getSessionCallBack());
+                        boolean state = ProcessIoUtils.pipReadWrite(is, fileStream, true, length, submitEntity, mConfig.getSessionNotify());
                         if (state) {
                             submitEntity.setRespondEntity(resultType);
                         }

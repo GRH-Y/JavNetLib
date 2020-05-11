@@ -1,8 +1,6 @@
 package connect.network.base.joggle;
 
 
-import java.io.IOException;
-
 /**
  * 发送者接口
  *
@@ -11,10 +9,16 @@ import java.io.IOException;
 public interface INetSender {
 
     /**
+     * 设置发送回调反馈
+     * @param feedback
+     */
+    void setSenderFeedback(ISenderFeedback feedback);
+
+    /**
      * 发送数据
      *
      * @param data
      */
-    void sendData(byte[] data) throws IOException;
+    void sendData(byte[] data);
 
 }

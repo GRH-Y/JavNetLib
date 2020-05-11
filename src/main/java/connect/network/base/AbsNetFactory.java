@@ -21,11 +21,11 @@ public abstract class AbsNetFactory<T extends BaseNetTask> implements INetFactor
 
         mWork = initNetWork();
         if (mWork == null) {
-            throw new IllegalStateException(" initNetWork() This method returns value can not be null");
+            throw new IllegalStateException("initNetWork() This method returns value can not be null");
         }
         mEngine = initNetEngine();
         if (mEngine == null) {
-            throw new IllegalStateException(" initNetEngine() This method returns value can not be null");
+            throw new IllegalStateException("initNetEngine() This method returns value can not be null");
         }
     }
 

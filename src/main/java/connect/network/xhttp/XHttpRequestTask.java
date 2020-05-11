@@ -2,6 +2,8 @@ package connect.network.xhttp;
 
 import connect.network.base.AbsNetFactory;
 import connect.network.base.joggle.INetReceiver;
+import connect.network.base.joggle.INetSender;
+import connect.network.base.joggle.ISenderFeedback;
 import connect.network.nio.NioClientTask;
 import connect.network.nio.NioSender;
 import connect.network.xhttp.entity.XRequest;
@@ -12,12 +14,13 @@ import connect.network.xhttp.joggle.IXHttpDns;
 import connect.network.xhttp.joggle.IXHttpIntercept;
 import connect.network.xhttp.joggle.IXHttpResponseConvert;
 import log.LogDog;
+import util.DirectBufferCleaner;
 import util.ReflectionCall;
 
-import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
-public class XHttpRequestTask extends NioClientTask {
+public class XHttpRequestTask extends NioClientTask implements ISenderFeedback {
 
     private XRequest request;
     private XHttpConfig httpConfig;
@@ -48,6 +51,14 @@ public class XHttpRequestTask extends NioClientTask {
             host = httpDns.findCacheDns(httpUrlMedia.getHost());
         }
         setAddress(host, httpUrlMedia.getPort(), httpUrlMedia.isTSL());
+    }
+
+    @Override
+    public void onSenderFeedBack(INetSender sender, ByteBuffer data, Throwable e) {
+        if (e != null) {
+            netFactory.removeTask(this);
+        }
+        DirectBufferCleaner.clean(data);
     }
 
 
@@ -100,12 +111,9 @@ public class XHttpRequestTask extends NioClientTask {
             setReceive(new XHttpReceiver(receiveCallBack));
         }
         byte[] head = httpProtocol.toByte();
-        try {
-            getSender().sendData(head);
-            getSender().sendData(request.getSendData());
-        } catch (IOException e) {
-            netFactory.removeTask(this);
-        }
+        getSender().setSenderFeedback(this);
+        getSender().sendData(head);
+        getSender().sendData(request.getSendData());
         LogDog.d("==> head = " + new String(head));
     }
 

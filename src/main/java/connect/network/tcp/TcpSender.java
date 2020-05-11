@@ -1,6 +1,7 @@
 package connect.network.tcp;
 
 import connect.network.base.joggle.INetSender;
+import connect.network.base.joggle.ISenderFeedback;
 
 import java.io.OutputStream;
 import java.net.SocketTimeoutException;
@@ -11,9 +12,15 @@ public class TcpSender implements INetSender {
 
     protected Queue<byte[]> cache;
     protected OutputStream stream = null;
+    protected ISenderFeedback feedback;
 
     public TcpSender() {
         cache = new ConcurrentLinkedQueue<>();
+    }
+
+    @Override
+    public void setSenderFeedback(ISenderFeedback feedback) {
+        this.feedback = feedback;
     }
 
     @Override

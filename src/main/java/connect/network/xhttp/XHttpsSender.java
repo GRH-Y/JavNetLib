@@ -2,7 +2,6 @@ package connect.network.xhttp;
 
 import connect.network.nio.NioSender;
 import connect.network.ssl.TLSHandler;
-import util.DirectBufferCleaner;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -21,20 +20,8 @@ public class XHttpsSender extends NioSender {
     }
 
     @Override
-    protected void sendDataImp(byte[] data) throws IOException {
-        if (data == null || data.length == 0) {
-            return;
-        }
-        ByteBuffer appDataBuffer = ByteBuffer.allocateDirect(data.length);
-        appDataBuffer.put(data);
-        appDataBuffer.flip();
-        try {
-            tlsHandler.wrapAndWrite(channel, appDataBuffer);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
-        } finally {
-            DirectBufferCleaner.clean(appDataBuffer);
-        }
+    protected void sendDataImp(ByteBuffer data) throws IOException {
+        tlsHandler.wrapAndWrite(channel, data);
     }
+
 }

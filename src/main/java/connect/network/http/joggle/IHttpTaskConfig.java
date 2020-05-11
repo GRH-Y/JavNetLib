@@ -1,13 +1,13 @@
 package connect.network.http.joggle;
 
 import connect.network.base.joggle.ISSLFactory;
-import connect.network.base.joggle.ISessionCallBack;
+import connect.network.base.joggle.ISessionNotify;
 
 import java.util.Map;
 
 public interface IHttpTaskConfig {
 
-    void setSessionCallBack(ISessionCallBack sessionCallBack);
+    void setSessionNotify(ISessionNotify sessionNotify);
 
     void setConvertResult(IResponseConvert convertResult);
 

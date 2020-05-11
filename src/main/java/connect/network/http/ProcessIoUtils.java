@@ -1,9 +1,10 @@
 package connect.network.http;
 
-import connect.network.base.joggle.ISessionCallBack;
+import connect.network.base.joggle.ISessionNotify;
 import log.LogDog;
 import util.IoEnvoy;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.SocketTimeoutException;
@@ -18,29 +19,28 @@ public class ProcessIoUtils {
      * @param os 输出流
      */
     public static boolean pipReadWrite(InputStream is, OutputStream os, boolean isCanTimeOut, int maxLength,
-                                       RequestEntity requestEntity, ISessionCallBack callBack) {
+                                       RequestEntity requestEntity, ISessionNotify callBack) {
         boolean state = true;
         int missCount = 0;
-        long currentLength = 0;
-        while (state) {
+        int currentLength = 0;
+        LogDog.w("{ProcessIoUtils} pipReadWrite currentLength = " + currentLength);
+        byte[] buffer = new byte[IoEnvoy.SIZE];
+        do {
             try {
-                int available = is.available();
-                available = available > 0 ? available : IoEnvoy.SIZE;
-                byte[] buffer = new byte[available];
                 int len = is.read(buffer);
                 if (len > 0) {
                     os.write(buffer, 0, len);
                     os.flush();
-                    if (callBack != null) {
-                        callBack.notifyProcess(requestEntity, len, maxLength, false);
-                    }
                     missCount = 0;
                     currentLength += len;
+                    if (callBack != null) {
+                        callBack.notifyProcess(requestEntity, currentLength, maxLength);
+                    }
                 } else {
                     if (missCount < 8 && isCanTimeOut) {
                         missCount++;
                     } else {
-                        break;
+                        throw new IOException("socket read fail !!! ");
                     }
                 }
             } catch (Throwable e) {
@@ -49,16 +49,13 @@ public class ProcessIoUtils {
                     missCount++;
                 } else {
                     state = false;
+                    requestEntity.setException(e);
                     e.printStackTrace();
                 }
             }
-        }
-        if (callBack != null) {
-            callBack.notifyProcess(requestEntity, 0, maxLength, true);
-        }
-        LogDog.w("{ProcessIoUtils} pipReadWrite currentLength = " + currentLength);
+        } while (currentLength < maxLength && state);
+
         return state;
     }
-
 
 }

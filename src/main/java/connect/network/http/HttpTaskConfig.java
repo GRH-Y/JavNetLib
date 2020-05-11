@@ -2,7 +2,7 @@ package connect.network.http;
 
 
 import connect.network.base.joggle.ISSLFactory;
-import connect.network.base.joggle.ISessionCallBack;
+import connect.network.base.joggle.ISessionNotify;
 import connect.network.http.joggle.IHttpTaskConfig;
 import connect.network.http.joggle.IRequestIntercept;
 import connect.network.http.joggle.IResponseConvert;
@@ -21,7 +21,7 @@ public class HttpTaskConfig implements IHttpTaskConfig {
 
     private ITaskContainer mTaskContainer;
     private ISSLFactory mSslFactory;
-    private ISessionCallBack mSessionCallBack;
+    private ISessionNotify mSessionNotify;
     private IConsumerAttribute<RequestEntity> mAttribute;
     private IResponseConvert mConvertResult;
     private IRequestIntercept mInterceptRequest;
@@ -52,8 +52,8 @@ public class HttpTaskConfig implements IHttpTaskConfig {
     }
 
     @Override
-    public void setSessionCallBack(ISessionCallBack sessionCallBack) {
-        this.mSessionCallBack = sessionCallBack;
+    public void setSessionNotify(ISessionNotify sessionNotify) {
+        this.mSessionNotify = sessionNotify;
     }
 
     @Override
@@ -117,8 +117,8 @@ public class HttpTaskConfig implements IHttpTaskConfig {
         return mConvertResult;
     }
 
-    protected ISessionCallBack getSessionCallBack() {
-        return mSessionCallBack;
+    protected ISessionNotify getSessionNotify() {
+        return mSessionNotify;
     }
 
     protected int getTimeout() {

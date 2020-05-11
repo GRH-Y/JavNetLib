@@ -1,6 +1,7 @@
 package connect.network.udp;
 
 import connect.network.base.joggle.INetSender;
+import connect.network.base.joggle.ISenderFeedback;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -15,6 +16,7 @@ public class UdpSender implements INetSender {
     protected Queue<UdpSenderEntity> cache;
     protected DatagramPacket mPacket;
     protected DatagramSocket socket = null;
+    protected ISenderFeedback feedback;
 
     public UdpSender() {
         cache = new ConcurrentLinkedQueue<>();
@@ -24,6 +26,11 @@ public class UdpSender implements INetSender {
         if (mPacket != null) {
             mPacket.setSocketAddress(address);
         }
+    }
+
+    @Override
+    public void setSenderFeedback(ISenderFeedback feedback) {
+        this.feedback = feedback;
     }
 
     @Override
