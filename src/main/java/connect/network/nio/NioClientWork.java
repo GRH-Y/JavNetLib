@@ -1,6 +1,7 @@
 package connect.network.nio;
 
 
+import connect.network.base.SocketChannelCloseException;
 import connect.network.base.joggle.ISSLFactory;
 import connect.network.ssl.TLSHandler;
 import log.LogDog;
@@ -46,49 +47,57 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
                     channel.configureBlocking(false);
                 }
             }
-            notifyConnect(channel.isConnected(), false, task);
+            if (channel.isConnected()) {
+                if (task.isTLS()) {
+                    task.onHandshake(task.getSslEngine(), task.getSocketChannel());
+                }
+                task.onConnectCompleteChannel(task.getSocketChannel());
+                SelectionKey selectionKey = task.getSocketChannel().register(mSelector, SelectionKey.OP_READ, task);
+                task.setSelectionKey(selectionKey);
+            } else {
+                SelectionKey selectionKey = task.getSocketChannel().register(mSelector, SelectionKey.OP_CONNECT, task);
+                task.setSelectionKey(selectionKey);
+            }
         } catch (Throwable e) {
-            LogDog.e("url = " + task.getHost() + " port = " + task.getPort());
+            LogDog.e("## url = " + task.getHost() + " port = " + task.getPort());
             e.printStackTrace();
             //该通道有异常，结束任务
             addDestroyTask(task);
         }
     }
 
-    /**
-     * 通知连接结果
-     *
-     * @param isConnect 是否连接成功
-     * @param isReg     是否注册过
-     * @param task      任务
-     * @throws IOException
-     */
-    private void notifyConnect(boolean isConnect, boolean isReg, T task) throws Throwable {
-        if ((isReg && isConnect) || !isReg) {
-            //注册过连接则不需要再注册，连接成功则注册读事件
-            int ops = isConnect ? SelectionKey.OP_READ : SelectionKey.OP_CONNECT;
-            SelectionKey selectionKey = task.getSocketChannel().register(mSelector, ops, task);
-            task.setSelectionKey(selectionKey);
-        }
-        if (!isConnect && !isReg) {
-            //在没有注册过的情况下而且连接失败
-            return;
-        }
-        if (isConnect) {
-            if (task.isTLS()) {
-                task.onHandshake(task.getSslEngine(), task.getSocketChannel());
-            }
-            try {
-                task.onConnectCompleteChannel(task.getSocketChannel());
-            } catch (Throwable e) {
-                e.printStackTrace();
-            }
-        }
-        if (isReg && !isConnect) {
-            //连接失败则结束任务
-            addDestroyTask(task);
-        }
-    }
+//    /**
+//     * 通知连接结果
+//     *
+//     * @param isConnect    是否连接成功
+//     * @param isRegConnect 是否注册过连接事件
+//     * @param task         任务
+//     * @throws IOException
+//     */
+//    private void notifyConnect(boolean isConnect, boolean isRegConnect, T task) throws Throwable {
+//        if ((isRegConnect && isConnect) || !isRegConnect) {
+//            //注册过连接则不需要再注册，连接成功则注册读事件
+//            int ops = isConnect ? SelectionKey.OP_READ : SelectionKey.OP_CONNECT;
+//            SelectionKey selectionKey = task.getSocketChannel().register(mSelector, ops, task);
+//            task.setSelectionKey(selectionKey);
+//        }
+//        if (!isConnect && !isRegConnect) {
+//            //当前状态是没有注册过连接事件而且连接失败（等待连接事件回调再处理）
+//            return;
+//        }
+//        if (isConnect) {
+//            if (task.isTLS()) {
+//                task.onHandshake(task.getSslEngine(), task.getSocketChannel());
+//            }
+//            task.onConnectCompleteChannel(task.getSocketChannel());
+//        }
+//        if (isRegConnect && !isConnect) {
+//            //连接失败回调
+//            task.onConnectError();
+//            //连接失败则结束任务
+//            addDestroyTask(task);
+//        }
+//    }
 
 
     /**
@@ -98,14 +107,15 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
      * @return
      */
     private SocketChannel createSocketChannel(T task) throws IOException {
+        InetSocketAddress address = new InetSocketAddress(task.getHost(), task.getPort());
         SocketChannel channel = SocketChannel.open();
         channel.configureBlocking(false);
-        channel.connect(new InetSocketAddress(task.getHost(), task.getPort()));
+        channel.connect(address);
         task.setChannel(channel);
         return channel;
     }
 
-    private void initSSLConnect(T task) throws IOException {
+    private void initSSLConnect(T task) {
         if (task.isTLS()) {
             if (mSslFactory != null) {
                 SSLContext sslContext = mSslFactory.getSSLContext();
@@ -134,15 +144,33 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
             boolean isConnect = false;
             try {
                 isConnect = channel.finishConnect();
-            } catch (IOException e) {
+            } catch (Throwable e) {
+                LogDog.e("## url = " + task.getHost() + " port = " + task.getPort());
                 e.printStackTrace();
-            } finally {
+            }
+            Throwable throwable = null;
+            if (isConnect) {
                 try {
-                    notifyConnect(isConnect, true, task);
+                    if (task.isTLS()) {
+                        task.onHandshake(task.getSslEngine(), task.getSocketChannel());
+                    }
+                    task.onConnectCompleteChannel(task.getSocketChannel());
+                    selectionKey = task.getSocketChannel().register(mSelector, SelectionKey.OP_READ, task);
+                    task.setSelectionKey(selectionKey);
                 } catch (Throwable e) {
-                    addDestroyTask(task);
+                    throwable = e;
                     e.printStackTrace();
                 }
+            }
+            if (!isConnect || throwable != null) {
+                //连接失败回调
+                try {
+                    task.onConnectError();
+                } catch (Throwable e) {
+                    e.printStackTrace();
+                }
+                //连接失败则结束任务
+                addDestroyTask(task);
             }
         } else if (isCanRead) {
             NioReceiver receive = task.getReceive();
@@ -151,7 +179,7 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
                     receive.onRead(channel);
                 } catch (Throwable e) {
                     addDestroyTask(task);
-                    if (!"SocketChannel close !!!".equals(e.getMessage())) {
+                    if (!(e instanceof SocketChannelCloseException)) {
                         e.printStackTrace();
                     }
                 }
@@ -183,4 +211,10 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
         }
     }
 
+    @Override
+    public void onRecoveryTask(T task) {
+        super.onRecoveryTask(task);
+        task.setReceive(null);
+        task.setSender(null);
+    }
 }

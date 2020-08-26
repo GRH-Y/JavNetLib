@@ -6,6 +6,8 @@ import connect.network.nio.buf.MultilevelBuf;
 import connect.network.xhttp.entity.XReceiverMode;
 import connect.network.xhttp.entity.XReceiverStatus;
 import connect.network.xhttp.entity.XResponse;
+import connect.network.xhttp.utils.ByteCacheStream;
+import connect.network.xhttp.utils.XHttpProtocol;
 import util.StringEnvoy;
 
 import java.util.Map;
@@ -67,37 +69,36 @@ public class XHttpReceiver extends NioReceiver<XResponse> {
 
 
     @Override
-    protected void onInterceptReceive(MultilevelBuf buf, Exception e) throws Exception {
-        buf.flip();
+    protected void onReceiveFullData(MultilevelBuf buf) {
         byte[] data = buf.array();
-        onHttpReceive(data, data != null ? data.length : -1, e);
+        onHttpReceive(data, data != null ? data.length : -1);
     }
 
 
-    protected void onHttpReceive(byte[] data, int len, Exception e) throws Exception {
+    protected void onHttpReceive(byte[] data, int len) {
         if (mode == XReceiverMode.REQUEST) {
-            onRequest(data, len, e);
+            onRequest(data, len);
         } else {
-            onResponse(data, len, e);
+            onResponse(data, len);
         }
     }
 
-    protected void onRequest(byte[] data, int len, Exception e) throws Exception {
+    protected void onRequest(byte[] data, int len) {
         if (data != null) {
             response.appendRawData(data);
             processHttpHead(data, len);
             processRequestBody(data, len);
-            processNotify(e);
+            processNotify();
         }
     }
 
-    protected void onResponse(byte[] data, int len, Exception e) throws Exception {
+    protected void onResponse(byte[] data, int len) {
         if (data != null) {
 //            LogDog.d("==> data = " + new String(data));
             response.appendRawData(data);
             processHttpHead(data, len);
             processResponseBody(data, len);
-            processNotify(e);
+            processNotify();
         }
     }
 
@@ -124,6 +125,7 @@ public class XHttpReceiver extends NioReceiver<XResponse> {
 
     /**
      * 处理请求数据里面body数据
+     *
      * @param data
      * @param len
      */
@@ -151,6 +153,7 @@ public class XHttpReceiver extends NioReceiver<XResponse> {
 
     /**
      * 处理接收数据里面的body数据
+     *
      * @param data
      * @param len
      */
@@ -180,9 +183,9 @@ public class XHttpReceiver extends NioReceiver<XResponse> {
         }
     }
 
-    protected void processNotify(Exception e) {
-        if (status == XReceiverStatus.OVER || e != null) {
-            notifyReceiver(response, e);
+    protected void processNotify() {
+        if (status == XReceiverStatus.OVER) {
+            notifyReceiver(response);
             status = XReceiverStatus.NONE;
             callStatusChange();
         }

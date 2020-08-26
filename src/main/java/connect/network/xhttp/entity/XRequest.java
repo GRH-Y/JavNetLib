@@ -2,6 +2,7 @@ package connect.network.xhttp.entity;
 
 
 import connect.network.base.RequestMode;
+import connect.network.xhttp.utils.XUrlMedia;
 
 import java.util.Map;
 

@@ -1,4 +1,4 @@
-package connect.network.xhttp;
+package connect.network.xhttp.utils;
 
 import java.io.ByteArrayOutputStream;
 

@@ -1,8 +1,7 @@
-package connect.network.xhttp;
+package connect.network.xhttp.utils;
 
 import connect.network.base.RequestMode;
 import connect.network.xhttp.entity.XRequest;
-import connect.network.xhttp.entity.XUrlMedia;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -77,7 +76,7 @@ public class XHttpProtocol {
 
     private Map<String, String> headParameterMap = new LinkedHashMap<>();
 
-    public void init(XRequest request) {
+    public void initProtocol(XRequest request) {
         RequestMode requestMode = request.getRequestMode();
         byte[] data = request.getSendData();
         XUrlMedia httpUrlMedia = request.getUrl();

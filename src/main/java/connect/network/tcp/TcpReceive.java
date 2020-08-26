@@ -30,17 +30,17 @@ public class TcpReceive {
             data = IoEnvoy.tryRead(stream);
         } catch (Exception e) {
             exception = e;
+            throw e;
         } finally {
             notifyReceiver(data, exception);
         }
     }
 
-    protected void notifyReceiver(Object data, Exception exception) throws Exception {
+    protected void notifyReceiver(Object data, Exception exception) {
         if (receive != null) {
-            receive.onReceive(data, exception);
-        } else {
+            receive.onReceiveFullData(data);
             if (exception != null) {
-                throw exception;
+                receive.onReceiveException(exception);
             }
         }
     }

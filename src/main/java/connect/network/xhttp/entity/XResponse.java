@@ -1,6 +1,6 @@
 package connect.network.xhttp.entity;
 
-import connect.network.xhttp.ByteCacheStream;
+import connect.network.xhttp.utils.ByteCacheStream;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

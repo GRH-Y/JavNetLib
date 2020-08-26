@@ -1,8 +1,9 @@
-package connect.network.xhttp;
+package connect.network.xhttp.config;
 
 import connect.network.xhttp.entity.XRequest;
 import connect.network.xhttp.entity.XResponse;
 import connect.network.xhttp.joggle.IXHttpResponseConvert;
+import connect.network.xhttp.utils.XHttpProtocol;
 import json.JsonEnvoy;
 import storage.GZipUtils;
 import util.StringEnvoy;

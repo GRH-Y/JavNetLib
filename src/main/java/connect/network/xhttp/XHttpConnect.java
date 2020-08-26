@@ -2,6 +2,7 @@ package connect.network.xhttp;
 
 import connect.network.base.AbsNetFactory;
 import connect.network.nio.NioClientFactory;
+import connect.network.xhttp.config.XHttpConfig;
 import connect.network.xhttp.entity.XRequest;
 import connect.network.xhttp.joggle.IXHttpIntercept;
 
@@ -62,6 +63,9 @@ public class XHttpConnect {
     public boolean submitRequest(XRequest request) {
         if (request == null) {
             return false;
+        }
+        if (mHttpConfig == null) {
+            mHttpConfig = XHttpConfig.getDefaultConfig();
         }
         IXHttpIntercept intercept = mHttpConfig.getIntercept();
         if (intercept != null) {

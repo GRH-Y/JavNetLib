@@ -219,8 +219,9 @@ public class HttpCoreTask extends BaseConsumerTask {
                     }
                     if (entity == null) {
                         submitEntity.setRespondData(buffer);
+                    } else {
+                        submitEntity.setRespondEntity(entity);
                     }
-                    submitEntity.setRespondEntity(entity);
                 }
                 onResultCallBack(submitEntity);
             } else if (code >= HttpURLConnection.HTTP_MULT_CHOICE && code <= HttpURLConnection.HTTP_USE_PROXY) {
@@ -235,6 +236,7 @@ public class HttpCoreTask extends BaseConsumerTask {
                 InputStream is = connection.getInputStream();
                 byte[] buffer = IoEnvoy.tryRead(is);
                 submitEntity.setRespondData(buffer);
+                submitEntity.setException(new Exception("http code = " + code));
                 submitEntity.setResponseCode(code);
                 onResultCallBack(submitEntity);
             }

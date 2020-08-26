@@ -66,7 +66,6 @@ public class NioClientTask extends BaseNioNetTask {
 
     //---------------------------- get ---------------------------------------
 
-
     public boolean isTLS() {
         return isTLS;
     }
@@ -104,6 +103,13 @@ public class NioClientTask extends BaseNioNetTask {
      * @param channel
      */
     protected void onConnectCompleteChannel(SocketChannel channel) throws Exception {
+    }
+
+    /**
+     * 连接失败回调
+     */
+    protected void onConnectError() {
+
     }
 
     /**

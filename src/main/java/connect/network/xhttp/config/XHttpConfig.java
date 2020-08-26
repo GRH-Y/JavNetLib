@@ -1,4 +1,4 @@
-package connect.network.xhttp;
+package connect.network.xhttp.config;
 
 import connect.network.xhttp.joggle.IXHttpConfig;
 import connect.network.xhttp.joggle.IXHttpDns;

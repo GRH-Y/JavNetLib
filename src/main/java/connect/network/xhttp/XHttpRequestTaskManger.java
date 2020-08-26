@@ -1,6 +1,7 @@
 package connect.network.xhttp;
 
 import connect.network.base.AbsNetFactory;
+import connect.network.xhttp.config.XHttpConfig;
 import connect.network.xhttp.entity.XRequest;
 import util.MultiplexCache;
 

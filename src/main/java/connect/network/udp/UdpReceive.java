@@ -8,10 +8,10 @@ import java.net.SocketTimeoutException;
 
 public class UdpReceive {
 
-    protected INetReceiver mReceive;
+    protected INetReceiver<DatagramPacket> mReceive;
     protected DatagramSocket socket = null;
 
-    public UdpReceive(INetReceiver receive) {
+    public UdpReceive(INetReceiver<DatagramPacket> receive) {
         this.mReceive = receive;
     }
 
@@ -33,23 +33,19 @@ public class UdpReceive {
             socket.receive(receive);
         } catch (Exception e) {
             exception = e;
+            if (!(exception instanceof SocketTimeoutException)) {
+                throw exception;
+            }
         } finally {
             notifyReceiver(receive, exception);
         }
     }
 
-    protected void notifyReceiver(Object data, Exception exception) throws Exception {
+    protected void notifyReceiver(DatagramPacket packet, Exception exception) {
         if (mReceive != null) {
-            try {
-                mReceive.onReceive(data, exception);
-            } catch (Throwable e) {
-                e.printStackTrace();
-            }
-        } else {
-            if (exception != null) {
-                if (!(exception instanceof SocketTimeoutException)) {
-                    throw exception;
-                }
+            mReceive.onReceiveFullData(packet);
+            if (exception != null && !(exception instanceof SocketTimeoutException)) {
+                mReceive.onReceiveException(exception);
             }
         }
     }

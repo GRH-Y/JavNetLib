@@ -1,6 +1,6 @@
-package connect.network.xhttp.entity;
+package connect.network.xhttp.utils;
 
-import connect.network.xhttp.XHttpProtocol;
+import connect.network.xhttp.entity.XResponse;
 import util.StringEnvoy;
 
 public class XResponseHelper {
@@ -89,8 +89,13 @@ public class XResponseHelper {
     }
 
     public static boolean isTLS(XResponse response) {
-        String protocol = getProtocol(response);
-        return "https".equalsIgnoreCase(protocol);
+        String content = response.getHeadForKey(XHttpProtocol.XY_FIST_LINE);
+        int httpIndex = content.indexOf("://");
+        if (httpIndex > 0) {
+            return "https".equalsIgnoreCase(content.substring(0, httpIndex));
+        } else {
+            return content.startsWith("CONNECT") || content.startsWith("wss");
+        }
     }
 
     public static String getVersion(XResponse response) {

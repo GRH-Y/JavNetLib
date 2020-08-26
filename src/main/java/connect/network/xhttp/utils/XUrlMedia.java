@@ -1,4 +1,4 @@
-package connect.network.xhttp.entity;
+package connect.network.xhttp.utils;
 
 import log.LogDog;
 import util.StringEnvoy;

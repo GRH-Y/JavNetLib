@@ -45,10 +45,18 @@ public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T
     @Override
     protected void onExecuteTask() {
         int count = 0;
-        try {
-            count = mSelector.select();
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (mConnectCache.isEmpty()) {
+            try {
+                count = mSelector.select();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            try {
+                count = mSelector.selectNow();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
         if (count > 0) {
             for (Iterator<SelectionKey> iterator = mSelector.selectedKeys().iterator(); iterator.hasNext(); iterator.remove()) {
@@ -94,9 +102,11 @@ public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T
         if (mSelector != null) {
             //线程准备结束，释放所有链接
             for (SelectionKey selectionKey : mSelector.keys()) {
-                T task = (T) selectionKey.attachment();
-                onDisconnectTask(task);
-                closeConnect(task);
+                if (selectionKey.isValid()) {
+                    T task = (T) selectionKey.attachment();
+                    onDisconnectTask(task);
+                    closeConnect(task);
+                }
             }
             try {
                 mSelector.close();

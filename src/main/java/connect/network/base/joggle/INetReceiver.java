@@ -7,5 +7,8 @@ package connect.network.base.joggle;
  */
 public interface INetReceiver<T> {
 
-    void onReceive(T data, Exception e);
+    void onReceiveFullData(T data);
+
+    void onReceiveException(Exception e);
+
 }
