@@ -66,39 +66,6 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
         }
     }
 
-//    /**
-//     * 通知连接结果
-//     *
-//     * @param isConnect    是否连接成功
-//     * @param isRegConnect 是否注册过连接事件
-//     * @param task         任务
-//     * @throws IOException
-//     */
-//    private void notifyConnect(boolean isConnect, boolean isRegConnect, T task) throws Throwable {
-//        if ((isRegConnect && isConnect) || !isRegConnect) {
-//            //注册过连接则不需要再注册，连接成功则注册读事件
-//            int ops = isConnect ? SelectionKey.OP_READ : SelectionKey.OP_CONNECT;
-//            SelectionKey selectionKey = task.getSocketChannel().register(mSelector, ops, task);
-//            task.setSelectionKey(selectionKey);
-//        }
-//        if (!isConnect && !isRegConnect) {
-//            //当前状态是没有注册过连接事件而且连接失败（等待连接事件回调再处理）
-//            return;
-//        }
-//        if (isConnect) {
-//            if (task.isTLS()) {
-//                task.onHandshake(task.getSslEngine(), task.getSocketChannel());
-//            }
-//            task.onConnectCompleteChannel(task.getSocketChannel());
-//        }
-//        if (isRegConnect && !isConnect) {
-//            //连接失败回调
-//            task.onConnectError();
-//            //连接失败则结束任务
-//            addDestroyTask(task);
-//        }
-//    }
-
 
     /**
      * 创建通道
@@ -116,15 +83,12 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
     }
 
     private void initSSLConnect(T task) {
-        if (task.isTLS()) {
-            if (mSslFactory != null) {
-                SSLContext sslContext = mSslFactory.getSSLContext();
-                SSLEngine sslEngine = sslContext.createSSLEngine(task.getHost(), task.getPort());
-                sslEngine.setUseClientMode(true);
-                sslEngine.setEnableSessionCreation(true);
-                task.setSslEngine(sslEngine);
-//                sslEngine.beginHandshake();
-            }
+        if (task.isTLS() && mSslFactory != null) {
+            SSLContext sslContext = mSslFactory.getSSLContext();
+            SSLEngine sslEngine = sslContext.createSSLEngine(task.getHost(), task.getPort());
+            sslEngine.setUseClientMode(true);
+            sslEngine.setEnableSessionCreation(true);
+            task.setSslEngine(sslEngine);
         }
     }
 
@@ -207,14 +171,7 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
             if (receiver != null) {
                 receiver.onRelease();
             }
-            task.setChannel(null);
         }
     }
 
-    @Override
-    public void onRecoveryTask(T task) {
-        super.onRecoveryTask(task);
-        task.setReceive(null);
-        task.setSender(null);
-    }
 }

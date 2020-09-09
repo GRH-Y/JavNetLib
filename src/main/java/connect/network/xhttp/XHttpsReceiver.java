@@ -18,6 +18,10 @@ public class XHttpsReceiver extends XHttpReceiver {
         this.tlsHandler = tlsHandler;
     }
 
+    public void setTlsHandler(TLSHandler tlsHandler) {
+        this.tlsHandler = tlsHandler;
+    }
+
     @Override
     protected void init() {
     }

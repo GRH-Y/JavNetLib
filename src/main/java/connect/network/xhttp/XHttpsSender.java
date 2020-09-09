@@ -19,6 +19,10 @@ public class XHttpsSender extends NioSender {
         this.channel = channel;
     }
 
+    public void setTlsHandler(TLSHandler tlsHandler) {
+        this.tlsHandler = tlsHandler;
+    }
+
     @Override
     protected void sendDataImp(ByteBuffer data) throws IOException {
         tlsHandler.wrapAndWrite(channel, data);

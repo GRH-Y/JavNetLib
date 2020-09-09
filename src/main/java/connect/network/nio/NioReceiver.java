@@ -57,11 +57,6 @@ public class NioReceiver<T> {
                 }
             } while (ret > 0 && channel.isOpen());
         } catch (Exception e) {
-            InetSocketAddress localAddress = (InetSocketAddress) channel.getLocalAddress();
-            InetSocketAddress remoteAddress = (InetSocketAddress) channel.getRemoteAddress();
-            LogDog.e("## read data has exception !!! " + e.getMessage());
-            LogDog.e("## local address =  " + localAddress.toString());
-            LogDog.e("## remote address =  " + remoteAddress.toString());
             exception = e;
             throw e;
         } finally {
@@ -78,7 +73,9 @@ public class NioReceiver<T> {
                 onReceiveException(exception);
             }
             if (ret < 0 && exception == null) {
-                LogDog.e("read data return - 1");
+                InetSocketAddress localAddress = (InetSocketAddress) channel.getLocalAddress();
+                InetSocketAddress remoteAddress = (InetSocketAddress) channel.getRemoteAddress();
+                LogDog.e("## read data return - 1 ， local address = " + localAddress.toString() + " remote address = " + remoteAddress.toString());
                 throw new SocketChannelCloseException();
             }
         }

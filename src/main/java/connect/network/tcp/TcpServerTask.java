@@ -29,7 +29,7 @@ public class TcpServerTask extends BaseNetTask {
     public int getMaxConnect() {
         return mMaxConnect;
     }
-//---------------------------- set ---------------------------------------
+    //---------------------------- set ---------------------------------------
 
     public void setAddress(String host, int port) {
         this.mHost = host;

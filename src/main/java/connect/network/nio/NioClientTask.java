@@ -94,7 +94,6 @@ public class NioClientTask extends BaseNioNetTask {
         return (T) receive;
     }
 
-
     //---------------------------- on ---------------------------------------
 
     /**
@@ -128,7 +127,21 @@ public class NioClientTask extends BaseNioNetTask {
     /**
      * 当前状态链接还没关闭，可以做最后的一次数据传输
      */
-    protected void onCloseClientChannel() throws Exception {
+    protected void onCloseClientChannel() {
+    }
+
+    @Override
+    protected void reset() {
+        super.reset();
+        isTLS = false;
+        mChannel = null;
+        tlsHandler = null;
+        if (sender != null) {
+            sender.setSenderFeedback(null);
+        }
+        if (receive != null) {
+            receive.reset();
+        }
     }
 
 }

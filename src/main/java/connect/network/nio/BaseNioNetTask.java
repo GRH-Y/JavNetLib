@@ -27,4 +27,8 @@ public class BaseNioNetTask extends BaseNetTask {
         return sslEngine;
     }
 
+    protected void reset() {
+        selectionKey = null;
+        sslEngine = null;
+    }
 }

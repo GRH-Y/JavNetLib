@@ -104,11 +104,33 @@ public class XHttpRequestTask extends NioClientTask implements ISenderFeedback, 
     protected void onConnectCompleteChannel(SocketChannel channel) {
         XUrlMedia httpUrlMedia = request.getUrl();
         if (httpUrlMedia.isTSL()) {
-            setSender(new XHttpsSender(getTlsHandler(), channel));
-            setReceive(new XHttpsReceiver(getTlsHandler(), this));
+            XHttpsSender sender = getSender();
+            if (sender == null) {
+                setSender(new XHttpsSender(getTlsHandler(), channel));
+            } else {
+                sender.setTlsHandler(getTlsHandler());
+                sender.setChannel(channel);
+            }
+            XHttpsReceiver receiver = getReceive();
+            if (receiver == null) {
+                setReceive(new XHttpsReceiver(getTlsHandler(), this));
+            } else {
+                receiver.setTlsHandler(getTlsHandler());
+                receiver.setReceiver(this);
+            }
         } else {
-            setSender(new NioSender(channel));
-            setReceive(new XHttpReceiver(this));
+            NioSender sender = getSender();
+            if (sender == null) {
+                setSender(new NioSender(channel));
+            } else {
+                sender.setChannel(channel);
+            }
+            XHttpReceiver receiver = getReceive();
+            if (receiver == null) {
+                setReceive(new XHttpReceiver(this));
+            } else {
+                receiver.setReceiver(this);
+            }
         }
         byte[] head = httpProtocol.toByte();
         getSender().setSenderFeedback(this);
@@ -120,10 +142,6 @@ public class XHttpRequestTask extends NioClientTask implements ISenderFeedback, 
 
     @Override
     protected void onRecovery() {
-        XHttpReceiver receive = getReceive();
-        if (receive != null) {
-            receive.reset();
-        }
         if (isRedirect) {
             //是否是重定向
             setTaskNeedClose(false);

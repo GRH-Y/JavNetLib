@@ -98,4 +98,10 @@ public class NioServerTask extends BaseNioNetTask {
     protected void onCloseServerChannel() throws Exception {
     }
 
+    @Override
+    protected void reset() {
+        super.reset();
+        isTLS = false;
+        mChannel = null;
+    }
 }

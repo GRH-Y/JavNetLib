@@ -90,12 +90,6 @@ public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T
     protected void onSelectionKey(SelectionKey selectionKey) {
     }
 
-    @Override
-    public void onRecoveryTask(T task) {
-        task.setSelectionKey(null);
-        task.setSslEngine(null);
-        super.onRecoveryTask(task);
-    }
 
     @Override
     protected void onRecoveryTaskAll() {

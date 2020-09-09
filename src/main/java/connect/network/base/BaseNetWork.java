@@ -81,6 +81,7 @@ public abstract class BaseNetWork<T extends BaseNetTask> {
      */
     protected void onRecoveryTask(T task) {
         try {
+            task.reset();
             task.onRecovery();
         } catch (Throwable e) {
             e.printStackTrace();

@@ -29,4 +29,6 @@ public class BaseNetTask {
     protected void onRecovery() {
     }
 
+    protected void reset() {
+    }
 }
