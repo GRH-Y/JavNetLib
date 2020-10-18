@@ -4,9 +4,10 @@ package connect.network.nio;
 import connect.network.base.AbsNetEngine;
 import connect.network.base.AbsNetFactory;
 import connect.network.base.BaseNetWork;
+import connect.network.base.TaskStatus;
 import connect.network.base.joggle.INetFactory;
 import connect.network.base.joggle.ISSLFactory;
-import connect.network.ssl.NioSSLFactory;
+import connect.network.ssl.SSLFactory;
 
 /**
  * nio服务端工厂(单线程管理多个ServerSocket)
@@ -51,7 +52,7 @@ public class NioServerFactory extends AbsNetFactory<NioServerTask> {
 
     @Override
     protected ISSLFactory initSSLFactory() {
-        return new NioSSLFactory();
+        return new SSLFactory();
     }
 
     @Override
@@ -61,7 +62,7 @@ public class NioServerFactory extends AbsNetFactory<NioServerTask> {
 
     @Override
     public boolean addTask(NioServerTask task) {
-        if (task != null && task.getSelectionKey() == null && !task.isTaskNeedClose()) {
+        if (task != null && task.getSelectionKey() == null && task.getTaskStatus() == TaskStatus.NONE) {
             return super.addTask(task);
         }
         return false;
@@ -69,7 +70,7 @@ public class NioServerFactory extends AbsNetFactory<NioServerTask> {
 
     @Override
     public void removeTask(NioServerTask task) {
-        if (task != null && task.getSelectionKey() != null && !task.isTaskNeedClose()) {
+        if (task != null && task.getSelectionKey() != null && task.getTaskStatus() == TaskStatus.RUN) {
             super.removeTask(task);
         }
     }

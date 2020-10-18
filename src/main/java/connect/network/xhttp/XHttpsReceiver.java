@@ -23,10 +23,6 @@ public class XHttpsReceiver extends XHttpReceiver {
     }
 
     @Override
-    protected void init() {
-    }
-
-    @Override
     protected void onRead(SocketChannel channel) throws Exception {
         Exception exception = null;
         ByteBuffer buffer = null;
@@ -43,16 +39,13 @@ public class XHttpsReceiver extends XHttpReceiver {
                 buffer.get(data, 0, data.length);
             }
             try {
-                onHttpReceive(data, data != null ? data.length : -1);
+                onHttpReceive(data, data != null ? data.length : -1, exception);
             } catch (Exception e) {
                 e.printStackTrace();
             } finally {
                 if (buffer != null) {
                     buffer.clear();
                 }
-            }
-            if (exception != null) {
-                onReceiveException(exception);
             }
         }
     }

@@ -1,28 +1,34 @@
 package connect.network.xhttp;
 
+import connect.network.aio.AioClientFactory;
 import connect.network.base.AbsNetFactory;
+import connect.network.http.joggle.AXRequest;
+import connect.network.http.joggle.IRequestEntity;
 import connect.network.nio.NioClientFactory;
 import connect.network.xhttp.config.XHttpConfig;
 import connect.network.xhttp.entity.XRequest;
-import connect.network.xhttp.joggle.IXHttpIntercept;
 
-import java.util.Collection;
+import java.util.Map;
 
 public class XHttpConnect {
 
     private XHttpConfig mHttpConfig;
 
-    private XHttpRequestTaskManger mHttpTaskManger;
+    private XMultiplexCacheManger mHttpTaskManger;
 
-    private AbsNetFactory mNetFactory;
+    private AbsNetFactory mNioNetFactory;
 
-    private XHttpConnect() {
-        mHttpTaskManger = XHttpRequestTaskManger.getInstance();
-        mNetFactory = new NioClientFactory();
-        mNetFactory.open();
-    }
+    private AbsNetFactory mAioNetFactory;
 
     private static XHttpConnect sHttpConnect = null;
+
+    private XHttpConnect() {
+        mHttpTaskManger = XMultiplexCacheManger.getInstance();
+        mNioNetFactory = new NioClientFactory();
+        mAioNetFactory = new AioClientFactory();
+        mNioNetFactory.open();
+        mAioNetFactory.open();
+    }
 
     public static synchronized XHttpConnect getInstance() {
         if (sHttpConnect == null) {
@@ -38,8 +44,9 @@ public class XHttpConnect {
     public static void destroy() {
         synchronized (XHttpConnect.class) {
             if (sHttpConnect != null) {
-                sHttpConnect.mNetFactory.close();
-                XHttpRequestTaskManger.destroy();
+                sHttpConnect.mNioNetFactory.close();
+                sHttpConnect.mAioNetFactory.close();
+                XMultiplexCacheManger.destroy();
                 sHttpConnect = null;
             }
         }
@@ -56,44 +63,61 @@ public class XHttpConnect {
         return mHttpConfig;
     }
 
-    protected AbsNetFactory getNetFactory() {
-        return mNetFactory;
+    private XRequest crateRequest(IRequestEntity entity, Object callBackTarget) {
+        Class clx = entity.getClass();
+        AXRequest request = (AXRequest) clx.getAnnotation(AXRequest.class);
+        if (request == null) {
+            throw new IllegalArgumentException("The entity has no annotations ARequest !!! ");
+        }
+        XRequest xHttpRequest = new XRequest();
+
+        Map<String, Object> property = entity.getRequestProperty();
+        xHttpRequest.setRequestProperty(property);
+        xHttpRequest.setCallBackTarget(callBackTarget);
+        xHttpRequest.setSendData(entity.getSendData());
+        xHttpRequest.setCallBackMethod(request.callBackMethod());
+        xHttpRequest.setProcessMethod(request.processMethod());
+        xHttpRequest.setResultType(request.resultType());
+        xHttpRequest.setRequestMode(request.requestMode());
+        xHttpRequest.setUrl(request.url());
+        return xHttpRequest;
+    }
+
+    public boolean submitRequest(IRequestEntity entity, Object callBackTarget) {
+        if (entity == null) {
+            throw new NullPointerException("entity is null ");
+        }
+        XRequest xHttpRequest = crateRequest(entity, callBackTarget);
+        return submitRequest(xHttpRequest);
+    }
+
+    public boolean submitAioRequest(IRequestEntity entity, Object callBackTarget) {
+        if (entity == null) {
+            throw new NullPointerException("entity is null ");
+        }
+        XRequest xHttpRequest = crateRequest(entity, callBackTarget);
+        return submitAioRequest(xHttpRequest);
     }
 
     public boolean submitRequest(XRequest request) {
         if (request == null) {
-            return false;
+            throw new NullPointerException("request is null ");
         }
         if (mHttpConfig == null) {
             mHttpConfig = XHttpConfig.getDefaultConfig();
         }
-        IXHttpIntercept intercept = mHttpConfig.getIntercept();
-        if (intercept != null) {
-            boolean isIntercept = intercept.onStartRequestIntercept(request);
-            if (isIntercept) {
-                return false;
-            }
-        }
-        XHttpRequestTask requestTask = mHttpTaskManger.obtain(mNetFactory, mHttpConfig, request);
-        boolean ret = mNetFactory.addTask(requestTask);
-        if (ret) {
-            mHttpTaskManger.pushTask(request.toString(), requestTask);
-        }
-        return ret;
+        XNioHttpTask requestTask = mHttpTaskManger.obtainNioTask(mNioNetFactory, mHttpConfig, request);
+        return mNioNetFactory.addTask(requestTask);
     }
 
-    public void cancelRequest(XRequest request) {
+    public boolean submitAioRequest(XRequest request) {
         if (request == null) {
-            return;
+            throw new NullPointerException("request is null ");
         }
-        XHttpRequestTask targetRequest = mHttpTaskManger.getTask(request.toString());
-        mNetFactory.removeTask(targetRequest);
-    }
-
-    public void cancelAllRequest() {
-        Collection<XHttpRequestTask> collection = mHttpTaskManger.getAllTask();
-        for (XHttpRequestTask task : collection) {
-            mNetFactory.removeTask(task);
+        if (mHttpConfig == null) {
+            mHttpConfig = XHttpConfig.getDefaultConfig();
         }
+        XAioHttpTask requestTask = mHttpTaskManger.obtainAioTask(mAioNetFactory, mHttpConfig, request);
+        return mAioNetFactory.addTask(requestTask);
     }
 }

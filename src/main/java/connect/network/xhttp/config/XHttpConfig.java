@@ -1,14 +1,14 @@
 package connect.network.xhttp.config;
 
+import connect.network.base.joggle.IXSessionNotify;
 import connect.network.xhttp.joggle.IXHttpConfig;
 import connect.network.xhttp.joggle.IXHttpDns;
-import connect.network.xhttp.joggle.IXHttpIntercept;
 import connect.network.xhttp.joggle.IXHttpResponseConvert;
 
 public class XHttpConfig implements IXHttpConfig {
 
     private IXHttpDns dns = null;
-    private IXHttpIntercept intercept = null;
+    private IXSessionNotify mSessionNotify;
     private IXHttpResponseConvert responseConvert = null;
 
     @Override
@@ -22,26 +22,29 @@ public class XHttpConfig implements IXHttpConfig {
     }
 
     @Override
-    public void setIntercept(IXHttpIntercept intercept) {
-        this.intercept = intercept;
-    }
-
-    @Override
-    public IXHttpIntercept getIntercept() {
-        return intercept;
-    }
-
     public void setResponseConvert(IXHttpResponseConvert responseConvert) {
         this.responseConvert = responseConvert;
     }
 
+    @Override
+    public void setSessionNotify(IXSessionNotify sessionNotify) {
+        this.mSessionNotify = sessionNotify;
+    }
+
+    @Override
     public IXHttpResponseConvert getResponseConvert() {
         return responseConvert;
     }
 
+    @Override
+    public IXSessionNotify getSessionNotify() {
+        return mSessionNotify;
+    }
+
     public static XHttpConfig getDefaultConfig() {
         XHttpConfig httpConfig = new XHttpConfig();
-//        httpConfig.setXHttpDns(new XHttpDefaultDns());
+        httpConfig.setXHttpDns(new XHttpDefaultDns());
+        httpConfig.setSessionNotify(new XHttpDefaultSessionNotify());
         httpConfig.setResponseConvert(new XHttpDefaultResponseConvert());
         return httpConfig;
     }

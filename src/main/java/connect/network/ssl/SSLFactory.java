@@ -10,10 +10,10 @@ import java.security.KeyStore;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 
-public class NioSSLFactory implements ISSLFactory {
+public class SSLFactory implements ISSLFactory {
     private SSLContext sslContext;
 
-    public NioSSLFactory(){
+    public SSLFactory() {
         try {
             sslContext = SSLContext.getDefault();
         } catch (Exception e) {
@@ -27,7 +27,7 @@ public class NioSSLFactory implements ISSLFactory {
      * @param protocol TLSv1.2
      * @throws Exception
      */
-    public NioSSLFactory(String protocol) throws Exception {
+    public SSLFactory(String protocol) throws Exception {
         sslContext = SSLContext.getInstance(protocol);
         KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
@@ -41,7 +41,7 @@ public class NioSSLFactory implements ISSLFactory {
      * @param keyStorePath      "C:\Program Files\Java\jdk1.8.0_161\jre\lib\security"
      * @param keyPassword       "changeit"
      */
-    public NioSSLFactory(String protocol, String keyManagerFactory, String keyStoreType, String keyStorePath, String keyPassword) throws Exception {
+    public SSLFactory(String protocol, String keyManagerFactory, String keyStoreType, String keyStorePath, String keyPassword) throws Exception {
         char[] password = keyPassword.toCharArray();
 
         sslContext = SSLContext.getInstance(protocol);

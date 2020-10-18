@@ -110,4 +110,32 @@ public class XResponseHelper {
         }
         return version;
     }
+
+    public static int findHeadEndTag(byte[] data, int len) {
+        for (int index = 0; index < len; index++) {
+            if (data[index] == '\r' && data[index + 1] == '\n' && data[index + 2] == '\r' && data[index + 3] == '\n') {
+                return index + 4;
+            }
+        }
+        return -1;
+    }
+
+    public static int findChunkedTag(byte[] data, int index) {
+        for (; index < data.length; index++) {
+            if (data[index] == '\r' && data[index + 1] == '\n') {
+                return index + 2;
+            }
+        }
+        return -1;
+    }
+
+    public static int findBodyEndTag(byte[] data, int len) {
+        if (data.length > 5) {
+            int index = len - 1;
+            if (data[index] == '\n' && data[index - 1] == '\r' && data[index - 2] == '\n' && data[index - 3] == '\r' && data[index - 4] == '0') {
+                return index - 4;
+            }
+        }
+        return -1;
+    }
 }

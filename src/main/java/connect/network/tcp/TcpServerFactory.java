@@ -4,7 +4,7 @@ import connect.network.base.AbsNetEngine;
 import connect.network.base.AbsNetFactory;
 import connect.network.base.BaseNetWork;
 import connect.network.base.joggle.ISSLFactory;
-import connect.network.ssl.NioSSLFactory;
+import connect.network.ssl.SSLFactory;
 
 public class TcpServerFactory extends AbsNetFactory<TcpServerTask> {
 
@@ -12,7 +12,7 @@ public class TcpServerFactory extends AbsNetFactory<TcpServerTask> {
 
     @Override
     protected AbsNetEngine initNetEngine() {
-        return new BioEngine(this, getNetWork());
+        return new BioEngine(getNetWork());
     }
 
     @Override
@@ -22,7 +22,7 @@ public class TcpServerFactory extends AbsNetFactory<TcpServerTask> {
 
     @Override
     protected ISSLFactory initSSLFactory() {
-        return new NioSSLFactory();
+        return new SSLFactory();
     }
 
 

@@ -36,8 +36,10 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
             if (channel == null) {
                 //创建通道
                 channel = createSocketChannel(task);
-                //如果是TLS初始化SSLEngine
-                initSSLConnect(task);
+                if (channel.isConnected()) {
+                    //如果是TLS初始化SSLEngine
+                    initSSLConnect(task, channel);
+                }
             } else {
                 if (!channel.isOpen() || channel.isRegistered()) {
                     throw new IllegalStateException("channel is unavailable !!! ");
@@ -46,16 +48,19 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
                     // 设置为非阻塞
                     channel.configureBlocking(false);
                 }
+                TLSHandler tlsHandler = task.getTlsHandler();
+                if (tlsHandler != null) {
+                    SSLEngine sslEngine = tlsHandler.getSslEngine();
+                    sslEngine.beginHandshake();
+                    tlsHandler.doHandshake(channel);
+                }
             }
             if (channel.isConnected()) {
-                if (task.isTLS()) {
-                    task.onHandshake(task.getSslEngine(), task.getSocketChannel());
-                }
-                task.onConnectCompleteChannel(task.getSocketChannel());
-                SelectionKey selectionKey = task.getSocketChannel().register(mSelector, SelectionKey.OP_READ, task);
+                SelectionKey selectionKey = channel.register(mSelector, SelectionKey.OP_READ, task);
                 task.setSelectionKey(selectionKey);
+                task.onConnectCompleteChannel(channel);
             } else {
-                SelectionKey selectionKey = task.getSocketChannel().register(mSelector, SelectionKey.OP_CONNECT, task);
+                SelectionKey selectionKey = channel.register(mSelector, SelectionKey.OP_CONNECT, task);
                 task.setSelectionKey(selectionKey);
             }
         } catch (Throwable e) {
@@ -77,18 +82,25 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
         InetSocketAddress address = new InetSocketAddress(task.getHost(), task.getPort());
         SocketChannel channel = SocketChannel.open();
         channel.configureBlocking(false);
+        channel.socket().setKeepAlive(true);
+        channel.socket().setReuseAddress(true);
+        channel.socket().setTcpNoDelay(false);
+        channel.socket().setOOBInline(false);
+        channel.socket().setPerformancePreferences(0, 1, 2);
         channel.connect(address);
         task.setChannel(channel);
         return channel;
     }
 
-    private void initSSLConnect(T task) {
-        if (task.isTLS() && mSslFactory != null) {
+    private void initSSLConnect(T task, SocketChannel channel) throws Exception {
+        if (task.isTLS()) {
             SSLContext sslContext = mSslFactory.getSSLContext();
             SSLEngine sslEngine = sslContext.createSSLEngine(task.getHost(), task.getPort());
             sslEngine.setUseClientMode(true);
             sslEngine.setEnableSessionCreation(true);
-            task.setSslEngine(sslEngine);
+            if (task.isTLS()) {
+                task.onHandshake(sslEngine, channel);
+            }
         }
     }
 
@@ -104,23 +116,24 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
         T task = (T) selectionKey.attachment();
         boolean isCanConnect = selectionKey.isValid() && selectionKey.isConnectable();
         boolean isCanRead = selectionKey.isValid() && selectionKey.isReadable();
+        boolean isCanWrite = selectionKey.isValid() && selectionKey.isWritable();
         if (isCanConnect) {
+            Throwable throwable = null;
             boolean isConnect = false;
             try {
                 isConnect = channel.finishConnect();
             } catch (Throwable e) {
                 LogDog.e("## url = " + task.getHost() + " port = " + task.getPort());
                 e.printStackTrace();
+                throwable = e;
             }
-            Throwable throwable = null;
             if (isConnect) {
                 try {
-                    if (task.isTLS()) {
-                        task.onHandshake(task.getSslEngine(), task.getSocketChannel());
-                    }
-                    task.onConnectCompleteChannel(task.getSocketChannel());
+                    //如果是TLS初始化SSLEngine(只能在连接成功后执行)
+                    initSSLConnect(task, channel);
                     selectionKey = task.getSocketChannel().register(mSelector, SelectionKey.OP_READ, task);
                     task.setSelectionKey(selectionKey);
+                    task.onConnectCompleteChannel(task.getSocketChannel());
                 } catch (Throwable e) {
                     throwable = e;
                     e.printStackTrace();
@@ -129,7 +142,7 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
             if (!isConnect || throwable != null) {
                 //连接失败回调
                 try {
-                    task.onConnectError();
+                    task.onConnectError(throwable);
                 } catch (Throwable e) {
                     e.printStackTrace();
                 }
@@ -137,10 +150,22 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
                 addDestroyTask(task);
             }
         } else if (isCanRead) {
-            NioReceiver receive = task.getReceive();
+            NioReceiver receive = task.getReceiver();
             if (receive != null) {
                 try {
                     receive.onRead(channel);
+                } catch (Throwable e) {
+                    addDestroyTask(task);
+                    if (!(e instanceof SocketChannelCloseException)) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        } else if (isCanWrite) {
+            NioSender sender = task.getSender();
+            if (sender != null) {
+                try {
+                    sender.doSendData();
                 } catch (Throwable e) {
                     addDestroyTask(task);
                     if (!(e instanceof SocketChannelCloseException)) {
@@ -166,10 +191,6 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
             TLSHandler tlsHandler = task.getTlsHandler();
             if (tlsHandler != null) {
                 tlsHandler.release();
-            }
-            NioReceiver receiver = task.getReceive();
-            if (receiver != null) {
-                receiver.onRelease();
             }
         }
     }

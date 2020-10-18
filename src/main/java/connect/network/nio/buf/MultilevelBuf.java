@@ -1,7 +1,5 @@
 package connect.network.nio.buf;
 
-import util.DirectBufferCleaner;
-
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -48,7 +46,7 @@ public class MultilevelBuf {
 //    }
 
     private void appendBuffer() {
-        bufList.add(ByteBuffer.allocate(initSize));
+        bufList.add(ByteBuffer.allocateDirect(initSize));
         capacity += initSize;
         limit += initSize;
 //        LogDog.d("bufList size = " + bufList.size());
@@ -66,6 +64,11 @@ public class MultilevelBuf {
     }
 
 
+    /**
+     * 租用buf（如果已租用buf则返回null）
+     *
+     * @return
+     */
     public final ByteBuffer getLendBuf() {
         synchronized (bufList) {
             if (isLendStatus) {
@@ -76,6 +79,11 @@ public class MultilevelBuf {
         }
     }
 
+    /**
+     * 归还buf
+     *
+     * @param buffer
+     */
     public final void setBackBuf(ByteBuffer buffer) {
         synchronized (bufList) {
             if (!isLendStatus || buffer == null) {
@@ -83,6 +91,7 @@ public class MultilevelBuf {
             }
             if (bufList.get(bufIndex) == buffer) {
                 if (buffer.position() == buffer.capacity()) {
+                    //如果buf存满数据则创建新的buf
                     appendBuffer();
                     bufIndex++;
                     offset = 0;
@@ -94,6 +103,11 @@ public class MultilevelBuf {
         }
     }
 
+    /**
+     * 把所有的buf数据装换成byte[]
+     *
+     * @return
+     */
     public final byte[] array() {
         synchronized (bufList) {
             if (isLendStatus) {
@@ -146,21 +160,36 @@ public class MultilevelBuf {
 //        }
 //    }
 
+    /**
+     * 当前指针位置（多个缓存buf组合）
+     *
+     * @return
+     */
     private final int position() {
         synchronized (bufList) {
             return bufIndex * initSize + offset;
         }
     }
 
+    /**
+     * 最大的缓存容量
+     *
+     * @return
+     */
     public final int capacity() {
         synchronized (bufList) {
             return capacity;
         }
     }
 
-    public final int hasRemaining() {
+    /**
+     * 缓存是否还有空间可以存储数据
+     *
+     * @return
+     */
+    public final boolean hasRemaining() {
         synchronized (bufList) {
-            return limit - position();
+            return position() < limit;
         }
     }
 
@@ -183,6 +212,9 @@ public class MultilevelBuf {
 //        }
 //    }
 
+    /**
+     * 反转为读模式（数据大小position的值）
+     */
     public final void flip() {
         synchronized (bufList) {
             limit = position();
@@ -197,6 +229,9 @@ public class MultilevelBuf {
 //        mark = -1;
 //    }
 
+    /**
+     * 清除所有的标记
+     */
     public final void clear() {
         synchronized (bufList) {
             for (ByteBuffer buffer : bufList) {
@@ -209,12 +244,16 @@ public class MultilevelBuf {
         }
     }
 
+    /**
+     * 释放资源（由于是使用直接字节buf）
+     */
     public final void release() {
         synchronized (bufList) {
             clear();
-            for (ByteBuffer buffer : bufList) {
-                DirectBufferCleaner.clean(buffer);
-            }
+//            bufList.clear();
+//            for (ByteBuffer buffer : bufList) {
+//                DirectBufferCleaner.clean(buffer);
+//            }
         }
     }
 

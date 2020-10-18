@@ -17,6 +17,12 @@ public class XHttpDefaultDns implements IXHttpDns {
         }
     }
 
+    public String getCacheDns(String host) {
+        synchronized (dnsMpa) {
+            return dnsMpa.get(host);
+        }
+    }
+
     @Override
     public String findCacheDns(String host) {
         synchronized (dnsMpa) {

@@ -4,6 +4,7 @@ package connect.network.nio;
 import connect.network.base.SocketChannelCloseException;
 import connect.network.base.joggle.INetReceiver;
 import connect.network.nio.buf.MultilevelBuf;
+import connect.network.xhttp.XMultiplexCacheManger;
 import log.LogDog;
 
 import java.net.InetSocketAddress;
@@ -13,29 +14,21 @@ import java.nio.channels.SocketChannel;
 public class NioReceiver<T> {
 
     protected INetReceiver<T> receiver;
-    protected MultilevelBuf buf;
 
     public NioReceiver() {
-        init();
     }
 
     public NioReceiver(INetReceiver<T> receiver) {
         this.receiver = receiver;
-        init();
     }
 
-    public void setReceiver(INetReceiver<T> receiver) {
+    public void setDataReceiver(INetReceiver<T> receiver) {
         this.receiver = receiver;
     }
 
-    protected void init() {
-        buf = new MultilevelBuf();
-    }
 
-    public void reset() {
-        if (buf != null) {
-            buf.clear();
-        }
+    public void resetMultilevelBuf(MultilevelBuf buf) {
+        XMultiplexCacheManger.getInstance().lose(buf);
     }
 
 
@@ -46,6 +39,7 @@ public class NioReceiver<T> {
      */
     protected void onRead(SocketChannel channel) throws Exception {
         Exception exception = null;
+        MultilevelBuf buf = XMultiplexCacheManger.getInstance().obtainBuf();
         ByteBuffer buffer = buf.getLendBuf();
         int ret = -1;
         try {
@@ -55,62 +49,31 @@ public class NioReceiver<T> {
                     buf.setBackBuf(buffer);
                     buffer = buf.getLendBuf();
                 }
-            } while (ret > 0 && channel.isOpen());
+            } while (ret > 0 && channel.isConnected());
         } catch (Exception e) {
             exception = e;
-            throw e;
-        } finally {
+        }finally {
             buf.setBackBuf(buffer);
             buf.flip();
-            try {
-                onReceiveFullData(buf);
-            } catch (Throwable e) {
-                e.printStackTrace();
-            } finally {
-                buf.clear();
-            }
-            if (exception != null) {
-                onReceiveException(exception);
-            }
-            if (ret < 0 && exception == null) {
-                InetSocketAddress localAddress = (InetSocketAddress) channel.getLocalAddress();
-                InetSocketAddress remoteAddress = (InetSocketAddress) channel.getRemoteAddress();
-                LogDog.e("## read data return - 1 ， local address = " + localAddress.toString() + " remote address = " + remoteAddress.toString());
-                throw new SocketChannelCloseException();
-            }
         }
-    }
-
-    protected void onReceiveFullData(MultilevelBuf buf) {
-        T result = null;
         try {
-            result = (T) buf;
-        } catch (Throwable e1) {
-            try {
-                result = (T) buf.array();
-            } catch (Throwable e2) {
-                LogDog.e("## need rewrite onInterceptReceive method !!!");
-            }
-        } finally {
-            notifyReceiver(result);
+            notifyReceiverImp(buf, exception);
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
+        if (exception != null) {
+            throw exception;
+        }else if (ret < 0 && exception == null) {
+            InetSocketAddress localAddress = (InetSocketAddress) channel.getLocalAddress();
+            InetSocketAddress remoteAddress = (InetSocketAddress) channel.getRemoteAddress();
+            LogDog.e("## read data return - 1 ， local address = " + localAddress.toString() + " remote address = " + remoteAddress.toString());
+            throw new SocketChannelCloseException();
         }
     }
 
-    protected void notifyReceiver(T data) {
+    protected void notifyReceiverImp(MultilevelBuf buf, Exception e) {
         if (receiver != null) {
-            receiver.onReceiveFullData(data);
-        }
-    }
-
-    protected void onReceiveException(Exception e) {
-        if (receiver != null && e != null) {
-            receiver.onReceiveException(e);
-        }
-    }
-
-    protected void onRelease() {
-        if (buf != null) {
-            buf.release();
+            receiver.onReceiveFullData((T) buf, e);
         }
     }
 }

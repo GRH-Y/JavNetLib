@@ -19,8 +19,7 @@ public class XRequest {
 
     private byte[] sendData = null;
 
-    private String successMethod = null;
-    private String errorMethod = null;
+    private String callBackMethod = null;
     private String processMethod = null;
 
     /**
@@ -67,12 +66,8 @@ public class XRequest {
         return resultType;
     }
 
-    public String getSuccessMethod() {
-        return successMethod;
-    }
-
-    public String getErrorMethod() {
-        return errorMethod;
+    public String getCallBackMethod() {
+        return callBackMethod;
     }
 
     public void setUrl(String url) {
@@ -99,17 +94,13 @@ public class XRequest {
     }
 
 
-    public void setSuccessMethod(String successMethod) {
-        this.successMethod = successMethod;
+    public void setCallBackMethod(String callBackMethod) {
+        this.callBackMethod = callBackMethod;
     }
 
 
     public String getProcessMethod() {
         return processMethod;
-    }
-
-    public void setErrorMethod(String errorMethod) {
-        this.errorMethod = errorMethod;
     }
 
     public void setProcessMethod(String processMethod) {

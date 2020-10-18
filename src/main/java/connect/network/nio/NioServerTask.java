@@ -1,8 +1,6 @@
 package connect.network.nio;
 
 
-import util.StringEnvoy;
-
 import javax.net.ssl.SSLEngine;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -15,12 +13,8 @@ import java.nio.channels.SocketChannel;
  */
 public class NioServerTask extends BaseNioNetTask {
 
-    private String mHost = null;
-    private int mPort = 0;
-    private boolean isTLS = false;
     private ServerSocketChannel mChannel = null;
     private int mMaxConnect = 50;
-    private int acceptTimeout = 3000;
 
     public NioServerTask() {
     }
@@ -30,15 +24,6 @@ public class NioServerTask extends BaseNioNetTask {
     }
 
     //---------------------------- set ---------------------------------------
-
-    public void setAddress(String host, int port, boolean isTLS) {
-        if (StringEnvoy.isEmpty(host) || port < 0) {
-            throw new IllegalStateException("host or port is invalid !!! ");
-        }
-        this.mHost = host;
-        this.mPort = port;
-        this.isTLS = isTLS;
-    }
 
     /**
      * 获取该任务要链接的服务器地址
@@ -53,15 +38,8 @@ public class NioServerTask extends BaseNioNetTask {
         this.mMaxConnect = mMaxConnect;
     }
 
-    public void setAcceptTimeout(int acceptTimeout) {
-        this.acceptTimeout = acceptTimeout;
-    }
-
     //---------------------------- get ---------------------------------------
 
-    public boolean isTLS() {
-        return isTLS;
-    }
 
     public int getServerPort() {
         return mPort;
@@ -79,29 +57,26 @@ public class NioServerTask extends BaseNioNetTask {
         return mMaxConnect;
     }
 
-    public int getAcceptTimeout() {
-        return acceptTimeout;
-    }
 
     //---------------------------- on ---------------------------------------
 
-    protected void onBootServerComplete(ServerSocketChannel channel) throws Exception {
-    }
-
-    protected void onConfigSSLEngine(SSLEngine sslEngine) {
-
-    }
-
-    protected void onAcceptServerChannel(SocketChannel channel) throws Exception {
-    }
-
-    protected void onCloseServerChannel() throws Exception {
+    protected void onBootServerComplete(ServerSocketChannel channel) {
     }
 
     @Override
-    protected void reset() {
-        super.reset();
-        isTLS = false;
+    protected void onHandshake(SSLEngine sslEngine, SocketChannel channel) throws Exception {
+        super.onHandshake(sslEngine, channel);
+    }
+
+    protected void onAcceptServerChannel(SocketChannel channel) {
+    }
+
+    protected void onCloseServerChannel() {
+    }
+
+    @Override
+    protected void onRecovery() {
+        super.onRecovery();
         mChannel = null;
     }
 }

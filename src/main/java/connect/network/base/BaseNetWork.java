@@ -20,11 +20,11 @@ public abstract class BaseNetWork<T extends BaseNetTask> {
         mDestroyCache = new ConcurrentLinkedQueue<>();
     }
 
-    protected Queue<T> getConnectCache() {
+    public Queue<T> getConnectCache() {
         return mConnectCache;
     }
 
-    protected Queue<T> getDestroyCache() {
+    public Queue<T> getDestroyCache() {
         return mDestroyCache;
     }
 
@@ -35,10 +35,15 @@ public abstract class BaseNetWork<T extends BaseNetTask> {
      */
     protected void onCheckConnectTask() {
         //检测是否有新的任务添加
-        if (!mConnectCache.isEmpty()) {
-            T task = mConnectCache.remove();
-            onConnectTask(task);
+        T task = mConnectCache.poll();
+        if (task != null) {
+            connectImp(task);
         }
+    }
+
+    protected void connectImp(T task) {
+        task.changeTaskStatus(TaskStatus.RUN);
+        onConnectTask(task);
     }
 
     protected void onExecuteTask() {
@@ -48,12 +53,24 @@ public abstract class BaseNetWork<T extends BaseNetTask> {
      * 检查要移除任务
      */
     protected void onCheckRemoverTask() {
-        //销毁链接
-        if (!mDestroyCache.isEmpty()) {
-            T task = mDestroyCache.remove();
-            onDisconnectTask(task);
+        T task = mDestroyCache.poll();
+        if (task != null) {
+            removerTaskImp(task);
         }
     }
+
+    protected void removerTaskImp(T task) {
+        task.changeTaskStatus(TaskStatus.NONE);
+        onDisconnectTask(task);
+    }
+
+
+    /**
+     * 销毁所有的链接任务
+     */
+    protected void onRecoveryTaskAll() {
+    }
+
 
     //------------------------------------------------------------------------------------
 
@@ -81,7 +98,6 @@ public abstract class BaseNetWork<T extends BaseNetTask> {
      */
     protected void onRecoveryTask(T task) {
         try {
-            task.reset();
             task.onRecovery();
         } catch (Throwable e) {
             e.printStackTrace();
@@ -89,18 +105,16 @@ public abstract class BaseNetWork<T extends BaseNetTask> {
     }
 
 
-    /**
-     * 销毁所有的链接任务
-     */
-    protected void onRecoveryTaskAll() {
-    }
-
     //------------------------------------------------------------------------------------
 
     protected boolean addConnectTask(T task) {
         boolean ret = false;
         if (task != null && !mConnectCache.contains(task)) {
-            ret = mConnectCache.add(task);
+            task.changeTaskStatus(TaskStatus.USE);
+            ret = mConnectCache.offer(task);
+            if (!ret) {
+                task.changeTaskStatus(TaskStatus.NONE);
+            }
         }
         return ret;
     }
@@ -108,8 +122,7 @@ public abstract class BaseNetWork<T extends BaseNetTask> {
     protected boolean addDestroyTask(T task) {
         boolean ret = false;
         if (task != null && !mDestroyCache.contains(task)) {
-            task.setTaskNeedClose(true);
-            ret = mDestroyCache.add(task);
+            ret = mDestroyCache.offer(task);
         }
         return ret;
     }

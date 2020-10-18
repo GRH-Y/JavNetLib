@@ -1,17 +1,23 @@
 package connect.network.base;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import util.StringEnvoy;
 
 public class BaseNetTask {
 
-    private volatile AtomicBoolean isTaskNeedClose;
+    protected String mHost = null;
+
+    protected int mPort = -1;
+
+    private volatile TaskStatus taskStatus;
 
     public BaseNetTask() {
-        isTaskNeedClose = new AtomicBoolean(false);
+        taskStatus = TaskStatus.NONE;
     }
 
-    protected void setTaskNeedClose(boolean isClose) {
-        isTaskNeedClose.set(isClose);
+    protected void changeTaskStatus(TaskStatus status) {
+        synchronized (BaseNetTask.class) {
+            this.taskStatus = status;
+        }
     }
 
     /**
@@ -19,16 +25,35 @@ public class BaseNetTask {
      *
      * @return
      */
-    public boolean isTaskNeedClose() {
-        return isTaskNeedClose.get();
+    public TaskStatus getTaskStatus() {
+        synchronized (BaseNetTask.class) {
+            return taskStatus;
+        }
+    }
+
+    public void setAddress(String host, int port) {
+        if (StringEnvoy.isEmpty(host) || port < 0) {
+            throw new IllegalStateException("host or port is invalid !!! ");
+        }
+        this.mHost = host;
+        this.mPort = port;
+    }
+
+
+
+    public int getPort() {
+        return mPort;
+    }
+
+    public String getHost() {
+        return mHost;
     }
 
     /**
      * 当前状态链接彻底关闭，可以做资源回收工作
      */
     protected void onRecovery() {
-    }
-
-    protected void reset() {
+        mHost = null;
+        mPort = -1;
     }
 }

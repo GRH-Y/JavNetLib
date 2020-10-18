@@ -43,10 +43,7 @@ public class UdpReceive {
 
     protected void notifyReceiver(DatagramPacket packet, Exception exception) {
         if (mReceive != null) {
-            mReceive.onReceiveFullData(packet);
-            if (exception != null && !(exception instanceof SocketTimeoutException)) {
-                mReceive.onReceiveException(exception);
-            }
+            mReceive.onReceiveFullData(packet, exception);
         }
     }
 }

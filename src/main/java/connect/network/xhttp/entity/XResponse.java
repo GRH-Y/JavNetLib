@@ -7,10 +7,22 @@ import java.util.Map;
 
 public class XResponse {
 
-    private byte[] httpData = null;
+    /**
+     * 完整的http数据
+     */
     private ByteCacheStream raw;
-
+    /**
+     * http head
+     */
     private Map<String, String> httpHead;
+    /**
+     * http body
+     */
+    private byte[] httpData = null;
+
+    /**
+     * body转换成实体结果
+     */
     private Object result = null;
 
 

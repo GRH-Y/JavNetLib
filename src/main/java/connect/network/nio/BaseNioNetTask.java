@@ -1,15 +1,12 @@
 package connect.network.nio;
 
-import connect.network.base.BaseNetTask;
+import connect.network.base.BaseTLSTask;
 
-import javax.net.ssl.SSLEngine;
 import java.nio.channels.SelectionKey;
 
-public class BaseNioNetTask extends BaseNetTask {
+public class BaseNioNetTask extends BaseTLSTask {
 
     protected SelectionKey selectionKey;
-
-    private SSLEngine sslEngine = null;
 
     protected void setSelectionKey(SelectionKey selectionKey) {
         this.selectionKey = selectionKey;
@@ -19,16 +16,9 @@ public class BaseNioNetTask extends BaseNetTask {
         return selectionKey;
     }
 
-    protected void setSslEngine(SSLEngine sslEngine) {
-        this.sslEngine = sslEngine;
-    }
-
-    protected SSLEngine getSslEngine() {
-        return sslEngine;
-    }
-
-    protected void reset() {
+    @Override
+    protected void onRecovery() {
+        super.onRecovery();
         selectionKey = null;
-        sslEngine = null;
     }
 }

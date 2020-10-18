@@ -2,8 +2,6 @@ package connect.network.nio;
 
 import connect.network.base.BaseNetWork;
 
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLSession;
 import java.io.IOException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
@@ -33,10 +31,7 @@ public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T
      */
     @Override
     protected void onCheckConnectTask() {
-        if (!mConnectCache.isEmpty()) {
-            T task = mConnectCache.remove();
-            onConnectTask(task);
-        }
+        super.onCheckConnectTask();
     }
 
     /**
@@ -45,7 +40,7 @@ public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T
     @Override
     protected void onExecuteTask() {
         int count = 0;
-        if (mConnectCache.isEmpty()) {
+        if (mConnectCache.isEmpty() && mDestroyCache.isEmpty()) {
             try {
                 count = mSelector.select();
             } catch (Exception e) {
@@ -66,18 +61,15 @@ public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T
         }
     }
 
-
-    /**
-     * 检查要移除任务
-     */
     @Override
     protected void onCheckRemoverTask() {
-        if (!mDestroyCache.isEmpty()) {
-            //处理要移除的任务
-            T target = mDestroyCache.remove();
-            onDisconnectTask(target);
-            closeConnect(target);
-        }
+        super.onCheckRemoverTask();
+    }
+
+    @Override
+    protected void removerTaskImp(T task) {
+        super.removerTaskImp(task);
+        closeConnect(task);
     }
 
     //------------------------------------------------------------------------------------------------------------------
@@ -98,8 +90,7 @@ public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T
             for (SelectionKey selectionKey : mSelector.keys()) {
                 if (selectionKey.isValid()) {
                     T task = (T) selectionKey.attachment();
-                    onDisconnectTask(task);
-                    closeConnect(task);
+                    removerTaskImp(task);
                 }
             }
             try {
@@ -126,23 +117,6 @@ public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T
                 e.printStackTrace();
             } finally {
                 target.selectionKey.cancel();
-            }
-        }
-        SSLEngine sslEngine = target.getSslEngine();
-        if (sslEngine != null) {
-            try {
-                SSLSession handSession = sslEngine.getHandshakeSession();
-                if (handSession != null) {
-                    handSession.invalidate();
-                }
-                SSLSession sslSession = sslEngine.getSession();
-                if (sslSession != null) {
-                    sslSession.invalidate();
-                }
-                sslEngine.closeOutbound();
-//                    sslEngine.closeInbound();
-            } catch (Exception e) {
-                e.printStackTrace();
             }
         }
         onRecoveryTask(target);

@@ -8,8 +8,6 @@ import java.net.Socket;
 public class TcpClientTask extends BaseNetTask {
 
     private Socket mSocket = null;
-    private String mHost = null;
-    private int mPort = -1;
     private int connectTimeout = 3000;
 
     private TcpReceive receive = null;
@@ -33,10 +31,6 @@ public class TcpClientTask extends BaseNetTask {
         this.mSocket = socket;
     }
 
-    public void setAddress(String host, int port) {
-        this.mHost = host;
-        this.mPort = port;
-    }
 
     public void setReceive(TcpReceive receive) {
         this.receive = receive;
@@ -51,14 +45,6 @@ public class TcpClientTask extends BaseNetTask {
     }
 
     //---------------------------- get ---------------------------------------
-
-    public int getPort() {
-        return mPort;
-    }
-
-    public String getHost() {
-        return mHost;
-    }
 
     public Socket getSocket() {
         return mSocket;

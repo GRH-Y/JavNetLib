@@ -38,10 +38,7 @@ public class TcpReceive {
 
     protected void notifyReceiver(Object data, Exception exception) {
         if (receive != null) {
-            receive.onReceiveFullData(data);
-            if (exception != null) {
-                receive.onReceiveException(exception);
-            }
+            receive.onReceiveFullData(data, exception);
         }
     }
 }

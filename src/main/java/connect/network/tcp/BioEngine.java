@@ -1,7 +1,6 @@
 package connect.network.tcp;
 
 import connect.network.base.AbsNetEngine;
-import connect.network.base.AbsNetFactory;
 import connect.network.base.BaseNetTask;
 
 /**
@@ -12,13 +11,10 @@ import connect.network.base.BaseNetTask;
 public class BioEngine<T extends BaseNetTask> extends AbsNetEngine {
 
 
-    protected AbsNetFactory<T> mFactory;
-
     protected BioNetWork<T> mWork;
 
 
-    public BioEngine(AbsNetFactory<T> factory, BioNetWork<T> work) {
-        this.mFactory = factory;
+    public BioEngine(BioNetWork<T> work) {
         this.mWork = work;
     }
 

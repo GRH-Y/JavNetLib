@@ -7,9 +7,6 @@ import java.net.Socket;
 
 public class TcpServerTask extends BaseNetTask {
     private ServerSocket mServerSocket = null;
-    private String mHost = null;
-    private int mPort = -1;
-
     private int mMaxConnect = 50;
 
     //---------------------------- get ---------------------------------------
@@ -18,23 +15,11 @@ public class TcpServerTask extends BaseNetTask {
         return mServerSocket;
     }
 
-    public int getServerPort() {
-        return mPort;
-    }
-
-    public String getServerHost() {
-        return mHost;
-    }
-
     public int getMaxConnect() {
         return mMaxConnect;
     }
     //---------------------------- set ---------------------------------------
 
-    public void setAddress(String host, int port) {
-        this.mHost = host;
-        this.mPort = port;
-    }
 
     public void setServerSocket(ServerSocket mServerSocket) {
         this.mServerSocket = mServerSocket;

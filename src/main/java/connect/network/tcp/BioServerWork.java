@@ -30,9 +30,9 @@ public class BioServerWork<T extends TcpServerTask> extends BioNetWork<T> {
         boolean isOpenServer = false;
         ServerSocket serverSocket = task.getServerSocket();
         try {
-            if (serverSocket == null && task.getServerHost() != null && task.getServerPort() > 0) {
-                InetSocketAddress address = new InetSocketAddress(task.getServerHost(), task.getServerPort());
-                if (task.getServerPort() == 443 && mFactory.getSslFactory() != null) {
+            if (serverSocket == null && task.getHost() != null && task.getPort() > 0) {
+                InetSocketAddress address = new InetSocketAddress(task.getHost(), task.getPort());
+                if (task.getPort() == 443 && mFactory.getSslFactory() != null) {
                     ServerSocketFactory sslServerSocketFactory = mFactory.getSslFactory().getSSLServerSocketFactory();
                     SSLServerSocket sslServerSocket = (SSLServerSocket) sslServerSocketFactory.createServerSocket();
                     sslServerSocket.bind(address);
@@ -86,13 +86,18 @@ public class BioServerWork<T extends TcpServerTask> extends BioNetWork<T> {
 
     @Override
     public void onDisconnectTask(T task) {
-        task.onCloseServer();
-        ServerSocket serverSocket = task.getServerSocket();
-        if (serverSocket != null) {
-            try {
-                serverSocket.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+        try {
+            task.onCloseServer();
+        } catch (Throwable e) {
+            e.printStackTrace();
+        } finally {
+            ServerSocket serverSocket = task.getServerSocket();
+            if (serverSocket != null) {
+                try {
+                    serverSocket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }

@@ -1,7 +1,5 @@
 package connect.network.base.joggle;
 
-import java.nio.ByteBuffer;
-
 public interface ISenderFeedback {
 
     /**
@@ -10,12 +8,5 @@ public interface ISenderFeedback {
      * @param sender
      * @param data
      */
-    void onSenderFeedBack(INetSender sender, ByteBuffer data, Throwable e);
-
-//    /**
-//     * 发送数据出错回调
-//     *
-//     * @param e
-//     */
-//    void onSenderError(Throwable e);
+    void onSenderFeedBack(INetSender sender, Object data, Throwable e);
 }

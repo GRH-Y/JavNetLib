@@ -8,6 +8,7 @@ import connect.network.xhttp.entity.XReceiverStatus;
 import connect.network.xhttp.entity.XResponse;
 import connect.network.xhttp.utils.ByteCacheStream;
 import connect.network.xhttp.utils.XHttpProtocol;
+import connect.network.xhttp.utils.XResponseHelper;
 import util.StringEnvoy;
 
 import java.util.Map;
@@ -47,14 +48,6 @@ public class XHttpReceiver extends NioReceiver<XResponse> {
     }
 
 
-    @Override
-    public void reset() {
-        super.reset();
-        headEndIndex = -1;
-        status = XReceiverStatus.HEAD;
-        response.reset();
-    }
-
     public XReceiverStatus getStatus() {
         return status;
     }
@@ -69,36 +62,37 @@ public class XHttpReceiver extends NioReceiver<XResponse> {
 
 
     @Override
-    protected void onReceiveFullData(MultilevelBuf buf) {
+    protected void notifyReceiverImp(MultilevelBuf buf, Exception e) {
         byte[] data = buf.array();
-        onHttpReceive(data, data != null ? data.length : -1);
+        onHttpReceive(data, data != null ? data.length : -1, e);
+        resetMultilevelBuf(buf);
     }
 
 
-    protected void onHttpReceive(byte[] data, int len) {
+    protected void onHttpReceive(byte[] data, int len, Exception e) {
         if (mode == XReceiverMode.REQUEST) {
-            onRequest(data, len);
+            onRequest(data, len, e);
         } else {
-            onResponse(data, len);
+            onResponse(data, len, e);
         }
     }
 
-    protected void onRequest(byte[] data, int len) {
+    protected void onRequest(byte[] data, int len, Exception e) {
         if (data != null) {
             response.appendRawData(data);
             processHttpHead(data, len);
             processRequestBody(data, len);
-            processNotify();
+            processNotify(e);
         }
     }
 
-    protected void onResponse(byte[] data, int len) {
+    protected void onResponse(byte[] data, int len, Exception e) {
         if (data != null) {
 //            LogDog.d("==> data = " + new String(data));
             response.appendRawData(data);
             processHttpHead(data, len);
             processResponseBody(data, len);
-            processNotify();
+            processNotify(e);
         }
     }
 
@@ -107,7 +101,7 @@ public class XHttpReceiver extends NioReceiver<XResponse> {
 
     protected void processHttpHead(byte[] data, int len) {
         if (status == XReceiverStatus.HEAD) {
-            headEndIndex = findHeadEndTag(data, len);
+            headEndIndex = XResponseHelper.findHeadEndTag(data, len);
             if (headEndIndex != -1) {
                 //找到协议头结束标志，则开始解析协议头
                 analysisHead(data, headEndIndex);
@@ -142,7 +136,7 @@ public class XHttpReceiver extends NioReceiver<XResponse> {
                 }
             } else {
                 //没有请求体
-                int index = findHeadEndTag(data, len);
+                int index = XResponseHelper.findHeadEndTag(data, len);
                 if (index != -1) {
                     status = XReceiverStatus.OVER;
                     callStatusChange();
@@ -164,7 +158,7 @@ public class XHttpReceiver extends NioReceiver<XResponse> {
             //分段传输方式
             if (isSubsection) {
                 //查找0\r\n结束标志
-                int index = findBodyEndTag(data, len);
+                int index = XResponseHelper.findBodyEndTag(data, len);
                 if (index != -1) {
                     body = new byte[raw.size() - 5 - headEndIndex];
                 }
@@ -183,12 +177,22 @@ public class XHttpReceiver extends NioReceiver<XResponse> {
         }
     }
 
-    protected void processNotify() {
+    private void processNotify(Exception e) {
         if (status == XReceiverStatus.OVER) {
-            notifyReceiver(response);
+            if (receiver != null) {
+                receiver.onReceiveFullData(response, e);
+            }
             status = XReceiverStatus.NONE;
             callStatusChange();
+            reset();
         }
+    }
+
+
+    private void reset() {
+        headEndIndex = -1;
+        status = XReceiverStatus.HEAD;
+        response.reset();
     }
 
     private void callStatusChange() {
@@ -215,24 +219,5 @@ public class XHttpReceiver extends NioReceiver<XResponse> {
             }
         }
 //        LogDog.d("=============== head end ====================\r\n");
-    }
-
-    private int findHeadEndTag(byte[] data, int len) {
-        for (int index = 0; index < len; index++) {
-            if (data[index] == '\r' && data[index + 1] == '\n' && data[index + 2] == '\r' && data[index + 3] == '\n') {
-                return index + 4;
-            }
-        }
-        return -1;
-    }
-
-    private int findBodyEndTag(byte[] data, int len) {
-        if (data.length > 5) {
-            int index = len - 1;
-            if (data[index] == '\n' && data[index - 1] == '\r' && data[index - 2] == '\n' && data[index - 3] == '\r' && data[index - 4] == '0') {
-                return index - 4;
-            }
-        }
-        return -1;
     }
 }

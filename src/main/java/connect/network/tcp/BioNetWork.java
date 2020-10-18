@@ -2,6 +2,7 @@ package connect.network.tcp;
 
 import connect.network.base.BaseNetTask;
 import connect.network.base.BaseNetWork;
+import connect.network.base.TaskStatus;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -21,17 +22,6 @@ public class BioNetWork<T extends BaseNetTask> extends BaseNetWork<T> {
         return mExecutorQueue;
     }
 
-    @Override
-    protected Queue<T> getConnectCache() {
-        return super.getConnectCache();
-    }
-
-    @Override
-    protected Queue<T> getDestroyCache() {
-        return super.getDestroyCache();
-    }
-
-
     //------------------------------------------------------------------------------------------------------------------
 
 
@@ -42,29 +32,26 @@ public class BioNetWork<T extends BaseNetTask> extends BaseNetWork<T> {
 
     @Override
     protected void onCheckConnectTask() {
-        //检测是否有新的任务添加
-        while (!mConnectCache.isEmpty()) {
-            T task = mConnectCache.remove();
-            onConnectTask(task);
-            if (!task.isTaskNeedClose()) {
-                mExecutorQueue.add(task);
-            }
+        super.onCheckConnectTask();
+    }
+
+    @Override
+    protected void connectImp(T task) {
+        super.connectImp(task);
+        if (task.getTaskStatus() == TaskStatus.RUN) {
+            mExecutorQueue.add(task);
         }
     }
 
-
     @Override
     protected void onCheckRemoverTask() {
-        //销毁链接
-        if (!mDestroyCache.isEmpty()) {
-            T task = mDestroyCache.remove();
-            try {
-                onDisconnectTask(task);
-            } catch (Throwable e) {
-                e.printStackTrace();
-            }
-            mExecutorQueue.remove(task);
-        }
+        super.onCheckRemoverTask();
+    }
+
+    @Override
+    protected void removerTaskImp(T task) {
+        super.removerTaskImp(task);
+        mExecutorQueue.remove(task);
     }
 
     @Override

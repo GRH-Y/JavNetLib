@@ -5,7 +5,6 @@ import log.LogDog;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
@@ -59,19 +58,13 @@ public class NioServerWork<T extends NioServerTask> extends NioNetWork<T> {
         return channel;
     }
 
-    private void initSSLConnect(T task) throws SSLException {
+    private void initSSLConnect(T task, SocketChannel channel) throws Exception {
         if (mSslFactory != null) {
             SSLContext sslContext = mSslFactory.getSSLContext();
             SSLEngine sslEngine = sslContext.createSSLEngine();
             sslEngine.setUseClientMode(false);
             sslEngine.setEnableSessionCreation(true);
-            try {
-                task.onConfigSSLEngine(sslEngine);
-            } catch (Throwable e) {
-                e.printStackTrace();
-            }
-            sslEngine.beginHandshake();
-            task.setSslEngine(sslEngine);
+            task.onHandshake(sslEngine, channel);
         }
     }
 
@@ -90,11 +83,12 @@ public class NioServerWork<T extends NioServerTask> extends NioNetWork<T> {
                 SocketChannel channel = serverSocketChannel.accept();
                 if (task.isTLS()) {
                     //如果是TLS初始化SSLEngine
-                    initSSLConnect(task);
+                    initSSLConnect(task, channel);
                 }
                 task.onAcceptServerChannel(channel);
             } catch (Throwable e) {
                 e.printStackTrace();
+                addDestroyTask(task);
             }
         }
     }

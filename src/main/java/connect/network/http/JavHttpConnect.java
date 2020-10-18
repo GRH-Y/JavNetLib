@@ -107,6 +107,9 @@ public class JavHttpConnect {
         }
         Class clx = requestEntity.getClass();
         ARequest request = (ARequest) clx.getAnnotation(ARequest.class);
+        if (request == null) {
+            throw new IllegalArgumentException("The entity has no annotations ARequest !!! ");
+        }
         int atnTaskTag = taskTag != RequestEntity.DEFAULT_TASK_TAG ? taskTag : request.taskTag();
         RequestMode requestMode = request.requestMode();
         String address = request.url().trim();
