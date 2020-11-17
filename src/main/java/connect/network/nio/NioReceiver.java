@@ -3,29 +3,32 @@ package connect.network.nio;
 
 import connect.network.base.SocketChannelCloseException;
 import connect.network.base.joggle.INetReceiver;
-import connect.network.nio.buf.MultilevelBuf;
+import connect.network.base.joggle.IReceiverDecodeHandle;
+import connect.network.xhttp.utils.MultilevelBuf;
 import connect.network.xhttp.XMultiplexCacheManger;
-import log.LogDog;
 
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
-public class NioReceiver<T> {
+public class NioReceiver {
 
-    protected INetReceiver<T> receiver;
+    protected INetReceiver<MultilevelBuf> receiver;
+    protected IReceiverDecodeHandle decodeHandle;
 
     public NioReceiver() {
     }
 
-    public NioReceiver(INetReceiver<T> receiver) {
+        public NioReceiver(INetReceiver<MultilevelBuf> receiver) {
         this.receiver = receiver;
     }
 
-    public void setDataReceiver(INetReceiver<T> receiver) {
+    public void setDataReceiver(INetReceiver<MultilevelBuf> receiver) {
         this.receiver = receiver;
     }
 
+    public void setDecodeHandle(IReceiverDecodeHandle decodeHandle) {
+        this.decodeHandle = decodeHandle;
+    }
 
     public void resetMultilevelBuf(MultilevelBuf buf) {
         XMultiplexCacheManger.getInstance().lose(buf);
@@ -37,43 +40,47 @@ public class NioReceiver<T> {
      *
      * @return 如果返回false则会关闭该链接
      */
-    protected void onRead(SocketChannel channel) throws Exception {
-        Exception exception = null;
-        MultilevelBuf buf = XMultiplexCacheManger.getInstance().obtainBuf();
-        ByteBuffer buffer = buf.getLendBuf();
-        int ret = -1;
-        try {
-            do {
-                ret = channel.read(buffer);
-                if (ret > 0 && buffer.position() == buffer.capacity()) {
-                    buf.setBackBuf(buffer);
-                    buffer = buf.getLendBuf();
-                }
-            } while (ret > 0 && channel.isConnected());
-        } catch (Exception e) {
-            exception = e;
-        }finally {
-            buf.setBackBuf(buffer);
-            buf.flip();
-        }
-        try {
-            notifyReceiverImp(buf, exception);
-        } catch (Throwable e) {
-            e.printStackTrace();
-        }
-        if (exception != null) {
-            throw exception;
-        }else if (ret < 0 && exception == null) {
-            InetSocketAddress localAddress = (InetSocketAddress) channel.getLocalAddress();
-            InetSocketAddress remoteAddress = (InetSocketAddress) channel.getRemoteAddress();
-            LogDog.e("## read data return - 1 ， local address = " + localAddress.toString() + " remote address = " + remoteAddress.toString());
-            throw new SocketChannelCloseException();
+    protected void onRead(SocketChannel channel) throws Throwable {
+        if (decodeHandle != null) {
+            decodeHandle.onDecode(channel);
+        } else {
+            Throwable exception = null;
+            MultilevelBuf buf = XMultiplexCacheManger.getInstance().obtainBuf();
+            ByteBuffer[] buffer = buf.getAllBuf();
+            long ret = -1;
+            try {
+                do {
+                    ret = channel.read(buffer);
+                    if (ret > 0) {
+                        buf.setBackBuf(buffer);
+                        buffer = buf.getAllBuf();
+                    }
+                } while (ret > 0);
+            } catch (Throwable e) {
+                exception = e;
+            } finally {
+                buf.setBackBuf(buffer);
+                buf.flip();
+            }
+            try {
+                notifyReceiverImp(buf, exception);
+            } catch (Throwable e) {
+                e.printStackTrace();
+            }
+            if (exception != null) {
+                throw exception;
+            } else if (ret < 0 && exception == null) {
+//            InetSocketAddress localAddress = (InetSocketAddress) channel.getLocalAddress();
+//            InetSocketAddress remoteAddress = (InetSocketAddress) channel.getRemoteAddress();
+//            LogDog.e("## socket channel exception， local address = " + localAddress.toString() + " remote address = " + remoteAddress.toString());
+                throw new SocketChannelCloseException();
+            }
         }
     }
 
-    protected void notifyReceiverImp(MultilevelBuf buf, Exception e) {
+    protected void notifyReceiverImp(MultilevelBuf buf, Throwable e) {
         if (receiver != null) {
-            receiver.onReceiveFullData((T) buf, e);
+            receiver.onReceiveFullData(buf, e);
         }
     }
 }

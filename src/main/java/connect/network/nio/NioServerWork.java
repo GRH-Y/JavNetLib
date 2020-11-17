@@ -58,7 +58,7 @@ public class NioServerWork<T extends NioServerTask> extends NioNetWork<T> {
         return channel;
     }
 
-    private void initSSLConnect(T task, SocketChannel channel) throws Exception {
+    private void initSSLConnect(T task, SocketChannel channel) throws Throwable {
         if (mSslFactory != null) {
             SSLContext sslContext = mSslFactory.getSSLContext();
             SSLEngine sslEngine = sslContext.createSSLEngine();

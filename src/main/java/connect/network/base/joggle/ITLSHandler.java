@@ -1,6 +1,5 @@
 package connect.network.base.joggle;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
@@ -8,15 +7,15 @@ import java.nio.channels.SocketChannel;
 
 public interface ITLSHandler {
 
-    void doHandshake(SocketChannel channel) throws IOException;
+    void doHandshake(SocketChannel channel) throws Throwable;
 
     void doHandshake(AsynchronousSocketChannel channel) throws Exception;
 
-    void wrapAndWrite(SocketChannel channel, ByteBuffer needWarp) throws IOException;
+    void wrapAndWrite(SocketChannel channel, ByteBuffer needWarp) throws Throwable;
 
     void wrapAndWrite(AsynchronousSocketChannel channel, ByteBuffer needWarp, CompletionHandler<Integer, ByteBuffer> handler) throws Exception;
 
-    ByteBuffer readAndUnwrap(SocketChannel channel, boolean isDoHandshake) throws IOException;
+    int readAndUnwrap(SocketChannel channel, boolean isDoHandshake, ByteBuffer... buffer) throws Throwable;
 
     ByteBuffer readAndUnwrap(AsynchronousSocketChannel channel, boolean isDoHandshake) throws Exception;
 }

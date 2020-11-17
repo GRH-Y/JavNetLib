@@ -92,7 +92,7 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
         return channel;
     }
 
-    private void initSSLConnect(T task, SocketChannel channel) throws Exception {
+    private void initSSLConnect(T task, SocketChannel channel) throws Throwable {
         if (task.isTLS()) {
             SSLContext sslContext = mSslFactory.getSSLContext();
             SSLEngine sslEngine = sslContext.createSSLEngine(task.getHost(), task.getPort());

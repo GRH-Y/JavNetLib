@@ -39,7 +39,7 @@ public class NioEngine extends AbsNetEngine {
 
     @Override
     protected void stopEngine() {
-        resumeEngine();
         super.stopEngine();
+        resumeEngine();
     }
 }

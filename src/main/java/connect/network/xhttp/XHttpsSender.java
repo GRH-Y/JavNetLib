@@ -3,7 +3,6 @@ package connect.network.xhttp;
 import connect.network.nio.NioSender;
 import connect.network.ssl.TLSHandler;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -25,7 +24,7 @@ public class XHttpsSender extends NioSender {
     }
 
     @Override
-    protected void sendDataImp(ByteBuffer data) throws IOException {
+    protected void sendDataImp(ByteBuffer data) throws Throwable {
         tlsHandler.wrapAndWrite(channel, data);
     }
 

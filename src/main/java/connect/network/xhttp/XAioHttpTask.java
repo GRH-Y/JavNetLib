@@ -8,7 +8,7 @@ import connect.network.base.joggle.INetReceiver;
 import connect.network.base.joggle.INetSender;
 import connect.network.base.joggle.ISenderFeedback;
 import connect.network.base.joggle.IXSessionNotify;
-import connect.network.nio.buf.MultilevelBuf;
+import connect.network.xhttp.utils.MultilevelBuf;
 import connect.network.xhttp.config.XHttpConfig;
 import connect.network.xhttp.entity.XRequest;
 import connect.network.xhttp.entity.XResponse;

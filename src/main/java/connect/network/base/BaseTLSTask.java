@@ -33,7 +33,7 @@ public class BaseTLSTask extends BaseNetTask {
      * @param channel
      * @throws Exception
      */
-    protected void onHandshake(SSLEngine sslEngine, SocketChannel channel) throws Exception {
+    protected void onHandshake(SSLEngine sslEngine, SocketChannel channel) throws Throwable {
         tlsHandler = new TLSHandler(sslEngine);
         sslEngine.beginHandshake();
         tlsHandler.doHandshake(channel);

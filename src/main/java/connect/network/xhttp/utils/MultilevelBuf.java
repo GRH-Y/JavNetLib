@@ -1,4 +1,6 @@
-package connect.network.nio.buf;
+package connect.network.xhttp.utils;
+
+import log.LogDog;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -24,9 +26,9 @@ public class MultilevelBuf {
     private final List<ByteBuffer> bufList;
     //默认每个buf的大小
     private final int initSize;
-    private final int DEFAULT_SIZE = 8096;
-    //是否是借用状态
-    private boolean isLendStatus = false;
+    private final int DEFAULT_SIZE = 16921;
+    //借用数量
+    private int lendCount = 0;
 
     public MultilevelBuf() {
         bufList = new LinkedList<>();
@@ -45,21 +47,52 @@ public class MultilevelBuf {
 //        return bufList;
 //    }
 
-    private void appendBuffer() {
+    public void appendBuffer() {
         bufList.add(ByteBuffer.allocateDirect(initSize));
         capacity += initSize;
         limit += initSize;
 //        LogDog.d("bufList size = " + bufList.size());
     }
 
-    public final ByteBuffer[] getAllBuf() {
+    /**
+     * 获取已用的buf
+     *
+     * @return
+     */
+    public final ByteBuffer[] getUseBuf() {
         synchronized (bufList) {
+            if (lendCount > 0) {
+                LogDog.e("## getUseBuf buf is use ing !!!");
+                return null;
+            }
             int size = bufIndex + (offset > 0 ? 1 : 0);
             ByteBuffer[] buffers = new ByteBuffer[size];
-            for (int index = 0; index < buffers.length; index++) {
-                buffers[index] = bufList.get(index);
+            try {
+                for (int index = 0; index < buffers.length; index++) {
+                    buffers[index] = bufList.get(index);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
+            lendCount = size;
             return buffers;
+        }
+    }
+
+    /**
+     * 获取所有的buf
+     *
+     * @return
+     */
+    public final ByteBuffer[] getAllBuf() {
+        synchronized (bufList) {
+            if (lendCount > 0) {
+                LogDog.e("## getAllBuf buf is use ing !!!");
+                return null;
+            }
+            ByteBuffer[] buffers = new ByteBuffer[bufList.size()];
+            lendCount = buffers.length;
+            return bufList.toArray(buffers);
         }
     }
 
@@ -71,10 +104,11 @@ public class MultilevelBuf {
      */
     public final ByteBuffer getLendBuf() {
         synchronized (bufList) {
-            if (isLendStatus) {
+            if (lendCount > 0) {
+                LogDog.e("## getLendBuf buf is use ing !!!");
                 return null;
             }
-            isLendStatus = true;
+            lendCount = 1;
             return bufList.get(bufIndex);
         }
     }
@@ -84,21 +118,33 @@ public class MultilevelBuf {
      *
      * @param buffer
      */
-    public final void setBackBuf(ByteBuffer buffer) {
+    public final void setBackBuf(ByteBuffer... buffer) {
         synchronized (bufList) {
-            if (!isLendStatus || buffer == null) {
+            if (lendCount == 0 || buffer == null || buffer.length == 0 || lendCount != buffer.length) {
                 return;
             }
-            if (bufList.get(bufIndex) == buffer) {
-                if (buffer.position() == buffer.capacity()) {
-                    //如果buf存满数据则创建新的buf
-                    appendBuffer();
-                    bufIndex++;
-                    offset = 0;
-                } else {
-                    offset = buffer.position();
+            for (ByteBuffer tmp : buffer) {
+                if (!bufList.contains(tmp)) {
+                    //发现不存在的buf
+                    LogDog.e("## Found non-existent buf");
+                    return;
                 }
-                isLendStatus = false;
+            }
+            lendCount = 0;
+            for (int index = 0; index < buffer.length; index++) {
+                if (buffer[index].hasRemaining()) {
+                    //buf没有存满则认为最后的buf
+                    offset = buffer[index].position();
+                    bufIndex = index;
+                    break;
+                } else {
+                    if (index == buffer.length - 1) {
+                        //最后的buf存满，则扩容
+                        appendBuffer();
+                        bufIndex++;
+                        offset = 0;
+                    }
+                }
             }
         }
     }
@@ -106,11 +152,11 @@ public class MultilevelBuf {
     /**
      * 把所有的buf数据装换成byte[]
      *
-     * @return
+     * @return 把数据转换成byte数据返回
      */
     public final byte[] array() {
         synchronized (bufList) {
-            if (isLendStatus) {
+            if (lendCount > 0) {
                 throw new IllegalStateException("currently in borrowing state,please call setBackBuf() !!!");
             }
             if (limit <= 0) {
@@ -185,11 +231,18 @@ public class MultilevelBuf {
     /**
      * 缓存是否还有空间可以存储数据
      *
-     * @return
+     * @return true 还有空间
      */
     public final boolean hasRemaining() {
         synchronized (bufList) {
-            return position() < limit;
+            return position() < capacity;
+        }
+    }
+
+
+    public final boolean isHasData() {
+        synchronized (bufList) {
+            return position() > 0;
         }
     }
 
@@ -250,7 +303,7 @@ public class MultilevelBuf {
     public final void release() {
         synchronized (bufList) {
             clear();
-//            bufList.clear();
+            bufList.clear();
 //            for (ByteBuffer buffer : bufList) {
 //                DirectBufferCleaner.clean(buffer);
 //            }
@@ -268,7 +321,7 @@ public class MultilevelBuf {
                 ", bufList=" + bufList +
                 ", initSize=" + initSize +
                 ", DEFAULT_SIZE=" + DEFAULT_SIZE +
-                ", isLendStatus=" + isLendStatus +
+                ", lendCount=" + lendCount +
                 ']';
     }
 }

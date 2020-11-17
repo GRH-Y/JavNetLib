@@ -83,7 +83,7 @@ public class NioClientTask extends BaseNioNetTask {
     }
 
     @Override
-    protected void onHandshake(SSLEngine sslEngine, SocketChannel channel) throws Exception {
+    protected void onHandshake(SSLEngine sslEngine, SocketChannel channel) throws Throwable {
         super.onHandshake(sslEngine, channel);
     }
 
@@ -98,7 +98,7 @@ public class NioClientTask extends BaseNioNetTask {
         super.onRecovery();
         mChannel = null;
         if (sender != null) {
-            sender.reset();
+            sender.clear();
         }
     }
 }

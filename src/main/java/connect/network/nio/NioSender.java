@@ -3,11 +3,10 @@ package connect.network.nio;
 
 import connect.network.base.joggle.INetSender;
 import connect.network.base.joggle.ISenderFeedback;
-import connect.network.nio.buf.MultilevelBuf;
+import connect.network.xhttp.utils.MultilevelBuf;
 import connect.network.xhttp.XMultiplexCacheManger;
 import util.IoEnvoy;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -36,7 +35,11 @@ public class NioSender implements INetSender {
         this.channel = channel;
     }
 
-    public void reset() {
+    public boolean isSendDataEmpty() {
+        return dataQueue.isEmpty();
+    }
+
+    public void clear() {
         for (Object obj : dataQueue) {
             if (obj instanceof MultilevelBuf) {
                 MultilevelBuf buf = (MultilevelBuf) obj;
@@ -68,20 +71,24 @@ public class NioSender implements INetSender {
     }
 
     public void sendData(MultilevelBuf buf) {
-        if (buf != null && selectionKey.isValid()) {
+        boolean ret = false;
+        if (buf != null && selectionKey.isValid() && buf.isHasData()) {
             try {
                 if (selectionKey.interestOps() != SelectionKey.OP_WRITE) {
                     selectionKey.interestOps(SelectionKey.OP_WRITE);
                 }
-            } catch (Exception e) {
+                ret = dataQueue.add(buf);
+            } catch (Throwable e) {
                 e.printStackTrace();
             }
-            dataQueue.add(buf);
+        }
+        if (!ret) {
+            XMultiplexCacheManger.getInstance().lose(buf);
         }
     }
 
     public void sendData(ByteBuffer data) {
-        if (data != null && data.hasRemaining() && selectionKey.isValid()) {
+        if (data != null && selectionKey.isValid() && data.hasRemaining()) {
             if (selectionKey.interestOps() != SelectionKey.OP_WRITE) {
                 selectionKey.interestOps(SelectionKey.OP_WRITE);
             }
@@ -89,8 +96,8 @@ public class NioSender implements INetSender {
         }
     }
 
-    protected void doSendData() {
-        Exception exception = null;
+    protected void doSendData() throws Throwable {
+        Throwable exception = null;
         Object data = dataQueue.poll();
         while (data != null && exception == null) {
             try {
@@ -98,13 +105,14 @@ public class NioSender implements INetSender {
                     sendDataImp((ByteBuffer) data);
                 } else if (data instanceof MultilevelBuf) {
                     MultilevelBuf buf = (MultilevelBuf) data;
-                    ByteBuffer[] buffers = buf.getAllBuf();
+                    ByteBuffer[] buffers = buf.getUseBuf();
+                    buf.setBackBuf(buffers);
                     for (ByteBuffer buffer : buffers) {
                         buffer.flip();
                         sendDataImp(buffer);
                     }
                 }
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 exception = e;
                 e.printStackTrace();
             } finally {
@@ -122,11 +130,13 @@ public class NioSender implements INetSender {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        } else {
+            throw exception;
         }
     }
 
 
-    protected void sendDataImp(ByteBuffer data) throws IOException {
+    protected void sendDataImp(ByteBuffer data) throws Throwable {
         IoEnvoy.writeToFull(channel, data);
     }
 

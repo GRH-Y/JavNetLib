@@ -1,17 +1,17 @@
 package connect.network.xhttp;
 
-import connect.network.base.joggle.INetReceiver;
+import connect.network.nio.NioReceiver;
+import connect.network.xhttp.utils.MultilevelBuf;
 import connect.network.ssl.TLSHandler;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
-public class XHttpsReceiver extends XHttpReceiver {
+public class XHttpsReceiver extends NioReceiver {
 
     protected TLSHandler tlsHandler;
 
-    public XHttpsReceiver(TLSHandler tlsHandler, INetReceiver receive) {
-        super(receive);
+    public XHttpsReceiver(TLSHandler tlsHandler) {
         if (tlsHandler == null) {
             throw new IllegalArgumentException("tlsHandler is null !!!");
         }
@@ -23,29 +23,34 @@ public class XHttpsReceiver extends XHttpReceiver {
     }
 
     @Override
-    protected void onRead(SocketChannel channel) throws Exception {
-        Exception exception = null;
-        ByteBuffer buffer = null;
+    protected void onRead(SocketChannel channel) throws Throwable {
+        Throwable exception = null;
+        MultilevelBuf buf = XMultiplexCacheManger.getInstance().obtainBuf();
+        int ret;
+        ByteBuffer[] cacheData = null;
         try {
-            buffer = tlsHandler.readAndUnwrap(channel, false);
-        } catch (Exception e) {
-            exception = e;
-            throw e;
-        } finally {
-            byte[] data = null;
-            if (buffer != null && buffer.position() > 0) {
-                buffer.flip();
-                data = new byte[buffer.limit()];
-                buffer.get(data, 0, data.length);
-            }
-            try {
-                onHttpReceive(data, data != null ? data.length : -1, exception);
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                if (buffer != null) {
-                    buffer.clear();
+            do {
+                cacheData = buf.getAllBuf();
+                ret = tlsHandler.readAndUnwrap(channel, false, cacheData);
+                if (ret == TLSHandler.NOT_ENOUGH_CAPACITY) {
+                    //解码缓存容量不够，则需要多传byteBuffer
+                    buf.setBackBuf(cacheData);
+                    buf.appendBuffer();
                 }
+            } while (ret == TLSHandler.NOT_ENOUGH_CAPACITY);
+        } catch (Throwable e) {
+            exception = e;
+        } finally {
+            buf.setBackBuf(cacheData);
+            buf.flip();
+        }
+        try {
+            notifyReceiverImp(buf, exception);
+        } catch (Throwable e) {
+            e.printStackTrace();
+        } finally {
+            if (exception != null) {
+                throw exception;
             }
         }
     }

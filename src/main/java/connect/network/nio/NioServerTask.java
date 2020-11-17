@@ -64,7 +64,7 @@ public class NioServerTask extends BaseNioNetTask {
     }
 
     @Override
-    protected void onHandshake(SSLEngine sslEngine, SocketChannel channel) throws Exception {
+    protected void onHandshake(SSLEngine sslEngine, SocketChannel channel) throws Throwable {
         super.onHandshake(sslEngine, channel);
     }
 

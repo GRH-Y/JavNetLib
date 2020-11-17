@@ -28,7 +28,7 @@ public class NioHighPcEngine<T extends BaseNioNetTask> extends NioEngine {
 
     @Override
     protected boolean isEngineRunning() {
-        return mainTaskContainer.getTaskExecutor().getLoopState();
+        return mainTaskContainer != null && mainTaskContainer.getTaskExecutor().getLoopState();
     }
 
     @Override
@@ -47,7 +47,9 @@ public class NioHighPcEngine<T extends BaseNioNetTask> extends NioEngine {
             if (selectionKey != null) {
                 mWork.onSelectionKey(selectionKey);
             } else {
-                otherTaskContainer.getTaskExecutor().pauseTask();
+                if (otherTaskContainer != null) {
+                    otherTaskContainer.getTaskExecutor().pauseTask();
+                }
             }
         }
     }
@@ -75,8 +77,10 @@ public class NioHighPcEngine<T extends BaseNioNetTask> extends NioEngine {
                     //连接事件由主引擎处理
                     mWork.onSelectionKey(selectionKey);
                 } else {
-                    attribute.pushToCache(selectionKey);
-                    otherTaskContainer.getTaskExecutor().resumeTask();
+                    if (otherTaskContainer != null) {
+                        attribute.pushToCache(selectionKey);
+                        otherTaskContainer.getTaskExecutor().resumeTask();
+                    }
                 }
                 iterator.remove();
             }
@@ -110,6 +114,7 @@ public class NioHighPcEngine<T extends BaseNioNetTask> extends NioEngine {
             otherTaskContainer.release();
             otherTaskContainer = null;
         }
+        resumeEngine();
     }
 
 }

@@ -10,7 +10,9 @@ import json.JsonEnvoy;
 import storage.GZipUtils;
 import util.StringEnvoy;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.zip.GZIPInputStream;
 
 public class XHttpDefaultResponseConvert implements IXHttpResponseConvert {
 
@@ -22,30 +24,56 @@ public class XHttpDefaultResponseConvert implements IXHttpResponseConvert {
             //有分段,数据交给上层处理
             byte[] httpData = response.getHttpData();
             int chunkedIndex = 0;
+            int startIndex = 0;
             int tagIndex;
-            ByteCacheStream stream = new ByteCacheStream();
+            ByteCacheStream result = new ByteCacheStream();
             do {
                 tagIndex = XResponseHelper.findChunkedTag(httpData, chunkedIndex);
                 if (tagIndex != -1) {
                     String strSize = new String(httpData, chunkedIndex, tagIndex - chunkedIndex - 2);
                     int size = Integer.parseInt(strSize, 16);
                     chunkedIndex += size + 4 + strSize.length();
+                    startIndex += strSize.length() + 2;
+
                     byte[] tmp = new byte[size];
-                    System.arraycopy(httpData, tagIndex, tmp, 0, size);
-                    if (StringEnvoy.isNotEmpty(encode) && encode.contains("gzip")) {
-                        //需要解压
-                        tmp = GZipUtils.unCompress(tmp);
+                    System.arraycopy(httpData, startIndex, tmp, 0, size);
+                    startIndex += size + 2;
+                    try {
+                        result.write(tmp);
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
-                    if (tmp != null) {
+                }
+            } while (tagIndex != -1);
+            if (StringEnvoy.isNotEmpty(encode) && encode.contains("gzip")) {
+                ByteArrayInputStream inputStream = new ByteArrayInputStream(result.getBuf(), 0, result.size());
+                ByteCacheStream unZipResult = new ByteCacheStream();
+                GZIPInputStream unzip = null;
+                byte[] cache = new byte[1024];
+                int len;
+                try {
+                    unzip = new GZIPInputStream(inputStream, result.size());
+                    do {
+                        len = unzip.read(cache);
+                        if (len > 0) {
+                            unZipResult.write(cache, 0, len);
+                        }
+                    } while (len > 0);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } finally {
+                    if (unzip != null) {
                         try {
-                            stream.write(tmp);
+                            unzip.close();
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
                     }
+                    response.setHttpData(unZipResult.toByteArray());
                 }
-            } while (tagIndex != -1);
-            response.setHttpData(stream.toByteArray());
+            } else {
+                response.setHttpData(result.toByteArray());
+            }
         } else {
             if (StringEnvoy.isNotEmpty(encode) && encode.contains("gzip")) {
                 //需要解压

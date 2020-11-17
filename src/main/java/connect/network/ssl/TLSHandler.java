@@ -1,6 +1,8 @@
 package connect.network.ssl;
 
+import connect.network.base.SocketChannelCloseException;
 import connect.network.base.joggle.ITLSHandler;
+import log.LogDog;
 import util.IoEnvoy;
 
 import javax.net.ssl.SSLEngine;
@@ -21,6 +23,9 @@ public class TLSHandler implements ITLSHandler {
     protected ByteBuffer receiveBuffer;
     protected ByteBuffer appDataBuffer;
 
+    public static final int NOT_ENOUGH_CAPACITY = 3;
+    public static final int OK = 0;
+
     public TLSHandler(SSLEngine engine) {
         if (engine == null) {
             throw new NullPointerException("engine is null !!! ");
@@ -28,7 +33,7 @@ public class TLSHandler implements ITLSHandler {
         this.sslEngine = engine;
         this.sendBuffer = newPacketBuffer();
         this.receiveBuffer = newPacketBuffer();
-        this.appDataBuffer = newApplicationBuffer(0);
+        this.appDataBuffer = ByteBuffer.allocateDirect(sslEngine.getSession().getApplicationBufferSize());
     }
 
     public SSLEngine getSslEngine() {
@@ -39,12 +44,12 @@ public class TLSHandler implements ITLSHandler {
         return ByteBuffer.allocateDirect(sslEngine.getSession().getPacketBufferSize());
     }
 
-    private ByteBuffer newApplicationBuffer(int exSize) {
-        return ByteBuffer.allocateDirect(sslEngine.getSession().getApplicationBufferSize() + exSize);
+    private ByteBuffer newApplicationBuffer() {
+        return ByteBuffer.allocateDirect(sslEngine.getSession().getApplicationBufferSize() + sslEngine.getSession().getApplicationBufferSize());
     }
 
     @Override
-    public void doHandshake(SocketChannel channel) throws IOException {
+    public void doHandshake(SocketChannel channel) throws Throwable {
         SSLEngineResult.HandshakeStatus hsStatus = sslEngine.getHandshakeStatus();
         while (hsStatus != SSLEngineResult.HandshakeStatus.FINISHED && hsStatus != SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING) {
             switch (hsStatus) {
@@ -63,7 +68,7 @@ public class TLSHandler implements ITLSHandler {
                     break;
                 case NEED_UNWRAP:
 //                    LogDog.d("doHandshake NEED_UNWRAP");
-                    readAndUnwrap(channel, true);
+                    readAndUnwrap(channel, true, appDataBuffer);
                     break;
             }
             hsStatus = sslEngine.getHandshakeStatus();
@@ -100,14 +105,15 @@ public class TLSHandler implements ITLSHandler {
     }
 
     @Override
-    public void wrapAndWrite(SocketChannel channel, ByteBuffer warp) throws IOException {
+    public void wrapAndWrite(SocketChannel channel, ByteBuffer warp) throws Throwable {
         do {
             SSLEngineResult.Status status = sslEngine.wrap(warp, sendBuffer).getStatus();
             switch (status) {
                 case CLOSED:
                     throw new IOException("SSLEngine Closed");
                 case BUFFER_OVERFLOW:
-                    ByteBuffer newBuffer = newApplicationBuffer(sendBuffer.position());
+                    LogDog.d("==> wrapAndWrite BUFFER_OVERFLOW !!! ");
+                    ByteBuffer newBuffer = newApplicationBuffer();
                     sendBuffer.flip();
                     newBuffer.put(sendBuffer);
                     sendBuffer = newBuffer;
@@ -129,7 +135,7 @@ public class TLSHandler implements ITLSHandler {
                 case CLOSED:
                     throw new IOException("SSLEngine Closed");
                 case BUFFER_OVERFLOW:
-                    ByteBuffer newBuffer = newApplicationBuffer(sendBuffer.position());
+                    ByteBuffer newBuffer = newApplicationBuffer();
                     sendBuffer.flip();
                     newBuffer.put(sendBuffer);
                     sendBuffer = newBuffer;
@@ -149,34 +155,33 @@ public class TLSHandler implements ITLSHandler {
     }
 
     @Override
-    public ByteBuffer readAndUnwrap(SocketChannel channel, boolean isDoHandshake) throws IOException {
+    public int readAndUnwrap(SocketChannel channel, boolean isDoHandshake, ByteBuffer... buffer) throws Throwable {
         do {
             int ret = channel.read(receiveBuffer);
             if (ret < 0) {
-                throw new IOException("SocketChannel close !!!");
+                throw new SocketChannelCloseException();
             }
-//            else if (ret == 0 && receiveBuffer.position() == 0) {
-//                return appDataBuffer;
-//            }
             receiveBuffer.flip();
-            SSLEngineResult.Status status = sslEngine.unwrap(receiveBuffer, appDataBuffer).getStatus();
+            SSLEngineResult.Status status = sslEngine.unwrap(receiveBuffer, buffer).getStatus();
             receiveBuffer.compact();
-            // case BUFFER_UNDERFLOW:
             //不能对传入的数据解包，因为没有足够的源字节可以用来生成一个完整的包。
             switch (status) {
                 case CLOSED:
                     throw new IOException("SSLEngine Closed");
                 case BUFFER_OVERFLOW:
                     //SSLEngine 不能进行该操作，因为在目标缓冲区没有足够的字节空间可以容纳结果。
-//                    LogDog.d("==> readAndUnwrap BUFFER_OVERFLOW !!! ");
-                    ByteBuffer newBuffer = newApplicationBuffer(appDataBuffer.position());
-                    appDataBuffer.flip();
-                    newBuffer.put(appDataBuffer);
-                    appDataBuffer = newBuffer;
-                    break;
+                    if (isDoHandshake) {
+                        LogDog.d("==> readAndUnwrap BUFFER_OVERFLOW !!! ");
+                        ByteBuffer newBuffer = newApplicationBuffer();
+                        appDataBuffer.flip();
+                        newBuffer.put(appDataBuffer);
+                        appDataBuffer = newBuffer;
+                        buffer[0] = appDataBuffer;
+                    }
+                    return NOT_ENOUGH_CAPACITY;
                 case OK:
                     if (isDoHandshake || receiveBuffer.position() == 0) {
-                        return appDataBuffer;
+                        return OK;
                     }
                     break;
             }
@@ -188,9 +193,6 @@ public class TLSHandler implements ITLSHandler {
         do {
             Future<Integer> future = channel.read(receiveBuffer);
             future.get();
-//            else if (ret == 0 && receiveBuffer.position() == 0) {
-//                return appDataBuffer;
-//            }
             receiveBuffer.flip();
             SSLEngineResult.Status status = sslEngine.unwrap(receiveBuffer, appDataBuffer).getStatus();
             receiveBuffer.compact();
@@ -202,7 +204,7 @@ public class TLSHandler implements ITLSHandler {
                 case BUFFER_OVERFLOW:
                     //SSLEngine 不能进行该操作，因为在目标缓冲区没有足够的字节空间可以容纳结果。
 //                    LogDog.d("==> readAndUnwrap BUFFER_OVERFLOW !!! ");
-                    ByteBuffer newBuffer = newApplicationBuffer(appDataBuffer.position());
+                    ByteBuffer newBuffer = newApplicationBuffer();
                     appDataBuffer.flip();
                     newBuffer.put(appDataBuffer);
                     appDataBuffer = newBuffer;
