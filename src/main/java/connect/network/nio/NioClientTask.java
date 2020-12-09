@@ -48,7 +48,7 @@ public class NioClientTask extends BaseNioNetTask {
 
     //---------------------------- get ---------------------------------------
 
-    protected SocketChannel getSocketChannel() {
+    protected SocketChannel getChannel() {
         return mChannel;
     }
 
@@ -68,11 +68,20 @@ public class NioClientTask extends BaseNioNetTask {
     //---------------------------- on ---------------------------------------
 
     /**
+     * 配置SocketChannel
+     *
+     * @param channel
+     */
+    protected void onConfigChannel(SocketChannel channel) {
+
+    }
+
+    /**
      * channel连接状态回调
      *
      * @param channel
      */
-    protected void onConnectCompleteChannel(SocketChannel channel) throws Exception {
+    protected void onConnectCompleteChannel(SocketChannel channel){
     }
 
     /**

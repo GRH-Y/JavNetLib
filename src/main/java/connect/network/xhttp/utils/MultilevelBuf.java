@@ -22,6 +22,8 @@ public class MultilevelBuf {
     private volatile int limit;
     //当前缓存最大的容量
     private volatile int capacity;
+    //临时缓存，一般用于缓存getUseBuf没有处理完
+    private ByteBuffer[] tmpCacheBuf = null;
     //buf集合
     private final List<ByteBuffer> bufList;
     //默认每个buf的大小
@@ -54,12 +56,24 @@ public class MultilevelBuf {
 //        LogDog.d("bufList size = " + bufList.size());
     }
 
+    public ByteBuffer[] getTmpCacheBuf() {
+        synchronized (bufList) {
+            return tmpCacheBuf;
+        }
+    }
+
+
+    public final ByteBuffer[] getUseBuf() {
+        return getUseBuf(false);
+    }
+
     /**
      * 获取已用的buf
      *
+     * @param isFlip 是否flip可用的ByteBuffer
      * @return
      */
-    public final ByteBuffer[] getUseBuf() {
+    public final ByteBuffer[] getUseBuf(boolean isFlip) {
         synchronized (bufList) {
             if (lendCount > 0) {
                 LogDog.e("## getUseBuf buf is use ing !!!");
@@ -69,7 +83,11 @@ public class MultilevelBuf {
             ByteBuffer[] buffers = new ByteBuffer[size];
             try {
                 for (int index = 0; index < buffers.length; index++) {
-                    buffers[index] = bufList.get(index);
+                    ByteBuffer tmp = bufList.get(index);
+                    if (isFlip) {
+                        tmp.flip();
+                    }
+                    buffers[index] = tmp;
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -112,6 +130,13 @@ public class MultilevelBuf {
             return bufList.get(bufIndex);
         }
     }
+
+    public final void setTmpCacheBuf(ByteBuffer... buffer) {
+        synchronized (bufList) {
+            this.tmpCacheBuf = buffer;
+        }
+    }
+
 
     /**
      * 归还buf
@@ -276,7 +301,8 @@ public class MultilevelBuf {
         }
     }
 
-//    public final void rewind() {
+
+    //    public final void rewind() {
 //        bufIndex = 0;
 //        offset = 0;
 //        mark = -1;
@@ -290,6 +316,7 @@ public class MultilevelBuf {
             for (ByteBuffer buffer : bufList) {
                 buffer.clear();
             }
+            tmpCacheBuf = null;
             limit = capacity;
             bufIndex = 0;
             offset = 0;

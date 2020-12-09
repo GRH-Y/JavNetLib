@@ -2,8 +2,10 @@ package connect.network.aio;
 
 import connect.network.base.AbsNetFactory;
 import connect.network.base.BaseTLSTask;
+import connect.network.ssl.TLSHandler;
 
 import javax.net.ssl.SSLEngine;
+import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.AsynchronousSocketChannel;
 
 public class AioClientTask extends BaseTLSTask {
@@ -45,7 +47,7 @@ public class AioClientTask extends BaseTLSTask {
 
     //------------------------------------------------------------------------------------------------------
 
-    protected AsynchronousSocketChannel getSocketChannel() {
+    protected AsynchronousSocketChannel getChannel() {
         return aSocketChannel;
     }
 
@@ -61,7 +63,24 @@ public class AioClientTask extends BaseTLSTask {
         return receiver;
     }
 
+    public AsynchronousChannelGroup getChannelGroup() {
+        return null;
+    }
+
+    @Override
+    protected TLSHandler getTlsHandler() {
+        return super.getTlsHandler();
+    }
+
     //---------------------------- on ---------------------------------------
+
+    /**
+     * 配置AsynchronousSocketChannel，在连接动作之前
+     *
+     * @param channel
+     */
+    protected void onConfigClientChannel(AsynchronousSocketChannel channel) {
+    }
 
 
     @Override

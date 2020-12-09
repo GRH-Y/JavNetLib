@@ -60,6 +60,14 @@ public class NioServerTask extends BaseNioNetTask {
 
     //---------------------------- on ---------------------------------------
 
+    /**
+     * 配置ServerSocketChannel，在没有开启服务前回调
+     * @param channel
+     */
+    protected void onConfigServerChannel(ServerSocketChannel channel) {
+
+    }
+
     protected void onBootServerComplete(ServerSocketChannel channel) {
     }
 

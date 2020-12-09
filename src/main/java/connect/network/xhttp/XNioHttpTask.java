@@ -8,16 +8,12 @@ import connect.network.base.joggle.IXSessionNotify;
 import connect.network.nio.NioClientTask;
 import connect.network.nio.NioReceiver;
 import connect.network.nio.NioSender;
-import connect.network.xhttp.utils.MultilevelBuf;
 import connect.network.xhttp.config.XHttpConfig;
 import connect.network.xhttp.entity.XRequest;
 import connect.network.xhttp.entity.XResponse;
 import connect.network.xhttp.joggle.IXHttpDns;
 import connect.network.xhttp.joggle.IXHttpResponseConvert;
-import connect.network.xhttp.utils.XHttpDecoderProcessor;
-import connect.network.xhttp.utils.XHttpProtocol;
-import connect.network.xhttp.utils.XResponseHelper;
-import connect.network.xhttp.utils.XUrlMedia;
+import connect.network.xhttp.utils.*;
 import util.StringEnvoy;
 
 import java.io.IOException;
@@ -99,11 +95,16 @@ public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INet
 
 
     @Override
-    protected void onConnectCompleteChannel(SocketChannel channel) throws IOException {
+    protected void onConnectCompleteChannel(SocketChannel channel) {
         XUrlMedia httpUrlMedia = request.getUrl();
         IXHttpDns httpDns = httpConfig.getXHttpDns();
         if (httpDns != null) {
-            InetSocketAddress address = (InetSocketAddress) channel.getRemoteAddress();
+            InetSocketAddress address = null;
+            try {
+                address = (InetSocketAddress) channel.getRemoteAddress();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             httpDns.setCacheDns(httpUrlMedia.getHost(), address.getAddress().getHostAddress());
         }
         NioReceiver receiver = getReceiver();

@@ -3,15 +3,14 @@ package connect.network.nio;
 
 import connect.network.base.joggle.INetSender;
 import connect.network.base.joggle.ISenderFeedback;
-import connect.network.xhttp.utils.MultilevelBuf;
 import connect.network.xhttp.XMultiplexCacheManger;
-import util.IoEnvoy;
+import connect.network.xhttp.utils.MultilevelBuf;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.LinkedList;
 
 public class NioSender implements INetSender {
 
@@ -21,7 +20,9 @@ public class NioSender implements INetSender {
 
     protected SelectionKey selectionKey;
 
-    protected Queue<Object> dataQueue = new ConcurrentLinkedQueue();
+    public final static int SEND_COMPLETE = 0, SEND_FAIL = -1, SEND_CHANNEL_BUSY = 1;
+
+    protected LinkedList<Object> dataQueue = new LinkedList();
 
     public NioSender() {
     }
@@ -98,37 +99,53 @@ public class NioSender implements INetSender {
 
     protected void doSendData() throws Throwable {
         Throwable exception = null;
-        Object data = dataQueue.poll();
+        Object data = dataQueue.pollFirst();
+        int ret = SEND_COMPLETE;
         while (data != null && exception == null) {
             try {
                 if (data instanceof ByteBuffer) {
-                    sendDataImp((ByteBuffer) data);
+                    ret = sendDataImp((ByteBuffer) data);
+                    if (ret == SEND_CHANNEL_BUSY) {
+                        dataQueue.addFirst(data);
+                        return;
+                    }
                 } else if (data instanceof MultilevelBuf) {
                     MultilevelBuf buf = (MultilevelBuf) data;
-                    ByteBuffer[] buffers = buf.getUseBuf();
-                    buf.setBackBuf(buffers);
-                    for (ByteBuffer buffer : buffers) {
-                        buffer.flip();
-                        sendDataImp(buffer);
+                    ByteBuffer[] sendDataBuf = buf.getTmpCacheBuf();
+                    if (sendDataBuf == null) {
+                        sendDataBuf = buf.getUseBuf(true);
                     }
+                    for (ByteBuffer buffer : sendDataBuf) {
+                        if (buffer.hasRemaining()) {
+                            ret = sendDataImp(buffer);
+                            if (ret == SEND_CHANNEL_BUSY) {
+                                buf.setTmpCacheBuf(sendDataBuf);
+                                dataQueue.addFirst(data);
+                                return;
+                            }
+                        }
+                    }
+                    buf.setTmpCacheBuf(null);
+                    buf.setBackBuf(sendDataBuf);
                 }
             } catch (Throwable e) {
                 exception = e;
                 e.printStackTrace();
-            } finally {
-                if (feedback != null) {
-                    feedback.onSenderFeedBack(this, data, exception);
-                }
-                if (exception == null) {
-                    data = dataQueue.poll();
-                }
+            }
+            if (feedback != null && ret != SEND_CHANNEL_BUSY) {
+                feedback.onSenderFeedBack(this, data, exception);
+            }
+            if (exception == null) {
+                data = dataQueue.pollFirst();
             }
         }
         if (exception == null) {
-            try {
-                selectionKey.interestOps(SelectionKey.OP_READ);
-            } catch (Exception e) {
-                e.printStackTrace();
+            if (ret == SEND_COMPLETE) {
+                try {
+                    selectionKey.interestOps(SelectionKey.OP_READ);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         } else {
             throw exception;
@@ -136,8 +153,19 @@ public class NioSender implements INetSender {
     }
 
 
-    protected void sendDataImp(ByteBuffer data) throws Throwable {
-        IoEnvoy.writeToFull(channel, data);
+    protected int sendDataImp(ByteBuffer buffers) throws Throwable {
+        if (channel == null || buffers == null || !channel.isConnected()) {
+            return SEND_FAIL;
+        }
+        do {
+            long ret = channel.write(buffers);
+            if (ret < 0) {
+                throw new IOException("## failed to send data. The socket channel may be closed !!! ");
+            } else if (ret == 0 && buffers.hasRemaining() && channel.isConnected()) {
+                return SEND_CHANNEL_BUSY;
+            }
+        } while (buffers.hasRemaining() && channel.isConnected());
+        return SEND_COMPLETE;
     }
 
 }

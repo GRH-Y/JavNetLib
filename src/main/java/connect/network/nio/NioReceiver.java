@@ -4,8 +4,8 @@ package connect.network.nio;
 import connect.network.base.SocketChannelCloseException;
 import connect.network.base.joggle.INetReceiver;
 import connect.network.base.joggle.IReceiverDecodeHandle;
-import connect.network.xhttp.utils.MultilevelBuf;
 import connect.network.xhttp.XMultiplexCacheManger;
+import connect.network.xhttp.utils.MultilevelBuf;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;

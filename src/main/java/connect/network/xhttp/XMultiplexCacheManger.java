@@ -1,9 +1,9 @@
 package connect.network.xhttp;
 
 import connect.network.base.AbsNetFactory;
-import connect.network.xhttp.utils.MultilevelBuf;
 import connect.network.xhttp.config.XHttpConfig;
 import connect.network.xhttp.entity.XRequest;
+import connect.network.xhttp.utils.MultilevelBuf;
 import util.MultiplexCache;
 
 public class XMultiplexCacheManger {

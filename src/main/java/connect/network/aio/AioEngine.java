@@ -18,6 +18,7 @@ public class AioEngine extends AbsNetEngine {
         mWork.onCheckRemoverTask();
 
         if (mExecutor.getLoopState() && mWork.getConnectCache().isEmpty() && mWork.getDestroyCache().isEmpty()) {
+            //如果没有任务则休眠
             mExecutor.waitTask(100);
         }
     }

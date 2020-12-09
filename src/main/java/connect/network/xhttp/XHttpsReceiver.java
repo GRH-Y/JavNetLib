@@ -1,8 +1,8 @@
 package connect.network.xhttp;
 
 import connect.network.nio.NioReceiver;
-import connect.network.xhttp.utils.MultilevelBuf;
 import connect.network.ssl.TLSHandler;
+import connect.network.xhttp.utils.MultilevelBuf;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;

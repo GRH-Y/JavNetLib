@@ -24,8 +24,9 @@ public class XHttpsSender extends NioSender {
     }
 
     @Override
-    protected void sendDataImp(ByteBuffer data) throws Throwable {
-        tlsHandler.wrapAndWrite(channel, data);
+    protected int sendDataImp(ByteBuffer buffers) throws Throwable {
+        tlsHandler.wrapAndWrite(channel, buffers);
+        return SEND_COMPLETE;
     }
 
 }

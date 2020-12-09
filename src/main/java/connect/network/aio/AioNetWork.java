@@ -4,11 +4,13 @@ package connect.network.aio;
 import connect.network.base.AbsNetFactory;
 import connect.network.base.BaseNetWork;
 import connect.network.base.joggle.ISSLFactory;
+import connect.network.ssl.TLSHandler;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.StandardSocketOptions;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 
@@ -30,10 +32,17 @@ public class AioNetWork<T extends AioClientTask> extends BaseNetWork<T> implemen
     @Override
     protected void onConnectTask(T task) {
         try {
-            AsynchronousSocketChannel client = AsynchronousSocketChannel.open();
-            task.setSocketChannel(client);
+            AsynchronousSocketChannel channel = AsynchronousSocketChannel.open(task.getChannelGroup());
+            //Disable the Nagle algorithm
+            channel.setOption(StandardSocketOptions.TCP_NODELAY, true);
+            //Keep connection alive
+            channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
+            //Re-use address
+            channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
+            task.setSocketChannel(channel);
             task.setFactory(mNetFactory);
-            client.connect(new InetSocketAddress(task.getHost(), task.getPort()), task, this);
+            task.onConfigClientChannel(channel);
+            channel.connect(new InetSocketAddress(task.getHost(), task.getPort()), task, this);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -45,9 +54,7 @@ public class AioNetWork<T extends AioClientTask> extends BaseNetWork<T> implemen
             SSLEngine sslEngine = sslContext.createSSLEngine(task.getHost(), task.getPort());
             sslEngine.setUseClientMode(true);
             sslEngine.setEnableSessionCreation(true);
-            if (task.isTLS()) {
-                task.onHandshake(sslEngine, task.getSocketChannel());
-            }
+            task.onHandshake(sslEngine, task.getChannel());
         }
     }
 
@@ -65,15 +72,20 @@ public class AioNetWork<T extends AioClientTask> extends BaseNetWork<T> implemen
     protected void onDisconnectTask(T task) {
         try {
             task.onCloseClientChannel();
-        } catch (Throwable e) {
+        } catch (Exception e) {
             e.printStackTrace();
         } finally {
             try {
-                task.getSocketChannel().close();
-            } catch (IOException e) {
+                task.getChannel().close();
+            } catch (Exception e) {
                 e.printStackTrace();
+            } finally {
+                TLSHandler tlsHandler = task.getTlsHandler();
+                if (tlsHandler != null) {
+                    tlsHandler.release();
+                }
+                onRecoveryTask(task);
             }
-            onRecoveryTask(task);
         }
     }
 
@@ -88,11 +100,13 @@ public class AioNetWork<T extends AioClientTask> extends BaseNetWork<T> implemen
     }
 
     @Override
-    public void failed(Throwable exc, T attachment) {
+    public void failed(Throwable exc, T task) {
         try {
-            attachment.onConnectError(exc);
+            task.onConnectError(exc);
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            removerTaskImp(task);
         }
     }
 }

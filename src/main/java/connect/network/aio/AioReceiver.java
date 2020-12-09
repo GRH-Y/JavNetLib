@@ -36,7 +36,15 @@ public class AioReceiver {
      * 触发接收数据
      */
     public void triggerReceiver() {
-        clientTask.getSocketChannel().read(receiverBuffer, receiverBuffer, handlerCore);
+        if (tlsHandler != null) {
+            try {
+                tlsHandler.readAndUnwrap(clientTask.getChannel(), handlerCore, receiverBuffer);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            clientTask.getChannel().read(receiverBuffer, receiverBuffer, handlerCore);
+        }
     }
 
     private class HandlerCore implements CompletionHandler<Integer, ByteBuffer> {
@@ -47,15 +55,15 @@ public class AioReceiver {
                 clientTask.getFactory().removeTask(clientTask);
             } else {
                 byteBuffer.flip();
-                if (receiver != null) {
-                    receiver.onReceiveFullData(byteBuffer, null);
-                }
                 byte[] data = new byte[byteBuffer.remaining()];
                 byteBuffer.get(data);
                 byteBuffer.clear();
                 LogDog.d("==> 接收数据 = " + new String(data));
                 LogDog.d("==> 耗时 = " + (System.currentTimeMillis() - AioClientFactory.starTime));
-                clientTask.getSocketChannel().read(receiverBuffer, receiverBuffer, this);
+                if (receiver != null) {
+                    receiver.onReceiveFullData(byteBuffer, null);
+                }
+                triggerReceiver();
             }
         }
 

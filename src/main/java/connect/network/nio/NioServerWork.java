@@ -53,6 +53,7 @@ public class NioServerWork<T extends NioServerTask> extends NioNetWork<T> {
     private ServerSocketChannel createChannel(T task) throws IOException {
         ServerSocketChannel channel = ServerSocketChannel.open();
         channel.configureBlocking(false);
+        task.onConfigServerChannel(channel);
         channel.bind(new InetSocketAddress(task.getServerHost(), task.getServerPort()), task.getMaxConnect());
         task.setServerSocketChannel(channel);
         return channel;

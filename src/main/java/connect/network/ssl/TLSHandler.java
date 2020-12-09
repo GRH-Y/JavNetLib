@@ -2,6 +2,7 @@ package connect.network.ssl;
 
 import connect.network.base.SocketChannelCloseException;
 import connect.network.base.joggle.ITLSHandler;
+import connect.network.xhttp.utils.MultilevelBuf;
 import log.LogDog;
 import util.IoEnvoy;
 
@@ -23,6 +24,8 @@ public class TLSHandler implements ITLSHandler {
     protected ByteBuffer receiveBuffer;
     protected ByteBuffer appDataBuffer;
 
+    protected MultilevelBuf sendBuf;
+
     public static final int NOT_ENOUGH_CAPACITY = 3;
     public static final int OK = 0;
 
@@ -33,6 +36,7 @@ public class TLSHandler implements ITLSHandler {
         this.sslEngine = engine;
         this.sendBuffer = newPacketBuffer();
         this.receiveBuffer = newPacketBuffer();
+        sendBuf = new MultilevelBuf();
         this.appDataBuffer = ByteBuffer.allocateDirect(sslEngine.getSession().getApplicationBufferSize());
     }
 
@@ -50,9 +54,9 @@ public class TLSHandler implements ITLSHandler {
 
     @Override
     public void doHandshake(SocketChannel channel) throws Throwable {
-        SSLEngineResult.HandshakeStatus hsStatus = sslEngine.getHandshakeStatus();
-        while (hsStatus != SSLEngineResult.HandshakeStatus.FINISHED && hsStatus != SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING) {
-            switch (hsStatus) {
+        SSLEngineResult.HandshakeStatus status = sslEngine.getHandshakeStatus();
+        while (status != SSLEngineResult.HandshakeStatus.FINISHED && status != SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING) {
+            switch (status) {
                 case NEED_TASK:
                     do {
                         Runnable task = sslEngine.getDelegatedTask();
@@ -71,17 +75,18 @@ public class TLSHandler implements ITLSHandler {
                     readAndUnwrap(channel, true, appDataBuffer);
                     break;
             }
-            hsStatus = sslEngine.getHandshakeStatus();
+            status = sslEngine.getHandshakeStatus();
         }
         receiveBuffer.clear();
     }
 
     @Override
     public void doHandshake(AsynchronousSocketChannel channel) throws Exception {
-        SSLEngineResult.HandshakeStatus hsStatus = sslEngine.getHandshakeStatus();
-        while (hsStatus != SSLEngineResult.HandshakeStatus.FINISHED && hsStatus != SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING) {
-            switch (hsStatus) {
+        SSLEngineResult.HandshakeStatus status = sslEngine.getHandshakeStatus();
+        while (status != SSLEngineResult.HandshakeStatus.FINISHED && status != SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING) {
+            switch (status) {
                 case NEED_TASK:
+                    LogDog.d("doHandshake NEED_TASK");
                     do {
                         Runnable task = sslEngine.getDelegatedTask();
                         if (task == null) {
@@ -91,21 +96,21 @@ public class TLSHandler implements ITLSHandler {
                     } while (true);
                     break;
                 case NEED_WRAP:
-//                    LogDog.d("doHandshake NEED_WRAP");
+                    LogDog.d("doHandshake NEED_WRAP");
                     wrapAndWrite(channel, appDataBuffer, null);
                     break;
                 case NEED_UNWRAP:
-//                    LogDog.d("doHandshake NEED_UNWRAP");
-                    readAndUnwrap(channel, true);
+                    LogDog.d("doHandshake NEED_UNWRAP");
+                    readAndUnwrap(channel, null, appDataBuffer);
                     break;
             }
-            hsStatus = sslEngine.getHandshakeStatus();
+            status = sslEngine.getHandshakeStatus();
         }
         receiveBuffer.clear();
     }
 
     @Override
-    public void wrapAndWrite(SocketChannel channel, ByteBuffer warp) throws Throwable {
+    public void wrapAndWrite(SocketChannel channel, ByteBuffer... warp) throws Throwable {
         do {
             SSLEngineResult.Status status = sslEngine.wrap(warp, sendBuffer).getStatus();
             switch (status) {
@@ -135,6 +140,7 @@ public class TLSHandler implements ITLSHandler {
                 case CLOSED:
                     throw new IOException("SSLEngine Closed");
                 case BUFFER_OVERFLOW:
+                    LogDog.d("==> wrapAndWrite BUFFER_OVERFLOW !!! ");
                     ByteBuffer newBuffer = newApplicationBuffer();
                     sendBuffer.flip();
                     newBuffer.put(sendBuffer);
@@ -143,8 +149,13 @@ public class TLSHandler implements ITLSHandler {
                 case OK:
                     sendBuffer.flip();
                     if (handler == null) {
-                        Future<Integer> future = channel.write(sendBuffer);
-                        future.get();
+                        while (sendBuffer.hasRemaining()) {
+                            Future<Integer> future = channel.write(sendBuffer);
+                            Integer ret = future.get();
+                            if (ret.intValue() < 0) {
+                                throw new SocketChannelCloseException();
+                            }
+                        }
                         sendBuffer.clear();
                     } else {
                         channel.write(sendBuffer, sendBuffer, handler);
@@ -189,31 +200,34 @@ public class TLSHandler implements ITLSHandler {
     }
 
     @Override
-    public ByteBuffer readAndUnwrap(AsynchronousSocketChannel channel, boolean isDoHandshake) throws Exception {
+    public int readAndUnwrap(AsynchronousSocketChannel channel, CompletionHandler<Integer, ByteBuffer> handler, ByteBuffer... buffer) throws Exception {
         do {
-            Future<Integer> future = channel.read(receiveBuffer);
-            future.get();
+            if (handler != null) {
+                channel.read(receiveBuffer, receiveBuffer, handler);
+            } else {
+                Future<Integer> future = channel.read(receiveBuffer);
+                Integer ret = future.get();
+                if (ret.intValue() < 0) {
+                    throw new SocketChannelCloseException();
+                }
+            }
             receiveBuffer.flip();
-            SSLEngineResult.Status status = sslEngine.unwrap(receiveBuffer, appDataBuffer).getStatus();
+            SSLEngineResult.Status status = sslEngine.unwrap(receiveBuffer, buffer).getStatus();
             receiveBuffer.compact();
-            // case BUFFER_UNDERFLOW:
-            //不能对传入的数据解包，因为没有足够的源字节可以用来生成一个完整的包。
             switch (status) {
                 case CLOSED:
                     throw new IOException("SSLEngine Closed");
                 case BUFFER_OVERFLOW:
                     //SSLEngine 不能进行该操作，因为在目标缓冲区没有足够的字节空间可以容纳结果。
-//                    LogDog.d("==> readAndUnwrap BUFFER_OVERFLOW !!! ");
-                    ByteBuffer newBuffer = newApplicationBuffer();
-                    appDataBuffer.flip();
-                    newBuffer.put(appDataBuffer);
-                    appDataBuffer = newBuffer;
-                    break;
+                    LogDog.d("==> readAndUnwrap BUFFER_OVERFLOW !!! ");
+//                    ByteBuffer newBuffer = newApplicationBuffer();
+//                    appDataBuffer.flip();
+//                    newBuffer.put(appDataBuffer);
+//                    appDataBuffer = newBuffer;
+                    return NOT_ENOUGH_CAPACITY;
                 case OK:
-                    if (isDoHandshake || receiveBuffer.position() == 0) {
-                        return appDataBuffer;
-                    }
-                    break;
+                    return OK;
+//                    break;
             }
         } while (true);
     }
@@ -229,12 +243,15 @@ public class TLSHandler implements ITLSHandler {
                 if (sslSession != null) {
                     sslSession.invalidate();
                 }
-                sslEngine.closeOutbound();
-//                    sslEngine.closeInbound();
+                if (sslEngine.isOutboundDone()) {
+                    sslEngine.closeOutbound();
+                }
+                if (sslEngine.isInboundDone()) {
+                    sslEngine.closeInbound();
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            sslEngine = null;
         }
     }
 

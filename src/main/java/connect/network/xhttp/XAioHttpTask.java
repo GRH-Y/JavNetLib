@@ -8,16 +8,17 @@ import connect.network.base.joggle.INetReceiver;
 import connect.network.base.joggle.INetSender;
 import connect.network.base.joggle.ISenderFeedback;
 import connect.network.base.joggle.IXSessionNotify;
-import connect.network.xhttp.utils.MultilevelBuf;
 import connect.network.xhttp.config.XHttpConfig;
 import connect.network.xhttp.entity.XRequest;
 import connect.network.xhttp.entity.XResponse;
 import connect.network.xhttp.joggle.IXHttpDns;
 import connect.network.xhttp.joggle.IXHttpResponseConvert;
+import connect.network.xhttp.utils.MultilevelBuf;
 import connect.network.xhttp.utils.XHttpProtocol;
 import connect.network.xhttp.utils.XResponseHelper;
 import connect.network.xhttp.utils.XUrlMedia;
 import log.LogDog;
+import util.StringEnvoy;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -48,10 +49,13 @@ public class XAioHttpTask extends AioClientTask implements ISenderFeedback, INet
         httpProtocol.initProtocol(request);
         XUrlMedia httpUrlMedia = request.getUrl();
         String host = httpUrlMedia.getHost();
-//        IXHttpDns httpDns = httpConfig.getXHttpDns();
-//        if (httpDns != null) {
-//            host = httpDns.findCacheDns(httpUrlMedia.getHost());
-//        }
+        IXHttpDns httpDns = httpConfig.getXHttpDns();
+        if (httpDns != null) {
+            String ip = httpDns.getCacheDns(httpUrlMedia.getHost());
+            if (StringEnvoy.isNotEmpty(ip)) {
+                host = ip;
+            }
+        }
         setAddress(host, httpUrlMedia.getPort());
         setTLS(httpUrlMedia.isTSL());
     }
@@ -69,27 +73,20 @@ public class XAioHttpTask extends AioClientTask implements ISenderFeedback, INet
 
     @Override
     public void onReceiveFullData(XResponse response, Throwable e) {
-        if (e != null) {
+        int code = XResponseHelper.getCode(response);
+        if (code >= 300 && code < 400) {
+            //重定向
+            String location = response.getHeadForKey(XHttpProtocol.XY_LOCATION);
+            request.setUrl(location);
+            isRedirect = true;
+        } else {
+            IXHttpResponseConvert responseConvert = httpConfig.getResponseConvert();
+            if (responseConvert != null) {
+                responseConvert.handlerEntity(request, response);
+            }
             IXSessionNotify sessionNotify = httpConfig.getSessionNotify();
             if (sessionNotify != null) {
-                sessionNotify.notifyData(request, null, e);
-            }
-        } else {
-            int code = XResponseHelper.getCode(response);
-            if (code >= 300 && code < 400) {
-                //重定向
-                String location = response.getHeadForKey(XHttpProtocol.XY_LOCATION);
-                request.setUrl(location);
-                isRedirect = true;
-            } else {
-                IXHttpResponseConvert responseConvert = httpConfig.getResponseConvert();
-                if (responseConvert != null) {
-                    responseConvert.handlerEntity(request, response);
-                }
-                IXSessionNotify sessionNotify = httpConfig.getSessionNotify();
-                if (sessionNotify != null) {
-                    sessionNotify.notifyData(request, response, null);
-                }
+                sessionNotify.notifyData(request, response, null);
             }
         }
         netFactory.removeTask(XAioHttpTask.this);
@@ -97,13 +94,25 @@ public class XAioHttpTask extends AioClientTask implements ISenderFeedback, INet
 
     @Override
     protected void onConnectCompleteChannel() {
+        XUrlMedia httpUrlMedia = request.getUrl();
+        IXHttpDns httpDns = httpConfig.getXHttpDns();
+        if (httpDns != null) {
+            InetSocketAddress address = null;
+            try {
+                address = (InetSocketAddress) getChannel().getRemoteAddress();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            httpDns.setCacheDns(httpUrlMedia.getHost(), address.getAddress().getHostAddress());
+        }
+
         AioReceiver receiver = getReceiver();
         AioSender sender = getSender();
         if (sender == null) {
-            sender = new AioSender(getSocketChannel());
+            sender = new AioSender(getChannel());
             setSender(sender);
         } else {
-            sender.setChannel(getSocketChannel());
+            sender.setChannel(getChannel());
         }
         if (receiver == null) {
             receiver = new AioReceiver(this);
@@ -113,32 +122,23 @@ public class XAioHttpTask extends AioClientTask implements ISenderFeedback, INet
             receiver.setClientTask(this);
         }
 
-        XUrlMedia httpUrlMedia = request.getUrl();
-        IXHttpDns httpDns = httpConfig.getXHttpDns();
-        if (httpDns != null) {
-            try {
-                InetSocketAddress address = (InetSocketAddress) getSocketChannel().getRemoteAddress();
-                httpDns.setCacheDns(httpUrlMedia.getHost(), address.getAddress().getHostAddress());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
         if (httpUrlMedia.isTSL()) {
             sender.setTlsHandler(getTlsHandler());
             receiver.setTlsHandler(getTlsHandler());
         }
+
         receiver.triggerReceiver();
         byte[] head = httpProtocol.toByte();
         sender.setSenderFeedback(this);
         sender.sendData(head);
         sender.sendData(request.getSendData());
-        LogDog.d("==> head = " + new String(head));
+//        LogDog.d("==> head = " + new String(head));
     }
 
     @Override
     protected void onCloseClientChannel() {
         try {
-            InetSocketAddress address = (InetSocketAddress) getSocketChannel().getRemoteAddress();
+            InetSocketAddress address = (InetSocketAddress) getChannel().getRemoteAddress();
             LogDog.d("==> XAioHttpTask onCloseClientChannel host = " + address.getHostName());
         } catch (IOException e) {
             e.printStackTrace();
