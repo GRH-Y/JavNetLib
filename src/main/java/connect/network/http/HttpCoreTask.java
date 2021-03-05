@@ -5,6 +5,7 @@ import connect.network.base.RequestMode;
 import connect.network.base.joggle.ISessionNotify;
 import connect.network.http.joggle.IRequestIntercept;
 import connect.network.http.joggle.IResponseConvert;
+import connect.network.xhttp.utils.RepeatableKey;
 import log.LogDog;
 import storage.FileHelper;
 import task.executor.BaseConsumerTask;
@@ -94,11 +95,15 @@ public class HttpCoreTask extends BaseConsumerTask {
      * @param connection
      * @param property
      */
-    private void setRequestProperty(HttpURLConnection connection, Map<String, Object> property) {
+    private void setRequestProperty(HttpURLConnection connection, Map<Object, Object> property) {
         if (property != null) {
-            for (String key : property.keySet()) {
+            for (Object key : property.keySet()) {
                 try {
                     Object obj = property.get(key);
+                    if (key instanceof RepeatableKey) {
+                        RepeatableKey repeatableKey = (RepeatableKey) key;
+                        key = repeatableKey.getKey();
+                    }
                     if (obj != null && isBasicDataType(obj.getClass())) {
                         String value;
                         if (obj instanceof String) {
@@ -106,7 +111,7 @@ public class HttpCoreTask extends BaseConsumerTask {
                         } else {
                             value = String.valueOf(obj);
                         }
-                        connection.setRequestProperty(key, value);
+                        connection.setRequestProperty((String) key, value);
                         LogDog.d("==> key = " + key + " value = " + value);
                     }
                 } catch (Exception e) {

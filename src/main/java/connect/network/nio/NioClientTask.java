@@ -27,7 +27,7 @@ public class NioClientTask extends BaseNioNetTask {
         if (!channel.isOpen() || !channel.isConnected()) {
             throw new IllegalStateException("SocketChannel is bed !!! ");
         }
-        this.mChannel = channel;
+        setChannel(channel);
         this.tlsHandler = tlsHandler;
     }
 
@@ -44,7 +44,6 @@ public class NioClientTask extends BaseNioNetTask {
     protected void setChannel(SocketChannel channel) {
         this.mChannel = channel;
     }
-
 
     //---------------------------- get ---------------------------------------
 
@@ -81,7 +80,7 @@ public class NioClientTask extends BaseNioNetTask {
      *
      * @param channel
      */
-    protected void onConnectCompleteChannel(SocketChannel channel){
+    protected void onConnectCompleteChannel(SocketChannel channel) {
     }
 
     /**

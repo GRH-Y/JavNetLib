@@ -93,7 +93,7 @@ public class BioClientWork<T extends TcpClientTask> extends BioNetWork<T> {
         TcpReceive receive = task.getReceive();
         if (receive != null) {
             try {
-                receive.onRead();
+                receive.onReadNetData();
             } catch (Throwable e) {
                 mFactory.removeTask(task);
                 e.printStackTrace();
@@ -105,7 +105,7 @@ public class BioClientWork<T extends TcpClientTask> extends BioNetWork<T> {
         TcpSender sender = task.getSender();
         if (sender != null) {
             try {
-                sender.onWrite();
+                sender.onSendNetData();
             } catch (Throwable e) {
                 mFactory.removeTask(task);
                 e.printStackTrace();

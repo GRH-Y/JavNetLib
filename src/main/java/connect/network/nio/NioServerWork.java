@@ -44,7 +44,7 @@ public class NioServerWork<T extends NioServerTask> extends NioNetWork<T> {
             //注册通道
             registerChannel(task, channel);
         } catch (Throwable e) {
-            LogDog.e("url = " + task.getServerHost() + " port = " + task.getServerHost());
+            LogDog.e("url = " + task.getHost() + " port = " + task.getPort());
             e.printStackTrace();
             addDestroyTask(task);
         }
@@ -54,7 +54,7 @@ public class NioServerWork<T extends NioServerTask> extends NioNetWork<T> {
         ServerSocketChannel channel = ServerSocketChannel.open();
         channel.configureBlocking(false);
         task.onConfigServerChannel(channel);
-        channel.bind(new InetSocketAddress(task.getServerHost(), task.getServerPort()), task.getMaxConnect());
+        channel.bind(new InetSocketAddress(task.getHost(), task.getPort()), task.getMaxConnect());
         task.setServerSocketChannel(channel);
         return channel;
     }

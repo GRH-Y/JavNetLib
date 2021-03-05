@@ -55,4 +55,10 @@ public @interface AXRequest {
      */
     Class resultType();
 
+    /**
+     * 是否禁用系统自带的http的header
+     * @return
+     */
+    boolean disableSysProperty() default false;
+
 }

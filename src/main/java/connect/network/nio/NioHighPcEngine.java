@@ -28,7 +28,7 @@ public class NioHighPcEngine<T extends BaseNioNetTask> extends NioEngine {
 
     @Override
     protected boolean isEngineRunning() {
-        return mainTaskContainer != null && mainTaskContainer.getTaskExecutor().getLoopState();
+        return mainTaskContainer != null && mainTaskContainer.getTaskExecutor().isLoopState();
     }
 
     @Override

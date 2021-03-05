@@ -8,7 +8,7 @@ import connect.network.nio.NioClientFactory;
 import connect.network.xhttp.config.XHttpConfig;
 import connect.network.xhttp.entity.XRequest;
 
-import java.util.Map;
+import java.util.LinkedHashMap;
 
 public class XHttpConnect {
 
@@ -73,7 +73,7 @@ public class XHttpConnect {
         }
         XRequest xHttpRequest = new XRequest();
 
-        Map<String, Object> property = entity.getRequestProperty();
+        LinkedHashMap<Object, Object> property = entity.getRequestProperty();
         xHttpRequest.setRequestProperty(property);
         xHttpRequest.setCallBackTarget(callBackTarget);
         xHttpRequest.setSendData(entity.getSendData());
@@ -82,6 +82,10 @@ public class XHttpConnect {
         xHttpRequest.setResultType(request.resultType());
         xHttpRequest.setRequestMode(request.requestMode());
         xHttpRequest.setUrl(request.url());
+        boolean isDisableSysProperty = request.disableSysProperty();
+        if (isDisableSysProperty) {
+            xHttpRequest.disableSysProperty();
+        }
         return xHttpRequest;
     }
 

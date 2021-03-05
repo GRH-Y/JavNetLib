@@ -116,6 +116,9 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
     @Override
     public void onSelectionKey(SelectionKey selectionKey) {
         SocketChannel channel = (SocketChannel) selectionKey.channel();
+        if (channel == null) {
+            return;
+        }
         T task = (T) selectionKey.attachment();
         boolean isCanConnect = selectionKey.isValid() && selectionKey.isConnectable();
         boolean isCanRead = selectionKey.isValid() && selectionKey.isReadable();
@@ -156,7 +159,7 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
             NioReceiver receive = task.getReceiver();
             if (receive != null) {
                 try {
-                    receive.onRead(channel);
+                    receive.onReadNetData(channel);
                 } catch (Throwable e) {
                     addDestroyTask(task);
                     if (!(e instanceof SocketChannelCloseException)) {
@@ -168,7 +171,7 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
             NioSender sender = task.getSender();
             if (sender != null) {
                 try {
-                    sender.doSendData();
+                    sender.onSendNetData();
                 } catch (Throwable e) {
                     addDestroyTask(task);
                     if (!(e instanceof SocketChannelCloseException)) {

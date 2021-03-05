@@ -128,7 +128,7 @@ public class JavHttpConnect {
         netTaskEntity.setRequestMode(requestMode);
         netTaskEntity.setIndependentTask(request.isIndependentTask());
 
-        Map<String, Object> property = requestEntity.getRequestProperty();
+        Map<Object, Object> property = requestEntity.getRequestProperty();
         netTaskEntity.setRequestProperty(property);
         byte[] data = requestEntity.getSendData();
 
@@ -155,13 +155,14 @@ public class JavHttpConnect {
         attribute.pushToCache(entity);
         if (entity.isIndependentTask()) {
             //一次性任务
-            ITaskContainer container = TaskExecutorPoolManager.getInstance().runTask(mCoreTask, mHttpTaskManage.getAttribute());
-            container.getTaskExecutor().setLoopState(false);
+            ITaskContainer container = TaskExecutorPoolManager.getInstance().createLoopTask(mCoreTask, mHttpTaskManage.getAttribute());
+            container.getTaskExecutor().blockStartTask();
+            container.getTaskExecutor().stopTask();
         } else {
             ILoopTaskExecutor executor = mHttpTaskManage.getExecutor();
-            if (!executor.getAliveState()) {
+            if (!executor.isAliveState()) {
                 executor.startTask();
-            } else if (executor.isIdleState() && executor.getAliveState()) {
+            } else if (executor.isIdleState() && executor.isAliveState()) {
                 ITaskContainer container = TaskExecutorPoolManager.getInstance().runTask(mCoreTask, attribute);
                 executor = container.getTaskExecutor();
                 mHttpTaskManage.setTaskContainer(container);

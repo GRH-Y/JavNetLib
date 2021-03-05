@@ -41,14 +41,6 @@ public class NioServerTask extends BaseNioNetTask {
     //---------------------------- get ---------------------------------------
 
 
-    public int getServerPort() {
-        return mPort;
-    }
-
-    public String getServerHost() {
-        return mHost;
-    }
-
     public ServerSocketChannel getServerSocketChannel() {
         return mChannel;
     }

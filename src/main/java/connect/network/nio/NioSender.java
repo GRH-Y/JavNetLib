@@ -1,8 +1,7 @@
 package connect.network.nio;
 
 
-import connect.network.base.joggle.INetSender;
-import connect.network.base.joggle.ISenderFeedback;
+import connect.network.base.BaseNetSender;
 import connect.network.xhttp.XMultiplexCacheManger;
 import connect.network.xhttp.utils.MultilevelBuf;
 
@@ -12,15 +11,10 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.LinkedList;
 
-public class NioSender implements INetSender {
-
-    protected ISenderFeedback feedback;
+public class NioSender extends BaseNetSender {
 
     protected SocketChannel channel;
-
     protected SelectionKey selectionKey;
-
-    public final static int SEND_COMPLETE = 0, SEND_FAIL = -1, SEND_CHANNEL_BUSY = 1;
 
     protected LinkedList<Object> dataQueue = new LinkedList();
 
@@ -51,86 +45,108 @@ public class NioSender implements INetSender {
         this.feedback = null;
     }
 
-    @Override
-    public void setSenderFeedback(ISenderFeedback feedback) {
-        this.feedback = feedback;
-    }
 
     /**
      * 发送数据
      *
-     * @param data
+     * @param objData
      */
     @Override
-    public void sendData(byte[] data) {
-        if (data != null && data.length > 0) {
-            ByteBuffer buffer = ByteBuffer.allocateDirect(data.length);
-            buffer.put(data);
-            buffer.flip();
-            sendData(buffer);
+    public void sendData(Object objData) {
+        if (objData == null) {
+            return;
         }
-    }
-
-    public void sendData(MultilevelBuf buf) {
-        boolean ret = false;
-        if (buf != null && selectionKey.isValid() && buf.isHasData()) {
-            try {
-                if (selectionKey.interestOps() != SelectionKey.OP_WRITE) {
+        if (objData instanceof byte[]) {
+            byte[] data = (byte[]) objData;
+            if (selectionKey.isValid() && data.length > 0) {
+                ByteBuffer buffer = ByteBuffer.allocateDirect(data.length);
+                buffer.put(data);
+                buffer.flip();
+                try {
+                    boolean ret = dataQueue.add(buffer);
+                    if (ret && selectionKey.interestOps() != SelectionKey.OP_WRITE) {
+                        selectionKey.interestOps(SelectionKey.OP_WRITE);
+                    }
+                } catch (Throwable e) {
+                    e.printStackTrace();
+                }
+            }
+        } else if (objData instanceof MultilevelBuf) {
+            boolean ret = false;
+            MultilevelBuf buf = (MultilevelBuf) objData;
+            if (selectionKey.isValid() && buf.isHasData()) {
+                try {
+                    ret = dataQueue.add(buf);
+                    if (ret && selectionKey.interestOps() != SelectionKey.OP_WRITE) {
+                        selectionKey.interestOps(SelectionKey.OP_WRITE);
+                    }
+                } catch (Throwable e) {
+                    e.printStackTrace();
+                }
+            }
+            if (!ret) {
+                XMultiplexCacheManger.getInstance().lose(buf);
+            }
+        } else if (objData instanceof ByteBuffer) {
+            ByteBuffer data = (ByteBuffer) objData;
+            if (selectionKey.isValid() && data.hasRemaining()) {
+                boolean ret = dataQueue.add(data);
+                if (ret && selectionKey.interestOps() != SelectionKey.OP_WRITE) {
                     selectionKey.interestOps(SelectionKey.OP_WRITE);
                 }
-                ret = dataQueue.add(buf);
-            } catch (Throwable e) {
-                e.printStackTrace();
             }
-        }
-        if (!ret) {
-            XMultiplexCacheManger.getInstance().lose(buf);
+        } else {
+            if (selectionKey.isValid()) {
+                boolean ret = dataQueue.add(objData);
+                if (ret && selectionKey.interestOps() != SelectionKey.OP_WRITE) {
+                    selectionKey.interestOps(SelectionKey.OP_WRITE);
+                }
+            }
         }
     }
 
-    public void sendData(ByteBuffer data) {
-        if (data != null && selectionKey.isValid() && data.hasRemaining()) {
-            if (selectionKey.interestOps() != SelectionKey.OP_WRITE) {
-                selectionKey.interestOps(SelectionKey.OP_WRITE);
-            }
-            dataQueue.add(data);
-        }
-    }
-
-    protected void doSendData() throws Throwable {
-        Throwable exception = null;
-        Object data = dataQueue.pollFirst();
+    @Override
+    protected int onHandleSendData(Object data) throws Throwable {
         int ret = SEND_COMPLETE;
+        if (data instanceof ByteBuffer) {
+            ret = sendDataImp((ByteBuffer) data);
+            if (ret == SEND_CHANNEL_BUSY) {
+                dataQueue.addFirst(data);
+            }
+        } else if (data instanceof MultilevelBuf) {
+            MultilevelBuf buf = (MultilevelBuf) data;
+            ByteBuffer[] sendDataBuf = buf.getTmpCacheBuf();
+            if (sendDataBuf == null) {
+                sendDataBuf = buf.getUseBuf(true);
+            }
+            for (ByteBuffer buffer : sendDataBuf) {
+                if (buffer.hasRemaining()) {
+                    ret = sendDataImp(buffer);
+                    if (ret == SEND_CHANNEL_BUSY) {
+                        buf.setTmpCacheBuf(sendDataBuf);
+                        dataQueue.addFirst(data);
+                    }
+                }
+            }
+            buf.setTmpCacheBuf(null);
+            buf.setBackBuf(sendDataBuf);
+        }
+        return ret;
+    }
+
+    protected void onSendNetData() throws Throwable {
+        Object data = dataQueue.pollFirst();
+        Throwable exception = null;
+        int ret = SEND_COMPLETE;
+
         while (data != null && exception == null) {
             try {
-                if (data instanceof ByteBuffer) {
-                    ret = sendDataImp((ByteBuffer) data);
-                    if (ret == SEND_CHANNEL_BUSY) {
-                        dataQueue.addFirst(data);
-                        return;
-                    }
-                } else if (data instanceof MultilevelBuf) {
-                    MultilevelBuf buf = (MultilevelBuf) data;
-                    ByteBuffer[] sendDataBuf = buf.getTmpCacheBuf();
-                    if (sendDataBuf == null) {
-                        sendDataBuf = buf.getUseBuf(true);
-                    }
-                    for (ByteBuffer buffer : sendDataBuf) {
-                        if (buffer.hasRemaining()) {
-                            ret = sendDataImp(buffer);
-                            if (ret == SEND_CHANNEL_BUSY) {
-                                buf.setTmpCacheBuf(sendDataBuf);
-                                dataQueue.addFirst(data);
-                                return;
-                            }
-                        }
-                    }
-                    buf.setTmpCacheBuf(null);
-                    buf.setBackBuf(sendDataBuf);
+                ret = onHandleSendData(data);
+                if (ret == SEND_CHANNEL_BUSY) {
+                    return;
                 }
             } catch (Throwable e) {
                 exception = e;
-                e.printStackTrace();
             }
             if (feedback != null && ret != SEND_CHANNEL_BUSY) {
                 feedback.onSenderFeedBack(this, data, exception);
@@ -167,5 +183,4 @@ public class NioSender implements INetSender {
         } while (buffers.hasRemaining() && channel.isConnected());
         return SEND_COMPLETE;
     }
-
 }

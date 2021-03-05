@@ -7,8 +7,6 @@ import java.net.DatagramSocket;
 public class UdpTask extends BaseNetTask {
 
     private DatagramSocket mSocket;
-    private String mHost;
-    private int mPort;
 
     private UdpReceive receive = null;
     private UdpSender sender = null;
@@ -31,11 +29,6 @@ public class UdpTask extends BaseNetTask {
         this.mSocket = socket;
     }
 
-    public void setAddress(String host, int port) {
-        this.mHost = host;
-        this.mPort = port;
-    }
-
     public void setReceive(UdpReceive receive) {
         this.receive = receive;
     }
@@ -44,15 +37,16 @@ public class UdpTask extends BaseNetTask {
         this.sender = sender;
     }
 
+    @Override
+    public void setAddress(String host, int port) {
+        if (isServer) {
+            super.setAddress(host, port);
+        } else {
+            throw new IllegalStateException("## The current task is not a service type and cannot be configured !!!");
+        }
+    }
+
     //---------------------------- get ---------------------------------------
-
-    public int getPort() {
-        return mPort;
-    }
-
-    public String getHost() {
-        return mHost;
-    }
 
     public LiveTime getLiveTime() {
         return liveTime;
@@ -81,6 +75,10 @@ public class UdpTask extends BaseNetTask {
     //---------------------------- on ---------------------------------------
 
     protected void onConfigSocket(DatagramSocket socket) {
+//        // 创建socket并加入组播地址
+//        socket.joinGroup(bcAddr);
+//        // 必须是false才能开启广播功能！！
+//        socket.setLoopbackMode(false);
     }
 
 

@@ -42,7 +42,7 @@ public abstract class BaseNetWork<T extends BaseNetTask> {
     }
 
     protected void connectImp(T task) {
-        task.changeTaskStatus(TaskStatus.RUN);
+        task.changeTaskStatus(NetTaskStatus.RUN);
         onConnectTask(task);
     }
 
@@ -60,7 +60,7 @@ public abstract class BaseNetWork<T extends BaseNetTask> {
     }
 
     protected void removerTaskImp(T task) {
-        task.changeTaskStatus(TaskStatus.NONE);
+        task.changeTaskStatus(NetTaskStatus.NONE);
         onDisconnectTask(task);
     }
 
@@ -110,10 +110,9 @@ public abstract class BaseNetWork<T extends BaseNetTask> {
     protected boolean addConnectTask(T task) {
         boolean ret = false;
         if (task != null && !mConnectCache.contains(task)) {
-            task.changeTaskStatus(TaskStatus.USE);
             ret = mConnectCache.offer(task);
-            if (!ret) {
-                task.changeTaskStatus(TaskStatus.NONE);
+            if (ret) {
+                task.changeTaskStatus(NetTaskStatus.LOAD);
             }
         }
         return ret;

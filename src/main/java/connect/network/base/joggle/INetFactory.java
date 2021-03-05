@@ -20,6 +20,13 @@ public interface INetFactory<T extends BaseNetTask> {
     void removeTask(T task);
 
     /**
+     * 是否已启动
+     *
+     * @return true 为已启动
+     */
+    boolean isOpen();
+
+    /**
      * 打开
      */
     void open();

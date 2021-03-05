@@ -29,7 +29,7 @@ public class HttpTaskConfig implements IHttpTaskConfig {
     private long mFreeExitTime = 30000;
     private int mTimeout = 8000;
     private String mBaseUrl = null;
-    private Map<String, Object> mRequestProperty = null;
+    private Map<Object, Object> mRequestProperty = null;
 
     public HttpTaskConfig() {
         mAttribute = new ConsumerQueueAttribute<>();
@@ -42,7 +42,7 @@ public class HttpTaskConfig implements IHttpTaskConfig {
     }
 
     @Override
-    public void setGlobalRequestProperty(Map<String, Object> property) {
+    public void setGlobalRequestProperty(Map<Object, Object> property) {
         this.mRequestProperty = property;
     }
 
@@ -125,7 +125,7 @@ public class HttpTaskConfig implements IHttpTaskConfig {
         return mTimeout;
     }
 
-    protected Map<String, Object> getGlobalRequestProperty() {
+    protected Map<Object, Object> getGlobalRequestProperty() {
         return mRequestProperty;
     }
 

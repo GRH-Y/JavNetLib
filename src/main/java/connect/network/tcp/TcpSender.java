@@ -1,32 +1,25 @@
 package connect.network.tcp;
 
-import connect.network.base.joggle.INetSender;
-import connect.network.base.joggle.ISenderFeedback;
+import connect.network.base.BaseNetSender;
 
 import java.io.OutputStream;
 import java.net.SocketTimeoutException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class TcpSender implements INetSender {
+public class TcpSender extends BaseNetSender {
 
-    protected Queue<byte[]> cache;
+    protected Queue<Object> cache;
     protected OutputStream stream = null;
-    protected ISenderFeedback feedback;
 
     public TcpSender() {
         cache = new ConcurrentLinkedQueue<>();
     }
 
     @Override
-    public void setSenderFeedback(ISenderFeedback feedback) {
-        this.feedback = feedback;
-    }
-
-    @Override
-    public void sendData(byte[] data) {
-        if (data != null) {
-            cache.add(data);
+    public void sendData(Object objData) {
+        if (objData != null) {
+            cache.add(objData);
         }
     }
 
@@ -49,10 +42,18 @@ public class TcpSender implements INetSender {
         return stream;
     }
 
-    protected void onWrite() throws Exception {
+    protected void onSendNetData() throws Throwable {
         while (!cache.isEmpty() && stream != null) {
-            byte[] data = cache.remove();
+            Object objData = cache.remove();
+            onHandleSendData(objData);
+        }
+    }
+
+    @Override
+    protected int onHandleSendData(Object objData) throws Throwable {
+        if (objData instanceof byte[]) {
             try {
+                byte[] data = (byte[]) objData;
                 stream.write(data);
             } catch (Exception e) {
                 if (!(e instanceof SocketTimeoutException)) {
@@ -60,5 +61,6 @@ public class TcpSender implements INetSender {
                 }
             }
         }
+        return SEND_COMPLETE;
     }
 }

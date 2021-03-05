@@ -53,7 +53,7 @@ public abstract class AbsNetFactory<T extends BaseNetTask> implements INetFactor
     @Override
     public boolean addTask(T task) {
         boolean ret = false;
-        if (task.getTaskStatus() == TaskStatus.NONE) {
+        if (task.getTaskStatus() == NetTaskStatus.NONE) {
             ret = mEngine.isEngineRunning();
             if (ret) {
                 ret = mWork.addConnectTask(task);
@@ -67,7 +67,7 @@ public abstract class AbsNetFactory<T extends BaseNetTask> implements INetFactor
 
     @Override
     public void removeTask(T task) {
-        if (task.getTaskStatus() == TaskStatus.RUN) {
+        if (task.getTaskStatus() == NetTaskStatus.RUN) {
             boolean ret = mEngine.isEngineRunning();
             if (ret) {
                 ret = mWork.addDestroyTask(task);
@@ -89,5 +89,13 @@ public abstract class AbsNetFactory<T extends BaseNetTask> implements INetFactor
     @Override
     public void close() {
         mEngine.stopEngine();
+    }
+
+    @Override
+    public boolean isOpen() {
+        if (mEngine == null) {
+            return false;
+        }
+        return mEngine.isEngineRunning();
     }
 }

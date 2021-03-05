@@ -23,7 +23,7 @@ public class TcpReceive {
         return stream;
     }
 
-    protected void onRead() throws Exception {
+    protected void onReadNetData() throws Exception {
         byte[] data = null;
         Exception exception = null;
         try {

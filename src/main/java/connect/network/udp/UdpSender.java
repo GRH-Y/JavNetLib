@@ -1,67 +1,31 @@
 package connect.network.udp;
 
-import connect.network.base.joggle.INetSender;
-import connect.network.base.joggle.ISenderFeedback;
+import connect.network.base.BaseNetSender;
 
-import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetSocketAddress;
-import java.net.SocketTimeoutException;
+import java.net.*;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class UdpSender implements INetSender {
+public class UdpSender extends BaseNetSender {
 
-    protected Queue<UdpSenderEntity> cache;
+    protected Queue<Object> cache;
     protected DatagramPacket mPacket;
     protected DatagramSocket socket = null;
-    protected ISenderFeedback feedback;
 
     public UdpSender() {
         cache = new ConcurrentLinkedQueue<>();
     }
 
-    public void setSocketAddress(InetSocketAddress address) {
-        if (mPacket != null) {
-            mPacket.setSocketAddress(address);
-        }
-    }
-
     @Override
-    public void setSenderFeedback(ISenderFeedback feedback) {
-        this.feedback = feedback;
-    }
-
-    @Override
-    public void sendData(byte[] data) {
-        if (data != null) {
-            cache.add(new UdpSenderEntity(data, data.length));
+    public void sendData(Object objData) {
+        if (objData == null) {
+            return;
         }
-    }
-
-//    @Override
-//    public void sendDataNow(byte[] data) {
-//        if (data != null) {
-//            sendDataNow(data, data.length);
-//        }
-//    }
-
-    public void sendDataNow(byte[] data, int length) {
-        if (data != null) {
-            try {
-                mPacket.setData(data);
-                mPacket.setLength(length);
-                socket.send(mPacket);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    public void sendData(byte[] data, int length) {
-        if (data != null && length > 0) {
-            cache.add(new UdpSenderEntity(data, length));
+        if (objData instanceof UdpSenderCarrier) {
+            UdpSenderCarrier data = (UdpSenderCarrier) objData;
+            cache.add(data);
+        } else {
+            cache.add(objData);
         }
     }
 
@@ -73,21 +37,44 @@ public class UdpSender implements INetSender {
         return socket;
     }
 
-    protected void onWrite(DatagramSocket socket, String host, int port) throws Exception {
+    @Override
+    protected int onHandleSendData(Object objData) throws Throwable {
+        if (objData instanceof UdpSenderCarrier) {
+            UdpSenderCarrier carrier = (UdpSenderCarrier) objData;
+            if (mPacket == null) {
+                mPacket = new DatagramPacket(carrier.data, carrier.length, new InetSocketAddress(carrier.host, carrier.port));
+            } else {
+                InetAddress address = mPacket.getAddress();
+                if (!address.getHostAddress().equals(carrier.host)) {
+                    mPacket.setAddress(InetAddress.getByName(carrier.host));
+                }
+                if (mPacket.getPort() != carrier.port) {
+                    mPacket.setPort(carrier.port);
+                }
+            }
+            mPacket.setData(carrier.data);
+            mPacket.setLength(carrier.length);
+            socket.send(mPacket);
+        }
+        return SEND_COMPLETE;
+    }
+
+    protected void onSendNetData() throws Throwable {
+        Throwable exception = null;
         while (!cache.isEmpty()) {
-            UdpSenderEntity entity = cache.remove();
+            Object objData = cache.remove();
             try {
-                if (mPacket == null) {
-                    mPacket = new DatagramPacket(entity.data, entity.length, new InetSocketAddress(host, port));
-                } else {
-                    mPacket.setData(entity.data);
-                    mPacket.setLength(entity.length);
-                }
-                socket.send(mPacket);
-            } catch (Exception e) {
+                onHandleSendData(objData);
+            } catch (Throwable e) {
                 if (!(e instanceof SocketTimeoutException)) {
-                    throw new Exception(e);
+                    exception = e;
                 }
+            }
+            if (feedback != null) {
+                feedback.onSenderFeedBack(this, objData, exception);
+            }
+            if (exception != null) {
+                throw exception;
             }
         }
     }

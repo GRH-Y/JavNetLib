@@ -22,17 +22,19 @@ public class BioEngine<T extends BaseNetTask> extends AbsNetEngine {
     protected void onEngineRun() {
         //检测是否有新的任务添加
         mWork.onCheckConnectTask();
-        //检查是否有读写任务
+        //检查是否有任务
         mWork.onExecuteTask();
         //清除要结束的任务
         mWork.onCheckRemoverTask();
 
-        if (mExecutor.getLoopState() && mWork.getExecutorQueue().isEmpty() && mWork.getConnectCache().isEmpty()
-                && mWork.getDestroyCache().isEmpty()) {
-            mExecutor.waitTask(100);
+        if (mExecutor.isLoopState()) {
+            if (mWork.getExecutorQueue().isEmpty() && mWork.getConnectCache().isEmpty() && mWork.getDestroyCache().isEmpty()) {
+                mExecutor.waitTask(0);
+            } else {
+                mExecutor.waitTask(100);
+            }
         }
     }
-
 
     @Override
     protected void onDestroyTask() {

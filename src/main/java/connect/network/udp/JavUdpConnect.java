@@ -167,7 +167,7 @@ public class JavUdpConnect {
         public int getLocalPort() {
             ILoopTaskExecutor executor = container.getTaskExecutor();
             if (executor.isStartState()) {
-                while (!executor.getLoopState() && socket == null) {
+                while (!executor.isLoopState() && socket == null) {
                     executor.waitTask(0);
                 }
             }
@@ -291,7 +291,7 @@ public class JavUdpConnect {
     }
 
     public boolean isPauseConnect() {
-        return coreTask.getContainer().getTaskExecutor().getPauseState();
+        return coreTask.getContainer().getTaskExecutor().isPauseState();
     }
 
     public void startConnect() {

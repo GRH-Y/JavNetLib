@@ -14,6 +14,7 @@ import connect.network.xhttp.entity.XResponse;
 import connect.network.xhttp.joggle.IXHttpDns;
 import connect.network.xhttp.joggle.IXHttpResponseConvert;
 import connect.network.xhttp.utils.*;
+import log.LogDog;
 import util.StringEnvoy;
 
 import java.io.IOException;
@@ -77,6 +78,7 @@ public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INet
         int code = XResponseHelper.getCode(response);
         if (code >= 300 && code < 400) {
             //重定向
+            LogDog.w("## has redirect !!!");
             String location = response.getHeadForKey(XHttpProtocol.XY_LOCATION);
             request.setUrl(location);
             isRedirect = true;

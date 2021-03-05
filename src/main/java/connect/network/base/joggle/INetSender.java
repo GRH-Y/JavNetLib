@@ -17,8 +17,8 @@ public interface INetSender {
     /**
      * 发送数据
      *
-     * @param data
+     * @param objData
      */
-    void sendData(byte[] data);
+    void sendData(Object objData);
 
 }

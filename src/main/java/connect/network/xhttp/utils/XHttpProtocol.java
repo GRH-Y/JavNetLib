@@ -74,40 +74,47 @@ public class XHttpProtocol {
     //需要在表单中进行文件上传时，就需要使用该格式
     public static final String CONTENT_TYPE_DATA = "multipart/form-data";
 
-    private Map<String, String> headParameterMap = new LinkedHashMap<>();
+    private Map<Object, String> headParameterMap = new LinkedHashMap<>();
+
+    private boolean isDisableSysProperty = false;
 
     public void initProtocol(XRequest request) {
-        RequestMode requestMode = request.getRequestMode();
-        byte[] data = request.getSendData();
-        XUrlMedia httpUrlMedia = request.getUrl();
-        String path = httpUrlMedia.getPath();
-        if (requestMode == RequestMode.GET) {
-            if (data != null) {
-                path = httpUrlMedia.getPath() + new String(data);
+        headParameterMap.clear();
+        isDisableSysProperty = request.isDisableSysProperty();
+        if (!isDisableSysProperty) {
+            RequestMode requestMode = request.getRequestMode();
+            XUrlMedia httpUrlMedia = request.getUrl();
+            byte[] data = request.getSendData();
+            String path = httpUrlMedia.getPath();
+            if (requestMode == RequestMode.GET) {
+                if (data != null) {
+                    path = httpUrlMedia.getPath() + new String(data);
+                }
+            }
+            headParameterMap.put(requestMode.getMode(), " " + path + " HTTP/1.1\r\n");
+            headParameterMap.put(XY_HOST, httpUrlMedia.getHost());
+            headParameterMap.put(XY_ACCEPT, " */*");
+            headParameterMap.put(XY_ACCEPT_LANGUAGE, "*/*");
+            headParameterMap.put(XY_ACCEPT_ENCODING, "gzip, deflate");
+            headParameterMap.put(XY_USER_AGENT, "XHttp_1.0");
+            headParameterMap.put(XY_CONNECTION, "keep-alive");
+            headParameterMap.put(XY_REFERER, httpUrlMedia.getReferer());
+            if (data != null && requestMode != RequestMode.GET) {
+                headParameterMap.put(XY_CONTENT_LENGTH, String.valueOf(data.length));
             }
         }
-        headParameterMap.put(requestMode.getMode(), " " + path + " HTTP/1.1\r\n");
-        headParameterMap.put(XY_HOST, httpUrlMedia.getHost());
-        headParameterMap.put(XY_ACCEPT, " */*");
-        headParameterMap.put(XY_ACCEPT_LANGUAGE, "*/*");
-        headParameterMap.put(XY_ACCEPT_ENCODING, "gzip, deflate");
-        headParameterMap.put(XY_USER_AGENT, "XHttp_1.0");
-        headParameterMap.put(XY_CONNECTION, "keep-alive");
-        headParameterMap.put(XY_REFERER, httpUrlMedia.getReferer());
-        Map<String, Object> userParameter = request.getRequestProperty();
+
+        Map<Object, Object> userParameter = request.getRequestProperty();
         if (userParameter != null && !userParameter.isEmpty()) {
-            Set<Map.Entry<String, Object>> set = userParameter.entrySet();
-            for (Map.Entry<String, Object> entry : set) {
+            Set<Map.Entry<Object, Object>> set = userParameter.entrySet();
+            for (Map.Entry<Object, Object> entry : set) {
                 headParameterMap.put(entry.getKey(), String.valueOf(entry.getValue()));
             }
-        }
-        if (data != null && requestMode != RequestMode.GET) {
-            headParameterMap.put(XY_CONTENT_LENGTH, String.valueOf(data.length));
         }
     }
 
 
-    public Map<String, String> getHeadParameterMap() {
+    public Map<Object, String> getHeadParameterMap() {
         return headParameterMap;
     }
 
@@ -129,12 +136,17 @@ public class XHttpProtocol {
         }
         StringBuilder builder = new StringBuilder();
         boolean isFirst = true;
-        for (Map.Entry<String, String> entry : headParameterMap.entrySet()) {
-            if (isFirst) {
-                builder.append(entry.getKey()).append(entry.getValue());
+        for (Map.Entry<Object, String> entry : headParameterMap.entrySet()) {
+            Object key = entry.getKey();
+            if (key instanceof RepeatableKey) {
+                RepeatableKey repeatableKey = (RepeatableKey) key;
+                key = repeatableKey.getKey();
+            }
+            if (isFirst && !isDisableSysProperty) {
+                builder.append(key).append(entry.getValue());
                 isFirst = false;
             } else {
-                builder.append(entry.getKey()).append(": ").append(entry.getValue());
+                builder.append(key).append(": ").append(entry.getValue());
                 if (!entry.getValue().endsWith("\r\n")) {
                     builder.append("\r\n");
                 }

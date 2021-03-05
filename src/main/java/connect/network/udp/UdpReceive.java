@@ -23,7 +23,7 @@ public class UdpReceive {
         return socket;
     }
 
-    protected void onRead() throws Exception {
+    protected void onReadNetData() throws Exception {
         DatagramPacket receive = null;
         Exception exception = null;
         try {
@@ -32,12 +32,14 @@ public class UdpReceive {
             receive = new DatagramPacket(buffer, buffer.length);
             socket.receive(receive);
         } catch (Exception e) {
-            exception = e;
-            if (!(exception instanceof SocketTimeoutException)) {
-                throw exception;
+            if (!(e instanceof SocketTimeoutException)) {
+                exception = e;
             }
         } finally {
             notifyReceiver(receive, exception);
+        }
+        if (exception != null) {
+            throw exception;
         }
     }
 

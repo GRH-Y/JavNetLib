@@ -6,6 +6,7 @@ import connect.network.base.joggle.INetReceiver;
 import connect.network.base.joggle.IReceiverDecodeHandle;
 import connect.network.xhttp.XMultiplexCacheManger;
 import connect.network.xhttp.utils.MultilevelBuf;
+import util.IoEnvoy;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
@@ -40,14 +41,14 @@ public class NioReceiver {
      *
      * @return 如果返回false则会关闭该链接
      */
-    protected void onRead(SocketChannel channel) throws Throwable {
+    protected void onReadNetData(SocketChannel channel) throws Throwable {
         if (decodeHandle != null) {
             decodeHandle.onDecode(channel);
         } else {
             Throwable exception = null;
             MultilevelBuf buf = XMultiplexCacheManger.getInstance().obtainBuf();
             ByteBuffer[] buffer = buf.getAllBuf();
-            long ret = -1;
+            long ret = IoEnvoy.FAIL;
             try {
                 do {
                     ret = channel.read(buffer);
@@ -70,9 +71,6 @@ public class NioReceiver {
             if (exception != null) {
                 throw exception;
             } else if (ret < 0 && exception == null) {
-//            InetSocketAddress localAddress = (InetSocketAddress) channel.getLocalAddress();
-//            InetSocketAddress remoteAddress = (InetSocketAddress) channel.getRemoteAddress();
-//            LogDog.e("## socket channel exception， local address = " + localAddress.toString() + " remote address = " + remoteAddress.toString());
                 throw new SocketChannelCloseException();
             }
         }

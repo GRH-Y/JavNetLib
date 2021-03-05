@@ -4,7 +4,6 @@ import connect.network.base.AbsNetEngine;
 import connect.network.base.AbsNetFactory;
 import connect.network.base.BaseNetWork;
 import connect.network.base.joggle.ISSLFactory;
-import connect.network.ssl.SSLFactory;
 import connect.network.tcp.BioEngine;
 
 public class UdpFactory extends AbsNetFactory<UdpTask> {
@@ -26,7 +25,7 @@ public class UdpFactory extends AbsNetFactory<UdpTask> {
 
     @Override
     protected ISSLFactory initSSLFactory() {
-        return new SSLFactory();
+        return null;
     }
 
     public synchronized static UdpFactory getFactory() {

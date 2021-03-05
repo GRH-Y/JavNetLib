@@ -36,8 +36,9 @@ public class AioSender implements INetSender {
     }
 
     @Override
-    public void sendData(byte[] data) {
-        if (data != null) {
+    public void sendData(Object objData) {
+        if (objData instanceof byte[]) {
+            byte[] data = (byte[]) objData;
             ByteBuffer byteBuffer = ByteBuffer.wrap(data);
             if (tlsHandler != null) {
                 try {

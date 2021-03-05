@@ -26,13 +26,13 @@ public class UdpWork<T extends UdpTask> extends BioNetWork<T> {
 
     @Override
     public void onConnectTask(T task) {
-        InetSocketAddress address = new InetSocketAddress(task.getHost(), task.getPort());
         try {
+            //广播地址的范围是224.0.0.0 ~ 239.255.255.255
             DatagramSocket socket;
             if (task.isServer()) {
-                //多播UDP
+                InetSocketAddress address = new InetSocketAddress(task.getHost(), task.getPort());
                 if (task.isBroadcast() && task.getLiveTime() != null) {
-                    //单播UDP服务端
+                    //组播UDP服务端
                     MulticastSocket multicastSocket = new MulticastSocket(address);
                     multicastSocket.setTimeToLive(task.getLiveTime().getTtl());
                     socket = multicastSocket;
@@ -43,9 +43,8 @@ public class UdpWork<T extends UdpTask> extends BioNetWork<T> {
                 //0x02 成本低, 0x04 可靠性,0x08 通过输入 ,0x10 低延迟
                 socket.setTrafficClass(0x02);
             } else {
-                //多播UDP
                 if (task.isBroadcast() && task.getLiveTime() != null) {
-                    //单播UDP客户端
+                    //组播UDP客户端
                     MulticastSocket multicastSocket = new MulticastSocket();
                     multicastSocket.setTimeToLive(task.getLiveTime().getTtl());
                     socket = multicastSocket;
@@ -64,7 +63,7 @@ public class UdpWork<T extends UdpTask> extends BioNetWork<T> {
             if (task.getReceive() != null) {
                 task.getReceive().setSocket(socket);
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             task.setSocket(null);
             mFactory.removeTask(task);
             e.printStackTrace();
@@ -75,7 +74,7 @@ public class UdpWork<T extends UdpTask> extends BioNetWork<T> {
         UdpReceive receive = task.getReceive();
         if (receive != null) {
             try {
-                receive.onRead();
+                receive.onReadNetData();
             } catch (Throwable e) {
                 mFactory.removeTask(task);
                 e.printStackTrace();
@@ -87,7 +86,7 @@ public class UdpWork<T extends UdpTask> extends BioNetWork<T> {
         UdpSender sender = task.getSender();
         if (sender != null) {
             try {
-                sender.onWrite(task.getSocket(), task.getHost(), task.getPort());
+                sender.onSendNetData();
             } catch (Throwable e) {
                 mFactory.removeTask(task);
                 e.printStackTrace();

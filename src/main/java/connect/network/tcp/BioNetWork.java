@@ -2,7 +2,7 @@ package connect.network.tcp;
 
 import connect.network.base.BaseNetTask;
 import connect.network.base.BaseNetWork;
-import connect.network.base.TaskStatus;
+import connect.network.base.NetTaskStatus;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -38,7 +38,7 @@ public class BioNetWork<T extends BaseNetTask> extends BaseNetWork<T> {
     @Override
     protected void connectImp(T task) {
         super.connectImp(task);
-        if (task.getTaskStatus() == TaskStatus.RUN) {
+        if (task.getTaskStatus() == NetTaskStatus.RUN) {
             mExecutorQueue.add(task);
         }
     }
@@ -71,8 +71,8 @@ public class BioNetWork<T extends BaseNetTask> extends BaseNetWork<T> {
     @Override
     protected boolean addConnectTask(T task) {
         boolean ret = false;
-        if (task != null && !mConnectCache.contains(task) && !mExecutorQueue.contains(task)) {
-            ret = mConnectCache.add(task);
+        if (!mExecutorQueue.contains(task)) {
+            ret = super.addConnectTask(task);
         }
         return ret;
     }
@@ -80,8 +80,8 @@ public class BioNetWork<T extends BaseNetTask> extends BaseNetWork<T> {
     @Override
     protected boolean addDestroyTask(T task) {
         boolean ret = false;
-        if (task != null && !mDestroyCache.contains(task) && mExecutorQueue.contains(task)) {
-            ret = mDestroyCache.add(task);
+        if (mExecutorQueue.contains(task)) {
+            ret = super.addDestroyTask(task);
         }
         return ret;
     }

@@ -4,7 +4,7 @@ package connect.network.xhttp.entity;
 import connect.network.base.RequestMode;
 import connect.network.xhttp.utils.XUrlMedia;
 
-import java.util.Map;
+import java.util.LinkedHashMap;
 
 /**
  * 请求网络任务实体
@@ -16,6 +16,9 @@ public class XRequest {
 
     private XUrlMedia httpUrlMedia;
     private RequestMode requestMode = RequestMode.GET;
+
+    //禁用系統的header参数，完全用户自定义
+    private boolean disableSysProperty = false;
 
     private byte[] sendData = null;
 
@@ -34,7 +37,7 @@ public class XRequest {
     /**
      * 请求头参数
      */
-    private Map<String, Object> requestProperty = null;
+    private LinkedHashMap<Object, Object> requestProperty = null;
 
 
     /**
@@ -82,6 +85,10 @@ public class XRequest {
         }
     }
 
+    public void disableSysProperty() {
+        this.disableSysProperty = true;
+    }
+
     public void setRequestMode(RequestMode requestMode) {
         if (requestMode == null) {
             throw new NullPointerException("requestMode is null !!!");
@@ -119,12 +126,15 @@ public class XRequest {
         return object;
     }
 
-    public void setRequestProperty(Map<String, Object> property) {
+    public void setRequestProperty(LinkedHashMap<Object, Object> property) {
         this.requestProperty = property;
     }
 
-    public Map<String, Object> getRequestProperty() {
+    public LinkedHashMap<Object, Object> getRequestProperty() {
         return requestProperty;
     }
 
+    public boolean isDisableSysProperty() {
+        return disableSysProperty;
+    }
 }

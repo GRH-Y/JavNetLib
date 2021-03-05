@@ -18,7 +18,7 @@ public abstract class AbsNetEngine extends BaseLoopTask {
     abstract protected void onEngineRun();
 
     protected boolean isEngineRunning() {
-        return mExecutor != null ? mExecutor.getAliveState() && mExecutor.isStartState() : false;
+        return mExecutor != null ? mExecutor.isLoopState() && mExecutor.isStartState() : false;
     }
 
     protected void resumeEngine() {

@@ -1,5 +1,6 @@
 package connect.network.base;
 
+import connect.network.base.joggle.INetTaskStateListener;
 import util.StringEnvoy;
 
 public class BaseNetTask {
@@ -8,15 +9,25 @@ public class BaseNetTask {
 
     protected int mPort = -1;
 
-    private volatile TaskStatus taskStatus;
+    private volatile NetTaskStatus taskStatus;
+
+    private INetTaskStateListener listener;
 
     public BaseNetTask() {
-        taskStatus = TaskStatus.NONE;
+        taskStatus = NetTaskStatus.NONE;
     }
 
-    protected void changeTaskStatus(TaskStatus status) {
+
+    public void setNetTaskStateLisetener(INetTaskStateListener listener) {
+        this.listener = listener;
+    }
+
+    protected void changeTaskStatus(NetTaskStatus status) {
         synchronized (BaseNetTask.class) {
             this.taskStatus = status;
+            if (listener != null) {
+                listener.onState(status);
+            }
         }
     }
 
@@ -25,7 +36,7 @@ public class BaseNetTask {
      *
      * @return
      */
-    public TaskStatus getTaskStatus() {
+    public NetTaskStatus getTaskStatus() {
         synchronized (BaseNetTask.class) {
             return taskStatus;
         }
@@ -38,7 +49,6 @@ public class BaseNetTask {
         this.mHost = host;
         this.mPort = port;
     }
-
 
 
     public int getPort() {

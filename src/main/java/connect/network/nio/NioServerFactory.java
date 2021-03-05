@@ -4,7 +4,7 @@ package connect.network.nio;
 import connect.network.base.AbsNetEngine;
 import connect.network.base.AbsNetFactory;
 import connect.network.base.BaseNetWork;
-import connect.network.base.TaskStatus;
+import connect.network.base.NetTaskStatus;
 import connect.network.base.joggle.INetFactory;
 import connect.network.base.joggle.ISSLFactory;
 import connect.network.ssl.SSLFactory;
@@ -62,7 +62,7 @@ public class NioServerFactory extends AbsNetFactory<NioServerTask> {
 
     @Override
     public boolean addTask(NioServerTask task) {
-        if (task != null && task.getSelectionKey() == null && task.getTaskStatus() == TaskStatus.NONE) {
+        if (task != null && task.getSelectionKey() == null && task.getTaskStatus() == NetTaskStatus.NONE) {
             return super.addTask(task);
         }
         return false;
@@ -70,7 +70,7 @@ public class NioServerFactory extends AbsNetFactory<NioServerTask> {
 
     @Override
     public void removeTask(NioServerTask task) {
-        if (task != null && task.getSelectionKey() != null && task.getTaskStatus() == TaskStatus.RUN) {
+        if (task != null && task.getSelectionKey() != null && task.getTaskStatus() == NetTaskStatus.RUN) {
             super.removeTask(task);
         }
     }

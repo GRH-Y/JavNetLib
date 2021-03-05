@@ -50,7 +50,7 @@ public class RequestEntity {
     /**
      * 请求头参数
      */
-    private Map<String, Object> requestProperty = null;
+    private Map<Object, Object> requestProperty = null;
 
     /**
      * 响应头参数
@@ -85,11 +85,11 @@ public class RequestEntity {
         this.taskTag = taskTag;
     }
 
-    public void setRequestProperty(Map<String, Object> property) {
+    public void setRequestProperty(Map<Object, Object> property) {
         this.requestProperty = property;
     }
 
-    public Map<String, Object> getRequestProperty() {
+    public Map<Object, Object> getRequestProperty() {
         return requestProperty;
     }
 
