@@ -6,12 +6,12 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketTimeoutException;
 
-public class UdpReceive {
+public class UdpReceiver {
 
     protected INetReceiver<DatagramPacket> mReceive;
     protected DatagramSocket socket = null;
 
-    public UdpReceive(INetReceiver<DatagramPacket> receive) {
+    public UdpReceiver(INetReceiver<DatagramPacket> receive) {
         this.mReceive = receive;
     }
 

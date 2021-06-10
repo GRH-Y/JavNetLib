@@ -2,14 +2,15 @@ package connect.network.udp;
 
 import connect.network.base.BaseNetSender;
 
-import java.net.*;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.SocketTimeoutException;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class UdpSender extends BaseNetSender {
 
     protected Queue<Object> cache;
-    protected DatagramPacket mPacket;
     protected DatagramSocket socket = null;
 
     public UdpSender() {
@@ -21,12 +22,7 @@ public class UdpSender extends BaseNetSender {
         if (objData == null) {
             return;
         }
-        if (objData instanceof UdpSenderCarrier) {
-            UdpSenderCarrier data = (UdpSenderCarrier) objData;
-            cache.add(data);
-        } else {
-            cache.add(objData);
-        }
+        cache.add(objData);
     }
 
     protected void setSocket(DatagramSocket socket) {
@@ -37,24 +33,10 @@ public class UdpSender extends BaseNetSender {
         return socket;
     }
 
-    @Override
     protected int onHandleSendData(Object objData) throws Throwable {
-        if (objData instanceof UdpSenderCarrier) {
-            UdpSenderCarrier carrier = (UdpSenderCarrier) objData;
-            if (mPacket == null) {
-                mPacket = new DatagramPacket(carrier.data, carrier.length, new InetSocketAddress(carrier.host, carrier.port));
-            } else {
-                InetAddress address = mPacket.getAddress();
-                if (!address.getHostAddress().equals(carrier.host)) {
-                    mPacket.setAddress(InetAddress.getByName(carrier.host));
-                }
-                if (mPacket.getPort() != carrier.port) {
-                    mPacket.setPort(carrier.port);
-                }
-            }
-            mPacket.setData(carrier.data);
-            mPacket.setLength(carrier.length);
-            socket.send(mPacket);
+        if (objData instanceof DatagramPacket) {
+            DatagramPacket packet = (DatagramPacket) objData;
+            socket.send(packet);
         }
         return SEND_COMPLETE;
     }

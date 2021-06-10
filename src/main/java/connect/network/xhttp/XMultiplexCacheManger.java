@@ -3,14 +3,14 @@ package connect.network.xhttp;
 import connect.network.base.AbsNetFactory;
 import connect.network.xhttp.config.XHttpConfig;
 import connect.network.xhttp.entity.XRequest;
-import connect.network.xhttp.utils.MultilevelBuf;
+import connect.network.xhttp.utils.MultiLevelBuf;
 import util.MultiplexCache;
 
 public class XMultiplexCacheManger {
 
     private MultiplexCache<XNioHttpTask> nioTaskMultiplexCache;
     private MultiplexCache<XAioHttpTask> aioTaskMultiplexCache;
-    private MultiplexCache<MultilevelBuf> bufMultiplexCache;
+    private MultiplexCache<MultiLevelBuf> bufMultiplexCache;
     private volatile boolean isRelease = false;
 
 
@@ -54,20 +54,20 @@ public class XMultiplexCacheManger {
         }
     }
 
-    public void lose(MultilevelBuf buf) {
+    public void lose(MultiLevelBuf buf) {
         if (buf != null && !isRelease) {
             buf.clear();
             bufMultiplexCache.resetData(buf);
         }
     }
 
-    public MultilevelBuf obtainBuf() {
+    public MultiLevelBuf obtainBuf() {
         if (isRelease) {
             return null;
         }
-        MultilevelBuf buf = bufMultiplexCache.getCanUseData();
+        MultiLevelBuf buf = bufMultiplexCache.getCanUseData();
         if (buf == null) {
-            buf = new MultilevelBuf();
+            buf = new MultiLevelBuf();
         }
         return buf;
     }

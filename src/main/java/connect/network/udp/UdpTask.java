@@ -8,7 +8,7 @@ public class UdpTask extends BaseNetTask {
 
     private DatagramSocket mSocket;
 
-    private UdpReceive receive = null;
+    private UdpReceiver receive = null;
     private UdpSender sender = null;
 
     private final boolean isServer;
@@ -29,7 +29,7 @@ public class UdpTask extends BaseNetTask {
         this.mSocket = socket;
     }
 
-    public void setReceive(UdpReceive receive) {
+    public void setReceive(UdpReceiver receive) {
         this.receive = receive;
     }
 
@@ -64,12 +64,12 @@ public class UdpTask extends BaseNetTask {
         return mSocket;
     }
 
-    public UdpSender getSender() {
-        return sender;
+    public <T extends UdpSender> T getSender() {
+        return (T) sender;
     }
 
-    public UdpReceive getReceive() {
-        return receive;
+    public <T extends UdpReceiver> T getReceive() {
+        return (T) receive;
     }
 
     //---------------------------- on ---------------------------------------

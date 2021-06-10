@@ -10,7 +10,7 @@ import util.StringEnvoy;
 
 import java.util.Map;
 
-public class XHttpDecoderProcessor implements INetReceiver<MultilevelBuf> {
+public class XHttpDecoderProcessor implements INetReceiver<MultiLevelBuf> {
 
     /**
      * 接收体（结果）
@@ -63,7 +63,7 @@ public class XHttpDecoderProcessor implements INetReceiver<MultilevelBuf> {
 
 
     @Override
-    public void onReceiveFullData(MultilevelBuf buf, Throwable e) {
+    public void onReceiveFullData(MultiLevelBuf buf, Throwable e) {
         byte[] data = buf.array();
         if (data != null) {
             int len = data.length;

@@ -15,6 +15,7 @@ public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T
     protected void init() {
         if (mSelector == null) {
             try {
+                //use time 310ms
                 mSelector = Selector.open();
             } catch (IOException e) {
                 throw new IllegalArgumentException(e);

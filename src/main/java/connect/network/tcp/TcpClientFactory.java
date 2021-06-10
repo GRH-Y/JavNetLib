@@ -17,7 +17,7 @@ public class TcpClientFactory<T extends TcpClientTask> extends AbsNetFactory<T> 
 
     @Override
     protected BaseNetWork initNetWork() {
-        return new BioClientWork<T>(this);
+        return new BioClientWork<T>(getSslFactory());
     }
 
     @Override

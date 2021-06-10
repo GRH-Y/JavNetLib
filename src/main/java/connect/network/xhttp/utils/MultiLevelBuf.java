@@ -10,7 +10,11 @@ import java.util.List;
 /**
  * 多级直接字节缓存
  */
-public class MultilevelBuf {
+public class MultiLevelBuf {
+
+    //默认每个buf的大小
+    private final int initSize;
+    private final int DEFAULT_SIZE = 16921;
 
     //当前可用的buf在集合的索引
     private volatile int bufIndex = 0;
@@ -22,32 +26,27 @@ public class MultilevelBuf {
     private volatile int limit;
     //当前缓存最大的容量
     private volatile int capacity;
+
     //临时缓存，一般用于缓存getUseBuf没有处理完
     private ByteBuffer[] tmpCacheBuf = null;
     //buf集合
     private final List<ByteBuffer> bufList;
-    //默认每个buf的大小
-    private final int initSize;
-    private final int DEFAULT_SIZE = 16921;
+
     //借用数量
     private int lendCount = 0;
 
-    public MultilevelBuf() {
+    public MultiLevelBuf() {
         bufList = new LinkedList<>();
         this.initSize = DEFAULT_SIZE;
         appendBuffer();
     }
 
-    public MultilevelBuf(int initSize) {
+    public MultiLevelBuf(int initSize) {
         bufList = new ArrayList<>();
         this.initSize = initSize;
         appendBuffer();
     }
 
-
-//    public List<ByteBuffer> getBufList() {
-//        return bufList;
-//    }
 
     public void appendBuffer() {
         bufList.add(ByteBuffer.allocateDirect(initSize));
@@ -56,7 +55,7 @@ public class MultilevelBuf {
 //        LogDog.d("bufList size = " + bufList.size());
     }
 
-    public ByteBuffer[] getTmpCacheBuf() {
+    public ByteBuffer[] getMarkBuf() {
         synchronized (bufList) {
             return tmpCacheBuf;
         }
@@ -70,7 +69,7 @@ public class MultilevelBuf {
     /**
      * 获取已用的buf
      *
-     * @param isFlip 是否flip可用的ByteBuffer
+     * @param isFlip 为true则对每个ByteBuffer进行flip调用
      * @return
      */
     public final ByteBuffer[] getUseBuf(boolean isFlip) {
@@ -131,7 +130,7 @@ public class MultilevelBuf {
         }
     }
 
-    public final void setTmpCacheBuf(ByteBuffer... buffer) {
+    public final void markBuf(ByteBuffer... buffer) {
         synchronized (bufList) {
             this.tmpCacheBuf = buffer;
         }
@@ -271,25 +270,6 @@ public class MultilevelBuf {
         }
     }
 
-//    public final void mark() {
-//        synchronized (bufList) {
-//            mark = position();
-//        }
-//    }
-//
-//    public final int getMark() {
-//        synchronized (bufList) {
-//            return mark;
-//        }
-//    }
-//
-//    public final void reset() {
-//        synchronized (bufList) {
-//            position(mark);
-//            mark = -1;
-//        }
-//    }
-
     /**
      * 反转为读模式（数据大小position的值）
      */
@@ -301,12 +281,6 @@ public class MultilevelBuf {
         }
     }
 
-
-    //    public final void rewind() {
-//        bufIndex = 0;
-//        offset = 0;
-//        mark = -1;
-//    }
 
     /**
      * 清除所有的标记

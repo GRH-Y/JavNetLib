@@ -48,7 +48,7 @@ public class AioNetWork<T extends AioClientTask> extends BaseNetWork<T> implemen
         }
     }
 
-    private void initSSLConnect(T task) throws Exception {
+    private void initSSLConnect(T task) throws Throwable {
         if (task.isTLS()) {
             SSLContext sslContext = mSslFactory.getSSLContext();
             SSLEngine sslEngine = sslContext.createSSLEngine(task.getHost(), task.getPort());
@@ -94,7 +94,7 @@ public class AioNetWork<T extends AioClientTask> extends BaseNetWork<T> implemen
         try {
             initSSLConnect(task);
             task.onConnectCompleteChannel();
-        } catch (Exception e) {
+        } catch (Throwable e) {
             e.printStackTrace();
         }
     }

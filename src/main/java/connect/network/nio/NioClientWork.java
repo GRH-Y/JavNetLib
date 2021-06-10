@@ -10,6 +10,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.StandardSocketOptions;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
@@ -70,6 +71,11 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
         } catch (Throwable e) {
             LogDog.e("## url = " + task.getHost() + " port = " + task.getPort());
             e.printStackTrace();
+            try {
+                task.onConnectError(e);
+            } catch (Throwable e1) {
+                e.printStackTrace();
+            }
             //该通道有异常，结束任务
             addDestroyTask(task);
         }
@@ -86,11 +92,12 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
         InetSocketAddress address = new InetSocketAddress(task.getHost(), task.getPort());
         SocketChannel channel = SocketChannel.open();
         channel.configureBlocking(false);
-        channel.socket().setKeepAlive(true);
-        channel.socket().setReuseAddress(true);
-        channel.socket().setTcpNoDelay(false);
-        channel.socket().setOOBInline(false);
-        channel.socket().setPerformancePreferences(0, 1, 2);
+        channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
+        channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
+        channel.setOption(StandardSocketOptions.SO_LINGER, 0);
+        channel.setOption(StandardSocketOptions.TCP_NODELAY, false);
+//        channel.socket().setOOBInline(false);
+//        channel.socket().setPerformancePreferences(0, 1, 2);
         task.onConfigChannel(channel);
         channel.connect(address);
         task.setChannel(channel);

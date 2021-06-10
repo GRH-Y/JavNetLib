@@ -8,10 +8,7 @@ import java.net.MulticastSocket;
 
 public class UdpWork<T extends UdpTask> extends BioNetWork<T> {
 
-    private UdpFactory mFactory;
-
-    protected UdpWork(UdpFactory factory) {
-        this.mFactory = factory;
+    protected UdpWork() {
     }
 
     @Override
@@ -65,18 +62,18 @@ public class UdpWork<T extends UdpTask> extends BioNetWork<T> {
             }
         } catch (Throwable e) {
             task.setSocket(null);
-            mFactory.removeTask(task);
+            addDestroyTask(task);
             e.printStackTrace();
         }
     }
 
     protected void onExecRead(T task) {
-        UdpReceive receive = task.getReceive();
+        UdpReceiver receive = task.getReceive();
         if (receive != null) {
             try {
                 receive.onReadNetData();
             } catch (Throwable e) {
-                mFactory.removeTask(task);
+                addDestroyTask(task);
                 e.printStackTrace();
             }
         }
@@ -88,7 +85,7 @@ public class UdpWork<T extends UdpTask> extends BioNetWork<T> {
             try {
                 sender.onSendNetData();
             } catch (Throwable e) {
-                mFactory.removeTask(task);
+                addDestroyTask(task);
                 e.printStackTrace();
             }
         }

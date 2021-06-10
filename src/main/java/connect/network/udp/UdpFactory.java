@@ -20,7 +20,7 @@ public class UdpFactory extends AbsNetFactory<UdpTask> {
 
     @Override
     protected BaseNetWork initNetWork() {
-        return new UdpWork(this);
+        return new UdpWork();
     }
 
     @Override

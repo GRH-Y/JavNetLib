@@ -2,7 +2,7 @@ package connect.network.ssl;
 
 import connect.network.base.SocketChannelCloseException;
 import connect.network.base.joggle.ITLSHandler;
-import connect.network.xhttp.utils.MultilevelBuf;
+import connect.network.xhttp.utils.MultiLevelBuf;
 import log.LogDog;
 import util.IoEnvoy;
 
@@ -24,7 +24,7 @@ public class TLSHandler implements ITLSHandler {
     protected ByteBuffer receiveBuffer;
     protected ByteBuffer appDataBuffer;
 
-    protected MultilevelBuf sendBuf;
+    protected MultiLevelBuf sendBuf;
 
     public static final int NOT_ENOUGH_CAPACITY = 3;
     public static final int OK = 0;
@@ -36,7 +36,7 @@ public class TLSHandler implements ITLSHandler {
         this.sslEngine = engine;
         this.sendBuffer = newPacketBuffer();
         this.receiveBuffer = newPacketBuffer();
-        sendBuf = new MultilevelBuf();
+        sendBuf = new MultiLevelBuf();
         this.appDataBuffer = ByteBuffer.allocateDirect(sslEngine.getSession().getApplicationBufferSize());
     }
 

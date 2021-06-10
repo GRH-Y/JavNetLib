@@ -29,9 +29,10 @@ public abstract class AbsNetEngine extends BaseLoopTask {
 
     protected void startEngine() {
         if (mContainer == null) {
+            // createLoopTask use time 20 ms
             mContainer = TaskExecutorPoolManager.getInstance().createLoopTask(this, null);
             mExecutor = mContainer.getTaskExecutor();
-            mExecutor.blockStartTask();
+            mExecutor.startTask();
         }
     }
 

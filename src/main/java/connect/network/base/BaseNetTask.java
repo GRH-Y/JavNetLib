@@ -1,6 +1,5 @@
 package connect.network.base;
 
-import connect.network.base.joggle.INetTaskStateListener;
 import util.StringEnvoy;
 
 public class BaseNetTask {
@@ -11,24 +10,24 @@ public class BaseNetTask {
 
     private volatile NetTaskStatus taskStatus;
 
-    private INetTaskStateListener listener;
-
     public BaseNetTask() {
         taskStatus = NetTaskStatus.NONE;
     }
 
 
-    public void setNetTaskStateLisetener(INetTaskStateListener listener) {
-        this.listener = listener;
-    }
-
     protected void changeTaskStatus(NetTaskStatus status) {
         synchronized (BaseNetTask.class) {
             this.taskStatus = status;
-            if (listener != null) {
-                listener.onState(status);
-            }
+            onTaskState(status);
         }
+    }
+
+    /**
+     * 任务状态变换回调
+     *
+     * @param status
+     */
+    protected void onTaskState(NetTaskStatus status) {
     }
 
     /**
@@ -66,4 +65,5 @@ public class BaseNetTask {
         mHost = null;
         mPort = -1;
     }
+
 }

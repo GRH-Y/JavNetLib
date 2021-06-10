@@ -50,12 +50,12 @@ public class TcpClientTask extends BaseNetTask {
         return mSocket;
     }
 
-    public TcpSender getSender() {
-        return sender;
+    public <T extends TcpSender> T getSender() {
+        return (T) sender;
     }
 
-    public TcpReceive getReceive() {
-        return receive;
+    public <T extends TcpReceive> T getReceive() {
+        return (T) receive;
     }
 
     public int getConnectTimeout() {

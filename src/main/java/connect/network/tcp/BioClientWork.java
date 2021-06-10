@@ -1,6 +1,7 @@
 package connect.network.tcp;
 
 
+import connect.network.base.joggle.ISSLFactory;
 import sun.security.ssl.SSLSocketImpl;
 
 import javax.net.ssl.SSLSocket;
@@ -9,10 +10,10 @@ import java.net.Socket;
 
 public class BioClientWork<T extends TcpClientTask> extends BioNetWork<T> {
 
-    private TcpClientFactory mFactory;
+    private ISSLFactory mSslFactory;
 
-    protected BioClientWork(TcpClientFactory factory) {
-        this.mFactory = factory;
+    protected BioClientWork(ISSLFactory factory) {
+        this.mSslFactory = factory;
     }
 
     @Override
@@ -31,8 +32,8 @@ public class BioClientWork<T extends TcpClientTask> extends BioNetWork<T> {
         Socket socket = task.getSocket();
         try {
             if (socket == null) {
-                if (task.getPort() == 443 && mFactory.getSslFactory() != null) {
-                    SSLSocketFactory sslSocketFactory = mFactory.getSslFactory().getSSLSocketFactory();
+                if (task.getPort() == 443 && mSslFactory != null) {
+                    SSLSocketFactory sslSocketFactory = mSslFactory.getSSLSocketFactory();
                     SSLSocketImpl sslSocketImpl = (SSLSocketImpl) sslSocketFactory.createSocket(task.getHost(), task.getPort());
                     sslSocketImpl.setUseClientMode(true);
                     sslSocketImpl.startHandshake();
@@ -59,7 +60,7 @@ public class BioClientWork<T extends TcpClientTask> extends BioNetWork<T> {
             }
         } catch (Throwable e) {
             isConnect = false;
-            mFactory.removeTask(task);
+            addDestroyTask(task);
             e.printStackTrace();
         }
         if (isConnect) {
@@ -95,7 +96,7 @@ public class BioClientWork<T extends TcpClientTask> extends BioNetWork<T> {
             try {
                 receive.onReadNetData();
             } catch (Throwable e) {
-                mFactory.removeTask(task);
+                addDestroyTask(task);
                 e.printStackTrace();
             }
         }
@@ -107,7 +108,7 @@ public class BioClientWork<T extends TcpClientTask> extends BioNetWork<T> {
             try {
                 sender.onSendNetData();
             } catch (Throwable e) {
-                mFactory.removeTask(task);
+                addDestroyTask(task);
                 e.printStackTrace();
             }
         }

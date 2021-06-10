@@ -2,6 +2,7 @@ package connect.network.nio;
 
 
 import javax.net.ssl.SSLEngine;
+import java.nio.channels.NetworkChannel;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
@@ -64,7 +65,7 @@ public class NioServerTask extends BaseNioNetTask {
     }
 
     @Override
-    protected void onHandshake(SSLEngine sslEngine, SocketChannel channel) throws Throwable {
+    protected void onHandshake(SSLEngine sslEngine, NetworkChannel channel) throws Throwable {
         super.onHandshake(sslEngine, channel);
     }
 

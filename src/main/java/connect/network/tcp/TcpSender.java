@@ -38,10 +38,6 @@ public class TcpSender extends BaseNetSender {
         this.stream = stream;
     }
 
-    public OutputStream getStream() {
-        return stream;
-    }
-
     protected void onSendNetData() throws Throwable {
         while (!cache.isEmpty() && stream != null) {
             Object objData = cache.remove();
@@ -49,7 +45,6 @@ public class TcpSender extends BaseNetSender {
         }
     }
 
-    @Override
     protected int onHandleSendData(Object objData) throws Throwable {
         if (objData instanceof byte[]) {
             try {

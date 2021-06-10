@@ -7,6 +7,7 @@ import connect.network.ssl.TLSHandler;
 import javax.net.ssl.SSLEngine;
 import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.channels.NetworkChannel;
 
 public class AioClientTask extends BaseTLSTask {
 
@@ -84,7 +85,7 @@ public class AioClientTask extends BaseTLSTask {
 
 
     @Override
-    protected void onHandshake(SSLEngine sslEngine, AsynchronousSocketChannel channel) throws Exception {
+    protected void onHandshake(SSLEngine sslEngine, NetworkChannel channel) throws Throwable {
         super.onHandshake(sslEngine, channel);
     }
 

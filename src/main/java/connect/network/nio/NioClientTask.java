@@ -4,6 +4,7 @@ package connect.network.nio;
 import connect.network.ssl.TLSHandler;
 
 import javax.net.ssl.SSLEngine;
+import java.nio.channels.NetworkChannel;
 import java.nio.channels.SocketChannel;
 
 /**
@@ -76,9 +77,7 @@ public class NioClientTask extends BaseNioNetTask {
     }
 
     /**
-     * channel连接状态回调
-     *
-     * @param channel
+     * SocketChannel 连接成功回调
      */
     protected void onConnectCompleteChannel(SocketChannel channel) {
     }
@@ -91,16 +90,19 @@ public class NioClientTask extends BaseNioNetTask {
     }
 
     @Override
-    protected void onHandshake(SSLEngine sslEngine, SocketChannel channel) throws Throwable {
+    protected void onHandshake(SSLEngine sslEngine, NetworkChannel channel) throws Throwable {
         super.onHandshake(sslEngine, channel);
     }
 
     /**
-     * 当前状态链接还没关闭，可以做最后的一次数据传输
+     * 准备断开链接回调
      */
     protected void onCloseClientChannel() {
     }
 
+    /**
+     * 断开链接后回调
+     */
     @Override
     protected void onRecovery() {
         super.onRecovery();

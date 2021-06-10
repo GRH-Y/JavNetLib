@@ -67,8 +67,8 @@ public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INet
             e.printStackTrace();
             netFactory.removeTask(this);
         }
-        if (data instanceof MultilevelBuf) {
-            XMultiplexCacheManger.getInstance().lose((MultilevelBuf) data);
+        if (data instanceof MultiLevelBuf) {
+            XMultiplexCacheManger.getInstance().lose((MultiLevelBuf) data);
         }
     }
 
@@ -95,6 +95,14 @@ public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INet
         netFactory.removeTask(XNioHttpTask.this);
     }
 
+
+    @Override
+    protected void onConnectError(Throwable throwable) {
+        IXSessionNotify sessionNotify = httpConfig.getSessionNotify();
+        if (sessionNotify != null) {
+            sessionNotify.notifyData(request, null, throwable);
+        }
+    }
 
     @Override
     protected void onConnectCompleteChannel(SocketChannel channel) {
@@ -136,7 +144,9 @@ public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INet
                 sender.setChannel(selectionKey, channel);
             }
             if (receiver == null || receiver instanceof XHttpsReceiver) {
-                setReceive(new NioReceiver(httpDecodeReceiver));
+                receiver = new NioReceiver();
+                receiver.setDataReceiver(httpDecodeReceiver);
+                setReceive(receiver);
             }
         }
 

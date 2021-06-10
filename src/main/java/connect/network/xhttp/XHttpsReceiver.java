@@ -1,9 +1,8 @@
 package connect.network.xhttp;
 
-import connect.network.base.SocketChannelCloseException;
 import connect.network.nio.NioReceiver;
 import connect.network.ssl.TLSHandler;
-import connect.network.xhttp.utils.MultilevelBuf;
+import connect.network.xhttp.utils.MultiLevelBuf;
 import util.IoEnvoy;
 
 import java.nio.ByteBuffer;
@@ -27,7 +26,7 @@ public class XHttpsReceiver extends NioReceiver {
     @Override
     protected void onReadNetData(SocketChannel channel) throws Throwable {
         Throwable exception = null;
-        MultilevelBuf buf = XMultiplexCacheManger.getInstance().obtainBuf();
+        MultiLevelBuf buf = XMultiplexCacheManger.getInstance().obtainBuf();
         int ret = IoEnvoy.FAIL;
         ByteBuffer[] cacheData = null;
         try {
@@ -46,16 +45,7 @@ public class XHttpsReceiver extends NioReceiver {
             buf.setBackBuf(cacheData);
             buf.flip();
         }
-        try {
-            notifyReceiverImp(buf, exception);
-        } catch (Throwable e) {
-            e.printStackTrace();
-        }
-        if (exception != null) {
-            throw exception;
-        } else if (ret < 0 && exception == null) {
-            throw new SocketChannelCloseException();
-        }
+        notifyReceiverImp(buf, exception, ret);
     }
 
 }

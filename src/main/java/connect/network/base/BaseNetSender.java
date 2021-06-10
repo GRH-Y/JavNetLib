@@ -14,6 +14,4 @@ public abstract class BaseNetSender implements INetSender {
         this.feedback = feedback;
     }
 
-    abstract protected int onHandleSendData(Object data) throws Throwable;
-
 }

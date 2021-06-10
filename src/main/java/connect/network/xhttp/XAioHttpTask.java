@@ -13,7 +13,7 @@ import connect.network.xhttp.entity.XRequest;
 import connect.network.xhttp.entity.XResponse;
 import connect.network.xhttp.joggle.IXHttpDns;
 import connect.network.xhttp.joggle.IXHttpResponseConvert;
-import connect.network.xhttp.utils.MultilevelBuf;
+import connect.network.xhttp.utils.MultiLevelBuf;
 import connect.network.xhttp.utils.XHttpProtocol;
 import connect.network.xhttp.utils.XResponseHelper;
 import connect.network.xhttp.utils.XUrlMedia;
@@ -65,8 +65,8 @@ public class XAioHttpTask extends AioClientTask implements ISenderFeedback, INet
         if (e != null) {
             netFactory.removeTask(this);
         }
-        if (data instanceof MultilevelBuf) {
-            XMultiplexCacheManger.getInstance().lose((MultilevelBuf) data);
+        if (data instanceof MultiLevelBuf) {
+            XMultiplexCacheManger.getInstance().lose((MultiLevelBuf) data);
         }
     }
 

@@ -4,6 +4,7 @@ import connect.network.ssl.TLSHandler;
 
 import javax.net.ssl.SSLEngine;
 import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.channels.NetworkChannel;
 import java.nio.channels.SocketChannel;
 
 public class BaseTLSTask extends BaseNetTask {
@@ -11,7 +12,6 @@ public class BaseTLSTask extends BaseNetTask {
     protected boolean isTLS = false;
 
     protected TLSHandler tlsHandler = null;
-
 
     public void setTLS(boolean TLS) {
         isTLS = TLS;
@@ -33,24 +33,17 @@ public class BaseTLSTask extends BaseNetTask {
      * @param channel
      * @throws Exception
      */
-    protected void onHandshake(SSLEngine sslEngine, SocketChannel channel) throws Throwable {
+    protected void onHandshake(SSLEngine sslEngine, NetworkChannel channel) throws Throwable {
         tlsHandler = new TLSHandler(sslEngine);
         sslEngine.beginHandshake();
-        tlsHandler.doHandshake(channel);
+        if (channel instanceof SocketChannel) {
+            tlsHandler.doHandshake((SocketChannel) channel);
+        } else if (channel instanceof AsynchronousSocketChannel) {
+            tlsHandler.doHandshake((AsynchronousSocketChannel) channel);
+        }
     }
 
-    /**
-     * TLS 握手回调（只有是TLS通讯才会回调）
-     *
-     * @param sslEngine
-     * @param channel
-     * @throws Exception
-     */
-    protected void onHandshake(SSLEngine sslEngine, AsynchronousSocketChannel channel) throws Exception {
-        tlsHandler = new TLSHandler(sslEngine);
-        sslEngine.beginHandshake();
-        tlsHandler.doHandshake(channel);
-    }
+
 
     @Override
     protected void onRecovery() {

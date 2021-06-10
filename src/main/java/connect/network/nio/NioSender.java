@@ -3,7 +3,7 @@ package connect.network.nio;
 
 import connect.network.base.BaseNetSender;
 import connect.network.xhttp.XMultiplexCacheManger;
-import connect.network.xhttp.utils.MultilevelBuf;
+import connect.network.xhttp.utils.MultiLevelBuf;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -26,6 +26,9 @@ public class NioSender extends BaseNetSender {
     }
 
     public void setChannel(SelectionKey selectionKey, SocketChannel channel) {
+        if (selectionKey == null || channel == null) {
+            throw new NullPointerException("selectionKey or channel is null !!!");
+        }
         this.selectionKey = selectionKey;
         this.channel = channel;
     }
@@ -36,8 +39,8 @@ public class NioSender extends BaseNetSender {
 
     public void clear() {
         for (Object obj : dataQueue) {
-            if (obj instanceof MultilevelBuf) {
-                MultilevelBuf buf = (MultilevelBuf) obj;
+            if (obj instanceof MultiLevelBuf) {
+                MultiLevelBuf buf = (MultiLevelBuf) obj;
                 XMultiplexCacheManger.getInstance().lose(buf);
             }
         }
@@ -53,32 +56,33 @@ public class NioSender extends BaseNetSender {
      */
     @Override
     public void sendData(Object objData) {
-        if (objData == null) {
+        if (objData == null || !selectionKey.isValid()) {
             return;
         }
         if (objData instanceof byte[]) {
             byte[] data = (byte[]) objData;
-            if (selectionKey.isValid() && data.length > 0) {
+            if (data.length > 0) {
                 ByteBuffer buffer = ByteBuffer.allocateDirect(data.length);
                 buffer.put(data);
                 buffer.flip();
                 try {
                     boolean ret = dataQueue.add(buffer);
-                    if (ret && selectionKey.interestOps() != SelectionKey.OP_WRITE) {
-                        selectionKey.interestOps(SelectionKey.OP_WRITE);
+                    //判断当前是否注册写事件监听，如果没有则添加
+                    if (ret && ((selectionKey.interestOps() & SelectionKey.OP_WRITE) != SelectionKey.OP_WRITE)) {
+                        selectionKey.interestOps(SelectionKey.OP_WRITE | SelectionKey.OP_READ);
                     }
                 } catch (Throwable e) {
                     e.printStackTrace();
                 }
             }
-        } else if (objData instanceof MultilevelBuf) {
+        } else if (objData instanceof MultiLevelBuf) {
             boolean ret = false;
-            MultilevelBuf buf = (MultilevelBuf) objData;
-            if (selectionKey.isValid() && buf.isHasData()) {
+            MultiLevelBuf buf = (MultiLevelBuf) objData;
+            if (buf.isHasData()) {
                 try {
                     ret = dataQueue.add(buf);
-                    if (ret && selectionKey.interestOps() != SelectionKey.OP_WRITE) {
-                        selectionKey.interestOps(SelectionKey.OP_WRITE);
+                    if (ret && ((selectionKey.interestOps() & SelectionKey.OP_WRITE) != SelectionKey.OP_WRITE)) {
+                        selectionKey.interestOps(SelectionKey.OP_WRITE | SelectionKey.OP_READ);
                     }
                 } catch (Throwable e) {
                     e.printStackTrace();
@@ -89,23 +93,20 @@ public class NioSender extends BaseNetSender {
             }
         } else if (objData instanceof ByteBuffer) {
             ByteBuffer data = (ByteBuffer) objData;
-            if (selectionKey.isValid() && data.hasRemaining()) {
+            if (data.hasRemaining()) {
                 boolean ret = dataQueue.add(data);
-                if (ret && selectionKey.interestOps() != SelectionKey.OP_WRITE) {
-                    selectionKey.interestOps(SelectionKey.OP_WRITE);
+                if (ret && ((selectionKey.interestOps() & SelectionKey.OP_WRITE) != SelectionKey.OP_WRITE)) {
+                    selectionKey.interestOps(SelectionKey.OP_WRITE | SelectionKey.OP_READ);
                 }
             }
         } else {
-            if (selectionKey.isValid()) {
-                boolean ret = dataQueue.add(objData);
-                if (ret && selectionKey.interestOps() != SelectionKey.OP_WRITE) {
-                    selectionKey.interestOps(SelectionKey.OP_WRITE);
-                }
+            boolean ret = dataQueue.add(objData);
+            if (ret && ((selectionKey.interestOps() & SelectionKey.OP_WRITE) != SelectionKey.OP_WRITE)) {
+                selectionKey.interestOps(SelectionKey.OP_WRITE | SelectionKey.OP_READ);
             }
         }
     }
 
-    @Override
     protected int onHandleSendData(Object data) throws Throwable {
         int ret = SEND_COMPLETE;
         if (data instanceof ByteBuffer) {
@@ -113,22 +114,26 @@ public class NioSender extends BaseNetSender {
             if (ret == SEND_CHANNEL_BUSY) {
                 dataQueue.addFirst(data);
             }
-        } else if (data instanceof MultilevelBuf) {
-            MultilevelBuf buf = (MultilevelBuf) data;
-            ByteBuffer[] sendDataBuf = buf.getTmpCacheBuf();
+        } else if (data instanceof MultiLevelBuf) {
+            MultiLevelBuf buf = (MultiLevelBuf) data;
+            ByteBuffer[] sendDataBuf = buf.getMarkBuf();
             if (sendDataBuf == null) {
+                // sendDataBuf 为null 说明是第一次处理数据，不为null说明上次数据发送不完整
                 sendDataBuf = buf.getUseBuf(true);
             }
             for (ByteBuffer buffer : sendDataBuf) {
                 if (buffer.hasRemaining()) {
                     ret = sendDataImp(buffer);
                     if (ret == SEND_CHANNEL_BUSY) {
-                        buf.setTmpCacheBuf(sendDataBuf);
+                        //当前数据没有发送完，则临时记录起来
+                        buf.markBuf(sendDataBuf);
+                        //加入发送队列等待下次处理
                         dataQueue.addFirst(data);
+                        return SEND_CHANNEL_BUSY;
                     }
                 }
             }
-            buf.setTmpCacheBuf(null);
+            buf.markBuf(null);
             buf.setBackBuf(sendDataBuf);
         }
         return ret;
@@ -158,6 +163,7 @@ public class NioSender extends BaseNetSender {
         if (exception == null) {
             if (ret == SEND_COMPLETE) {
                 try {
+                    //当前没有数据可发送则取消写事件监听
                     selectionKey.interestOps(SelectionKey.OP_READ);
                 } catch (Exception e) {
                     e.printStackTrace();
