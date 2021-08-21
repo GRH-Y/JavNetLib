@@ -1,5 +1,10 @@
 # CurrencyNetConnect
-这是个通用的网络通信框架，包含tcp,udp,http等，nio的服务端和客户端
+这是个通用的网络通信框架，包含tcp,udp,http等，实现服务端和客户端
+
+***
+2020-10-18 新增aio
+
+2019-12-01 使用nio实现XHttp
 
 
 # Tcp使用例子:
