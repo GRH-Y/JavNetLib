@@ -15,11 +15,11 @@ import java.util.Iterator;
  */
 public class NioHighPcEngine<T extends BaseNioNetTask> extends NioEngine {
 
-    private ITaskContainer mainTaskContainer;
-    private ITaskContainer otherTaskContainer;
-    private IConsumerAttribute<SelectionKey> attribute;
+    private ITaskContainer mMainTaskContainer;
+    private ITaskContainer mOtherTaskContainer;
+    private IConsumerAttribute<SelectionKey> mAttribute;
 
-    private long mainEngineTag;
+    private long mMainEngineTag;
 
     public NioHighPcEngine(NioNetWork<T> work) {
         super(work);
@@ -28,13 +28,13 @@ public class NioHighPcEngine<T extends BaseNioNetTask> extends NioEngine {
 
     @Override
     protected boolean isEngineRunning() {
-        return mainTaskContainer != null && mainTaskContainer.getTaskExecutor().isLoopState();
+        return mMainTaskContainer != null && mMainTaskContainer.getTaskExecutor().isLoopState();
     }
 
     @Override
     protected void onEngineRun() {
         //如果是主引擎处理事件分发
-        if (Thread.currentThread().getId() == mainEngineTag) {
+        if (Thread.currentThread().getId() == mMainEngineTag) {
             //检测是否有新的任务添加
             mWork.onCheckConnectTask();
             //检查是否有事件任务
@@ -43,12 +43,12 @@ public class NioHighPcEngine<T extends BaseNioNetTask> extends NioEngine {
             mWork.onCheckRemoverTask();
         } else {
 //                LogDog.d("==> 非主引擎");
-            SelectionKey selectionKey = attribute.popCacheData();
+            SelectionKey selectionKey = mAttribute.popCacheData();
             if (selectionKey != null) {
                 mWork.onSelectionKey(selectionKey);
             } else {
-                if (otherTaskContainer != null) {
-                    otherTaskContainer.getTaskExecutor().pauseTask();
+                if (mOtherTaskContainer != null) {
+                    mOtherTaskContainer.getTaskExecutor().pauseTask();
                 }
             }
         }
@@ -77,9 +77,9 @@ public class NioHighPcEngine<T extends BaseNioNetTask> extends NioEngine {
                     //连接事件由主引擎处理
                     mWork.onSelectionKey(selectionKey);
                 } else {
-                    if (otherTaskContainer != null) {
-                        attribute.pushToCache(selectionKey);
-                        otherTaskContainer.getTaskExecutor().resumeTask();
+                    if (mOtherTaskContainer != null) {
+                        mAttribute.pushToCache(selectionKey);
+                        mOtherTaskContainer.getTaskExecutor().resumeTask();
                     }
                 }
                 iterator.remove();
@@ -89,30 +89,30 @@ public class NioHighPcEngine<T extends BaseNioNetTask> extends NioEngine {
 
     @Override
     protected void startEngine() {
-        if (mainTaskContainer == null) {
-            mainTaskContainer = new TaskContainer(this);
-            mainEngineTag = mainTaskContainer.getThread().getId();
-            mainTaskContainer.getTaskExecutor().startTask();
+        if (mMainTaskContainer == null) {
+            mMainTaskContainer = new TaskContainer(this);
+            mMainEngineTag = mMainTaskContainer.getThread().getId();
+            mMainTaskContainer.getTaskExecutor().startTask();
         }
-        if (otherTaskContainer == null) {
-            otherTaskContainer = new TaskContainer(this);
-            attribute = new ConsumerListAttribute<>();
-            otherTaskContainer.getTaskExecutor().setAttribute(attribute);
-            otherTaskContainer.getTaskExecutor().startTask();
+        if (mOtherTaskContainer == null) {
+            mOtherTaskContainer = new TaskContainer(this);
+            mAttribute = new ConsumerListAttribute<>();
+            mOtherTaskContainer.getTaskExecutor().setAttribute(mAttribute);
+            mOtherTaskContainer.getTaskExecutor().startTask();
         }
     }
 
     @Override
     protected void stopEngine() {
-        if (mainTaskContainer != null) {
-            mainTaskContainer.getTaskExecutor().stopTask();
-            mainTaskContainer.release();
-            mainTaskContainer = null;
+        if (mMainTaskContainer != null) {
+            mMainTaskContainer.getTaskExecutor().stopTask();
+            mMainTaskContainer.release();
+            mMainTaskContainer = null;
         }
-        if (otherTaskContainer != null) {
-            otherTaskContainer.getTaskExecutor().stopTask();
-            otherTaskContainer.release();
-            otherTaskContainer = null;
+        if (mOtherTaskContainer != null) {
+            mOtherTaskContainer.getTaskExecutor().stopTask();
+            mOtherTaskContainer.release();
+            mOtherTaskContainer = null;
         }
         resumeEngine();
     }

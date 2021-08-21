@@ -5,13 +5,13 @@ import util.StringEnvoy;
 
 public class XUrlMedia {
 
-    private String url;
-    private String protocol;
-    private String referer = null;
-    private String host = null;
-    private String path = "/";
-    private int port = 0;
-    private boolean isTSL = false;
+    private String mUrl;
+    private String mProtocol;
+    private String mReferer = null;
+    private String mHost = null;
+    private String mPath = "/";
+    private int mPort = 0;
+    private boolean mIsTSL = false;
 
     public XUrlMedia(String url) {
         reset(url, -1);
@@ -33,12 +33,12 @@ public class XUrlMedia {
         if (httpIndex == -1) {
             throw new IllegalArgumentException("no protocol : " + url);
         }
-        this.protocol = url.substring(0, httpIndex);
-        this.isTSL = "https".equalsIgnoreCase(this.protocol);
+        this.mProtocol = url.substring(0, httpIndex);
+        this.mIsTSL = "https".equalsIgnoreCase(this.mProtocol);
         httpIndex += 3;
         int index = url.indexOf("/", httpIndex);
         if (index > 0) {
-            this.path = url.substring(index);
+            this.mPath = url.substring(index);
         } else {
             index = url.length();
         }
@@ -46,45 +46,45 @@ public class XUrlMedia {
         int portIndex = url.indexOf(":", httpIndex);
         if (userPort == -1) {
             if (portIndex == -1 || portIndex > index) {
-                this.port = isTSL ? 443 : 80;
+                this.mPort = mIsTSL ? 443 : 80;
             } else {
                 int endIndex = index == -1 ? url.length() : index;
                 try {
-                    this.port = Integer.parseInt(url.substring(portIndex + 1, endIndex));
+                    this.mPort = Integer.parseInt(url.substring(portIndex + 1, endIndex));
                 } catch (Exception e) {
                     LogDog.e(" url = " + url);
                     e.printStackTrace();
                 }
             }
         } else {
-            this.port = userPort;
+            this.mPort = userPort;
         }
-        this.host = url.substring(httpIndex, portIndex == -1 || portIndex > index ? index : portIndex);
-        this.referer = url.substring(0, index) + "/";
-        this.url = url;
+        this.mHost = url.substring(httpIndex, portIndex == -1 || portIndex > index ? index : portIndex);
+        this.mReferer = url.substring(0, index) + "/";
+        this.mUrl = url;
     }
 
     public String getUrl() {
-        return url;
+        return mUrl;
     }
 
     public String getHost() {
-        return host;
+        return mHost;
     }
 
     public String getPath() {
-        return path;
+        return mPath;
     }
 
     public String getReferer() {
-        return referer;
+        return mReferer;
     }
 
     public int getPort() {
-        return port;
+        return mPort;
     }
 
     public boolean isTSL() {
-        return isTSL;
+        return mIsTSL;
     }
 }

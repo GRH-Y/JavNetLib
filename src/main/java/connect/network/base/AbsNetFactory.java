@@ -14,10 +14,10 @@ public abstract class AbsNetFactory<T extends BaseNetTask> implements INetFactor
 
     private BaseNetWork<T> mWork;
 
-    private ISSLFactory sslFactory;
+    private ISSLFactory mSSLFactory;
 
     protected AbsNetFactory() {
-        sslFactory = initSSLFactory();
+        mSSLFactory = initSSLFactory();
 
         mWork = initNetWork();
         if (mWork == null) {
@@ -35,8 +35,8 @@ public abstract class AbsNetFactory<T extends BaseNetTask> implements INetFactor
 
     abstract protected ISSLFactory initSSLFactory();
 
-    public ISSLFactory getSslFactory() {
-        return sslFactory;
+    public ISSLFactory getSSLFactory() {
+        return mSSLFactory;
     }
 
     protected <T extends AbsNetEngine> T getNetEngine() {

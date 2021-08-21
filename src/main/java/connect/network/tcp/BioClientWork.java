@@ -10,10 +10,10 @@ import java.net.Socket;
 
 public class BioClientWork<T extends TcpClientTask> extends BioNetWork<T> {
 
-    private ISSLFactory mSslFactory;
+    private ISSLFactory mSSLFactory;
 
     protected BioClientWork(ISSLFactory factory) {
-        this.mSslFactory = factory;
+        this.mSSLFactory = factory;
     }
 
     @Override
@@ -32,8 +32,8 @@ public class BioClientWork<T extends TcpClientTask> extends BioNetWork<T> {
         Socket socket = task.getSocket();
         try {
             if (socket == null) {
-                if (task.getPort() == 443 && mSslFactory != null) {
-                    SSLSocketFactory sslSocketFactory = mSslFactory.getSSLSocketFactory();
+                if (task.getPort() == 443 && mSSLFactory != null) {
+                    SSLSocketFactory sslSocketFactory = mSSLFactory.getSSLSocketFactory();
                     SSLSocketImpl sslSocketImpl = (SSLSocketImpl) sslSocketFactory.createSocket(task.getHost(), task.getPort());
                     sslSocketImpl.setUseClientMode(true);
                     sslSocketImpl.startHandshake();

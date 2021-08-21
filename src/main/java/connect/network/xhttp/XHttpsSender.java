@@ -9,23 +9,23 @@ import java.nio.channels.SocketChannel;
 
 public class XHttpsSender extends NioSender {
 
-    protected TLSHandler tlsHandler;
+    protected TLSHandler mTLSHandler;
 
     public XHttpsSender(TLSHandler tlsHandler, SelectionKey selectionKey, SocketChannel channel) {
         if (tlsHandler == null) {
             throw new IllegalArgumentException("tlsHandler is null !!!");
         }
-        this.tlsHandler = tlsHandler;
+        this.mTLSHandler = tlsHandler;
         setChannel(selectionKey, channel);
     }
 
     public void setTlsHandler(TLSHandler tlsHandler) {
-        this.tlsHandler = tlsHandler;
+        this.mTLSHandler = tlsHandler;
     }
 
     @Override
     protected int sendDataImp(ByteBuffer buffers) throws Throwable {
-        tlsHandler.wrapAndWrite(channel, buffers);
+        mTLSHandler.wrapAndWrite(mChannel, buffers);
         return SEND_COMPLETE;
     }
 

@@ -22,207 +22,207 @@ public class RequestEntity {
     /**
      * 任务的tag，区分不同类型请求（用于取消同个tag的任务请求）
      */
-    private int taskTag = DEFAULT_TASK_TAG;
-    private String address = null;
-    private int port = 80;
-    private RequestMode requestMode = RequestMode.GET;
+    private int mTaskTag = DEFAULT_TASK_TAG;
+    private String mAddress = null;
+    private int mPort = 80;
+    private RequestMode mRequestMode = RequestMode.GET;
 
-    private int responseCode = HttpURLConnection.HTTP_OK;
-    private byte[] sendData = null;
-    private byte[] respondData = null;
-    private Object respondEntity = null;
+    private int mResponseCode = HttpURLConnection.HTTP_OK;
+    private byte[] mSendData = null;
+    private byte[] mRespondData = null;
+    private Object mRespondEntity = null;
 
-    private String successMethod = null;
-    private String errorMethod = null;
-    private String processMethod = null;
+    private String mSuccessMethod = null;
+    private String mErrorMethod = null;
+    private String mProcessMethod = null;
 
-    private boolean isDisableBaseUrl = false;
+    private boolean mIsDisableBaseUrl = false;
 
     /**
      * 回调接口返回结果的值
      */
-    private Object resultType = null;
+    private Object mResultType = null;
     /**
      * 接口回调类
      */
-    private Object callBackTarget = null;
+    private Object mCallBackTarget = null;
 
     /**
      * 请求头参数
      */
-    private Map<Object, Object> requestProperty = null;
+    private Map<Object, Object> mRequestProperty = null;
 
     /**
      * 响应头参数
      */
-    private Map<String, List<String>> responseProperty = null;
+    private Map<String, List<String>> mResponseProperty = null;
 
     /**
      * 是否独立任务（如果是独立任务会单独开启线程处理）
      */
-    private boolean isIndependentTask = false;
+    private boolean mIsIndependentTask = false;
 
     /**
      * 扩展参数
      */
-    private Object object;
+    private Object mExData;
 
-    private Throwable exception;
+    private Throwable mException;
 
     public boolean isDisableBaseUrl() {
-        return isDisableBaseUrl;
+        return mIsDisableBaseUrl;
     }
 
     public void setDisableBaseUrl(boolean enableBaseUrl) {
-        isDisableBaseUrl = enableBaseUrl;
+        mIsDisableBaseUrl = enableBaseUrl;
     }
 
     public int getTaskTag() {
-        return taskTag;
+        return mTaskTag;
     }
 
     public void setTaskTag(int taskTag) {
-        this.taskTag = taskTag;
+        this.mTaskTag = taskTag;
     }
 
     public void setRequestProperty(Map<Object, Object> property) {
-        this.requestProperty = property;
+        this.mRequestProperty = property;
     }
 
     public Map<Object, Object> getRequestProperty() {
-        return requestProperty;
+        return mRequestProperty;
     }
 
     public String getAddress() {
-        return address;
+        return mAddress;
     }
 
     public int getPort() {
-        return port;
+        return mPort;
     }
 
     public RequestMode getRequestMode() {
-        return requestMode;
+        return mRequestMode;
     }
 
     public byte[] getSendData() {
-        return sendData;
+        return mSendData;
     }
 
     public Object getCallBackTarget() {
-        return callBackTarget;
+        return mCallBackTarget;
     }
 
     public void setCallBackTarget(Object callBackTarget) {
-        this.callBackTarget = callBackTarget;
+        this.mCallBackTarget = callBackTarget;
     }
 
     public Object getResultType() {
-        return resultType;
+        return mResultType;
     }
 
     public String getSuccessMethod() {
-        return successMethod;
+        return mSuccessMethod;
     }
 
     public String getErrorMethod() {
-        return errorMethod;
+        return mErrorMethod;
     }
 
     public <T> T getRespondEntity() {
-        return (T) respondEntity;
+        return (T) mRespondEntity;
     }
 
     public void setRespondEntity(Object respondEntity) {
-        this.respondEntity = respondEntity;
+        this.mRespondEntity = respondEntity;
     }
 
     public void setAddress(String address) {
-        this.address = address;
+        this.mAddress = address;
     }
 
     public void setPort(int port) {
-        this.port = port;
+        this.mPort = port;
     }
 
     public void setRequestMode(RequestMode requestMode) {
         if (requestMode == null) {
             throw new NullPointerException("requestMode is null !!!");
         }
-        this.requestMode = requestMode;
+        this.mRequestMode = requestMode;
     }
 
     public void setSendData(byte[] sendData) {
-        this.sendData = sendData;
+        this.mSendData = sendData;
     }
 
 
     public void setSuccessMethod(String successMethod) {
-        this.successMethod = successMethod;
+        this.mSuccessMethod = successMethod;
     }
 
 
     public String getProcessMethod() {
-        return processMethod;
+        return mProcessMethod;
     }
 
     public void setErrorMethod(String errorMethod) {
-        this.errorMethod = errorMethod;
+        this.mErrorMethod = errorMethod;
     }
 
     public void setProcessMethod(String processMethod) {
-        this.processMethod = processMethod;
+        this.mProcessMethod = processMethod;
     }
 
     public void setResultType(Object resultType) {
-        this.resultType = resultType;
+        this.mResultType = resultType;
     }
 
     public void setIndependentTask(boolean independentTask) {
-        isIndependentTask = independentTask;
+        mIsIndependentTask = independentTask;
     }
 
     public boolean isIndependentTask() {
-        return isIndependentTask;
+        return mIsIndependentTask;
     }
 
     public void setRespondData(byte[] respondData) {
-        this.respondData = respondData;
+        this.mRespondData = respondData;
     }
 
     public byte[] getRespondData() {
-        return respondData;
+        return mRespondData;
     }
 
     protected void setResponseCode(int responseCode) {
-        this.responseCode = responseCode;
+        this.mResponseCode = responseCode;
     }
 
     public int getResponseCode() {
-        return responseCode;
+        return mResponseCode;
     }
 
-    public void setObject(Object object) {
-        this.object = object;
+    public void setExData(Object exData) {
+        this.mExData = exData;
     }
 
-    public Object getObject() {
-        return object;
+    public Object getExData() {
+        return mExData;
     }
 
     protected void setResponseProperty(Map<String, List<String>> responseProperty) {
-        this.responseProperty = responseProperty;
+        this.mResponseProperty = responseProperty;
     }
 
     public void setException(Throwable e) {
-        this.exception = e;
+        this.mException = e;
     }
 
     public Map<String, List<String>> getResponseProperty() {
-        return responseProperty;
+        return mResponseProperty;
     }
 
     public Throwable getException() {
-        return exception;
+        return mException;
     }
 }

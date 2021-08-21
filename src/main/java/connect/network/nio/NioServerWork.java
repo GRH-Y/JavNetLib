@@ -7,6 +7,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.StandardSocketOptions;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
@@ -53,6 +54,7 @@ public class NioServerWork<T extends NioServerTask> extends NioNetWork<T> {
     private ServerSocketChannel createChannel(T task) throws IOException {
         ServerSocketChannel channel = ServerSocketChannel.open();
         channel.configureBlocking(false);
+        channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
         task.onConfigServerChannel(channel);
         channel.bind(new InetSocketAddress(task.getHost(), task.getPort()), task.getMaxConnect());
         task.setServerSocketChannel(channel);
@@ -101,7 +103,20 @@ public class NioServerWork<T extends NioServerTask> extends NioNetWork<T> {
         } catch (Throwable e) {
             e.printStackTrace();
         } finally {
-            task.setServerSocketChannel(null);
+            if (task.mSelectionKey != null) {
+                try {
+                    task.mSelectionKey.cancel();
+                } catch (Throwable e) {
+                    e.printStackTrace();
+                }
+            }
+            if (task.getServerSocketChannel() != null) {
+                try {
+                    task.getServerSocketChannel().close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 

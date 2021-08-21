@@ -6,19 +6,19 @@ import java.nio.channels.SelectionKey;
 
 public class BaseNioNetTask extends BaseTLSTask {
 
-    protected SelectionKey selectionKey;
+    protected SelectionKey mSelectionKey;
 
     protected void setSelectionKey(SelectionKey selectionKey) {
-        this.selectionKey = selectionKey;
+        this.mSelectionKey = selectionKey;
     }
 
     protected SelectionKey getSelectionKey() {
-        return selectionKey;
+        return mSelectionKey;
     }
 
     @Override
     protected void onRecovery() {
         super.onRecovery();
-        selectionKey = null;
+        mSelectionKey = null;
     }
 }

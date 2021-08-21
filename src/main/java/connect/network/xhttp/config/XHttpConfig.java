@@ -7,23 +7,23 @@ import connect.network.xhttp.joggle.IXHttpResponseConvert;
 
 public class XHttpConfig implements IXHttpConfig {
 
-    private IXHttpDns dns = null;
+    private IXHttpDns mDns = null;
     private IXSessionNotify mSessionNotify;
-    private IXHttpResponseConvert responseConvert = null;
+    private IXHttpResponseConvert mResponseConvert = null;
 
     @Override
     public void setXHttpDns(IXHttpDns dns) {
-        this.dns = dns;
+        this.mDns = dns;
     }
 
     @Override
     public IXHttpDns getXHttpDns() {
-        return dns;
+        return mDns;
     }
 
     @Override
     public void setResponseConvert(IXHttpResponseConvert responseConvert) {
-        this.responseConvert = responseConvert;
+        this.mResponseConvert = responseConvert;
     }
 
     @Override
@@ -33,7 +33,7 @@ public class XHttpConfig implements IXHttpConfig {
 
     @Override
     public IXHttpResponseConvert getResponseConvert() {
-        return responseConvert;
+        return mResponseConvert;
     }
 
     @Override

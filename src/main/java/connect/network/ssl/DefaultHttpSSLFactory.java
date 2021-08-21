@@ -9,7 +9,7 @@ import javax.net.ssl.*;
 
 public class DefaultHttpSSLFactory implements ISSLFactory, HostnameVerifier {
 
-    protected String hostname;
+    protected String mHostname;
 
     public DefaultHttpSSLFactory() {
     }
@@ -18,7 +18,7 @@ public class DefaultHttpSSLFactory implements ISSLFactory, HostnameVerifier {
         if (StringEnvoy.isEmpty(hostname)) {
             throw new NullPointerException("hostname is null !!!");
         }
-        this.hostname = hostname.replace("http://", "").replace("https://", "")
+        this.mHostname = hostname.replace("http://", "").replace("https://", "")
                 .replace("/", "");
     }
 
@@ -44,10 +44,10 @@ public class DefaultHttpSSLFactory implements ISSLFactory, HostnameVerifier {
 
     @Override
     public boolean verify(String hostname, SSLSession sslSession) {
-        if (StringEnvoy.isEmpty(this.hostname)) {
+        if (StringEnvoy.isEmpty(this.mHostname)) {
             return true;
         } else {
-            if (this.hostname.equals(hostname)) {
+            if (this.mHostname.equals(hostname)) {
                 return true;
             } else {
                 HostnameVerifier hv = HttpsURLConnection.getDefaultHostnameVerifier();

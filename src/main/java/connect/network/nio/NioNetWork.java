@@ -3,7 +3,6 @@ package connect.network.nio;
 import connect.network.base.BaseNetWork;
 
 import java.io.IOException;
-import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.Iterator;
@@ -67,12 +66,6 @@ public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T
         super.onCheckRemoverTask();
     }
 
-    @Override
-    protected void removerTaskImp(T task) {
-        super.removerTaskImp(task);
-        closeConnect(task);
-    }
-
     //------------------------------------------------------------------------------------------------------------------
 
     /**
@@ -106,20 +99,4 @@ public abstract class NioNetWork<T extends BaseNioNetTask> extends BaseNetWork<T
     }
 
     //------------------------------------------------------------------------------------------------------------------
-
-    protected void closeConnect(T target) {
-        if (target.selectionKey != null) {
-            try {
-                SelectableChannel channel = target.selectionKey.channel();
-                if (channel != null) {
-                    channel.close();
-                }
-            } catch (Throwable e) {
-                e.printStackTrace();
-            } finally {
-                target.selectionKey.cancel();
-            }
-        }
-        onRecoveryTask(target);
-    }
 }

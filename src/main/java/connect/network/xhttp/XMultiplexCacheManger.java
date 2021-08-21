@@ -8,16 +8,16 @@ import util.MultiplexCache;
 
 public class XMultiplexCacheManger {
 
-    private MultiplexCache<XNioHttpTask> nioTaskMultiplexCache;
-    private MultiplexCache<XAioHttpTask> aioTaskMultiplexCache;
-    private MultiplexCache<MultiLevelBuf> bufMultiplexCache;
-    private volatile boolean isRelease = false;
+    private MultiplexCache<XNioHttpTask> mNioTaskMultiplexCache;
+    private MultiplexCache<XAioHttpTask> mAioTaskMultiplexCache;
+    private MultiplexCache<MultiLevelBuf> mBufMultiplexCache;
+    private volatile boolean mIsRelease = false;
 
 
     private XMultiplexCacheManger() {
-        nioTaskMultiplexCache = new MultiplexCache<>();
-        aioTaskMultiplexCache = new MultiplexCache<>();
-        bufMultiplexCache = new MultiplexCache<>();
+        mNioTaskMultiplexCache = new MultiplexCache<>();
+        mAioTaskMultiplexCache = new MultiplexCache<>();
+        mBufMultiplexCache = new MultiplexCache<>();
     }
 
     private static XMultiplexCacheManger sTaskManger = null;
@@ -35,37 +35,37 @@ public class XMultiplexCacheManger {
 
     public static void destroy() {
         if (sTaskManger != null) {
-            sTaskManger.isRelease = true;
-            sTaskManger.nioTaskMultiplexCache.release();
-            sTaskManger.aioTaskMultiplexCache.release();
-            sTaskManger.bufMultiplexCache.release();
+            sTaskManger.mIsRelease = true;
+            sTaskManger.mNioTaskMultiplexCache.release();
+            sTaskManger.mAioTaskMultiplexCache.release();
+            sTaskManger.mBufMultiplexCache.release();
         }
     }
 
     public void lose(XAioHttpTask task) {
-        if (task != null && !isRelease) {
-            aioTaskMultiplexCache.resetData(task);
+        if (task != null && !mIsRelease) {
+            mAioTaskMultiplexCache.resetData(task);
         }
     }
 
     public void lose(XNioHttpTask task) {
-        if (task != null && !isRelease) {
-            nioTaskMultiplexCache.resetData(task);
+        if (task != null && !mIsRelease) {
+            mNioTaskMultiplexCache.resetData(task);
         }
     }
 
     public void lose(MultiLevelBuf buf) {
-        if (buf != null && !isRelease) {
+        if (buf != null && !mIsRelease) {
             buf.clear();
-            bufMultiplexCache.resetData(buf);
+            mBufMultiplexCache.resetData(buf);
         }
     }
 
     public MultiLevelBuf obtainBuf() {
-        if (isRelease) {
+        if (mIsRelease) {
             return null;
         }
-        MultiLevelBuf buf = bufMultiplexCache.getCanUseData();
+        MultiLevelBuf buf = mBufMultiplexCache.getCanUseData();
         if (buf == null) {
             buf = new MultiLevelBuf();
         }
@@ -74,10 +74,10 @@ public class XMultiplexCacheManger {
 
 
     public XNioHttpTask obtainNioTask(AbsNetFactory netFactory, XHttpConfig httpConfig, XRequest request) {
-        if (isRelease) {
+        if (mIsRelease) {
             return null;
         }
-        XNioHttpTask requestTask = nioTaskMultiplexCache.getCanUseData();
+        XNioHttpTask requestTask = mNioTaskMultiplexCache.getCanUseData();
         if (requestTask == null) {
             requestTask = new XNioHttpTask(netFactory, httpConfig, request);
         } else {
@@ -87,10 +87,10 @@ public class XMultiplexCacheManger {
     }
 
     public XAioHttpTask obtainAioTask(AbsNetFactory netFactory, XHttpConfig httpConfig, XRequest request) {
-        if (isRelease) {
+        if (mIsRelease) {
             return null;
         }
-        XAioHttpTask requestTask = aioTaskMultiplexCache.getCanUseData();
+        XAioHttpTask requestTask = mAioTaskMultiplexCache.getCanUseData();
         if (requestTask == null) {
             requestTask = new XAioHttpTask(netFactory, httpConfig, request);
         } else {

@@ -8,35 +8,36 @@ import java.nio.channels.DatagramChannel;
 
 public class NioUdpReceiver {
 
-    private int PACKET_MAX_SIZE = 1472;
+    private static final int PACKET_MAX_SIZE = 1472;
 
-    private ByteBuffer buffer = ByteBuffer.allocate(PACKET_MAX_SIZE);
+    private ByteBuffer mBuffer = ByteBuffer.allocate(PACKET_MAX_SIZE);
 
-    private INetReceiver<ReceiverPacket> receiver;
+    private INetReceiver<ReceiverPacket> mReceiverCallBack;
 
     public static class ReceiverPacket {
-        public SocketAddress fromAddress;
-        public byte[] data;
+        public SocketAddress mFromAddress;
+        public byte[] mData;
 
         public ReceiverPacket(SocketAddress fromAddress, byte[] data) {
-            this.fromAddress = fromAddress;
-            this.data = data;
+            this.mFromAddress = fromAddress;
+            this.mData = data;
         }
     }
 
     public void setDataReceiver(INetReceiver<ReceiverPacket> receiver) {
-        this.receiver = receiver;
+        this.mReceiverCallBack = receiver;
     }
 
     protected void onReadNetData(DatagramChannel channel) throws Throwable {
-        SocketAddress address = channel.receive(buffer);
-        if (receiver != null) {
+        SocketAddress address = channel.receive(mBuffer);
+        if (mReceiverCallBack != null) {
             byte[] data = null;
-            if (buffer.limit() > 0) {
-                buffer.flip();
-                data = buffer.array();
+            if (mBuffer.limit() > 0) {
+                mBuffer.flip();
+                data = new byte[mBuffer.limit()];
+                mBuffer.get(data);
             }
-            receiver.onReceiveFullData(new ReceiverPacket(address, data), null);
+            mReceiverCallBack.onReceiveFullData(new ReceiverPacket(address, data), null);
         }
     }
 }

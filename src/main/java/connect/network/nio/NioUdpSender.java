@@ -7,7 +7,7 @@ import java.nio.channels.DatagramChannel;
 
 public class NioUdpSender extends BaseNetSender {
 
-    protected DatagramChannel channel;
+    protected DatagramChannel mChannel;
 
     public NioUdpSender() {
     }
@@ -20,7 +20,7 @@ public class NioUdpSender extends BaseNetSender {
         if (channel == null) {
             throw new NullPointerException("channel is null !!!");
         }
-        this.channel = channel;
+        this.mChannel = channel;
     }
 
 
@@ -29,7 +29,7 @@ public class NioUdpSender extends BaseNetSender {
         if (objData instanceof ByteBuffer) {
             ByteBuffer buffer = (ByteBuffer) objData;
             try {
-                channel.write(buffer);
+                mChannel.write(buffer);
             } catch (Exception e) {
                 e.printStackTrace();
             }

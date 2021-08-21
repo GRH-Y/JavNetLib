@@ -9,41 +9,41 @@ import java.nio.channels.CompletionHandler;
 
 public class AioReceiver {
 
-    protected TLSHandler tlsHandler;
-    private AioClientTask clientTask;
-    protected INetReceiver<ByteBuffer> receiver;
-    private HandlerCore handlerCore;
-    private ByteBuffer receiverBuffer = ByteBuffer.allocateDirect(4096);
+    protected TLSHandler mTLSHandler;
+    private AioClientTask mClientTask;
+    protected INetReceiver<ByteBuffer> mReceiver;
+    private HandlerCore mHandlerCore;
+    private ByteBuffer mReceiverBuffer = ByteBuffer.allocateDirect(4096);
 
     public AioReceiver(AioClientTask clientTask) {
-        this.clientTask = clientTask;
-        handlerCore = new HandlerCore();
+        this.mClientTask = clientTask;
+        mHandlerCore = new HandlerCore();
     }
 
     public void setDataReceiver(INetReceiver<ByteBuffer> receiver) {
-        this.receiver = receiver;
+        this.mReceiver = receiver;
     }
 
     public void setClientTask(AioClientTask clientTask) {
-        this.clientTask = clientTask;
+        this.mClientTask = clientTask;
     }
 
     public void setTlsHandler(TLSHandler tlsHandler) {
-        this.tlsHandler = tlsHandler;
+        this.mTLSHandler = tlsHandler;
     }
 
     /**
      * 触发接收数据
      */
     public void triggerReceiver() {
-        if (tlsHandler != null) {
+        if (mTLSHandler != null) {
             try {
-                tlsHandler.readAndUnwrap(clientTask.getChannel(), handlerCore, receiverBuffer);
+                mTLSHandler.readAndUnwrap(mClientTask.getChannel(), mHandlerCore, mReceiverBuffer);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         } else {
-            clientTask.getChannel().read(receiverBuffer, receiverBuffer, handlerCore);
+            mClientTask.getChannel().read(mReceiverBuffer, mReceiverBuffer, mHandlerCore);
         }
     }
 
@@ -52,16 +52,15 @@ public class AioReceiver {
         @Override
         public void completed(Integer result, ByteBuffer byteBuffer) {
             if (result.intValue() == -1) {
-                clientTask.getFactory().removeTask(clientTask);
+                mClientTask.getFactory().removeTask(mClientTask);
             } else {
                 byteBuffer.flip();
                 byte[] data = new byte[byteBuffer.remaining()];
                 byteBuffer.get(data);
                 byteBuffer.clear();
                 LogDog.d("==> 接收数据 = " + new String(data));
-                LogDog.d("==> 耗时 = " + (System.currentTimeMillis() - AioClientFactory.starTime));
-                if (receiver != null) {
-                    receiver.onReceiveFullData(byteBuffer, null);
+                if (mReceiver != null) {
+                    mReceiver.onReceiveFullData(byteBuffer, null);
                 }
                 triggerReceiver();
             }
@@ -69,8 +68,8 @@ public class AioReceiver {
 
         @Override
         public void failed(Throwable exc, ByteBuffer byteBuffer) {
-            if (receiver != null) {
-                receiver.onReceiveFullData(byteBuffer, exc);
+            if (mReceiver != null) {
+                mReceiver.onReceiveFullData(byteBuffer, exc);
             }
         }
     }

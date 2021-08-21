@@ -46,7 +46,7 @@ public class NioServerFactory extends AbsNetFactory<NioServerTask> {
 
     @Override
     protected BaseNetWork<NioServerTask> initNetWork() {
-        return new NioServerWork(getSslFactory());
+        return new NioServerWork(getSSLFactory());
     }
 
     @Override

@@ -14,63 +14,63 @@ import java.util.LinkedHashMap;
  */
 public class XRequest {
 
-    private XUrlMedia httpUrlMedia;
-    private RequestMode requestMode = RequestMode.GET;
+    private XUrlMedia mHttpUrlMedia;
+    private RequestMode mRequestMode = RequestMode.GET;
 
     //禁用系統的header参数，完全用户自定义
-    private boolean disableSysProperty = false;
+    private boolean mDisableSysProperty = false;
 
-    private byte[] sendData = null;
+    private byte[] mSendData = null;
 
-    private String callBackMethod = null;
-    private String processMethod = null;
+    private String mCallBackMethod = null;
+    private String mProcessMethod = null;
 
     /**
      * 回调接口返回结果的值
      */
-    private Object resultType = null;
+    private Object mResultType = null;
     /**
      * 接口回调类
      */
-    private Object callBackTarget = null;
+    private Object mCallBackTarget = null;
 
     /**
      * 请求头参数
      */
-    private LinkedHashMap<Object, Object> requestProperty = null;
+    private LinkedHashMap<Object, Object> mRequestProperty = null;
 
 
     /**
      * 扩展参数
      */
-    private Object object;
+    private Object exData;
 
     public XUrlMedia getUrl() {
-        return httpUrlMedia;
+        return mHttpUrlMedia;
     }
 
     public RequestMode getRequestMode() {
-        return requestMode;
+        return mRequestMode;
     }
 
     public byte[] getSendData() {
-        return sendData;
+        return mSendData;
     }
 
     public Object getCallBackTarget() {
-        return callBackTarget;
+        return mCallBackTarget;
     }
 
     public void setCallBackTarget(Object callBackTarget) {
-        this.callBackTarget = callBackTarget;
+        this.mCallBackTarget = callBackTarget;
     }
 
     public Object getResultType() {
-        return resultType;
+        return mResultType;
     }
 
     public String getCallBackMethod() {
-        return callBackMethod;
+        return mCallBackMethod;
     }
 
     public void setUrl(String url) {
@@ -78,63 +78,63 @@ public class XRequest {
     }
 
     public void setUrl(String url, int port) {
-        if (httpUrlMedia == null) {
-            httpUrlMedia = new XUrlMedia(url, port);
+        if (mHttpUrlMedia == null) {
+            mHttpUrlMedia = new XUrlMedia(url, port);
         } else {
-            httpUrlMedia.reset(url, port);
+            mHttpUrlMedia.reset(url, port);
         }
     }
 
     public void disableSysProperty() {
-        this.disableSysProperty = true;
+        this.mDisableSysProperty = true;
     }
 
     public void setRequestMode(RequestMode requestMode) {
         if (requestMode == null) {
             throw new NullPointerException("requestMode is null !!!");
         }
-        this.requestMode = requestMode;
+        this.mRequestMode = requestMode;
     }
 
     public void setSendData(byte[] sendData) {
-        this.sendData = sendData;
+        this.mSendData = sendData;
     }
 
 
     public void setCallBackMethod(String callBackMethod) {
-        this.callBackMethod = callBackMethod;
+        this.mCallBackMethod = callBackMethod;
     }
 
 
     public String getProcessMethod() {
-        return processMethod;
+        return mProcessMethod;
     }
 
     public void setProcessMethod(String processMethod) {
-        this.processMethod = processMethod;
+        this.mProcessMethod = processMethod;
     }
 
     public void setResultType(Object resultType) {
-        this.resultType = resultType;
+        this.mResultType = resultType;
     }
 
     public void setObject(Object object) {
-        this.object = object;
+        this.exData = object;
     }
 
     public Object getObject() {
-        return object;
+        return exData;
     }
 
     public void setRequestProperty(LinkedHashMap<Object, Object> property) {
-        this.requestProperty = property;
+        this.mRequestProperty = property;
     }
 
     public LinkedHashMap<Object, Object> getRequestProperty() {
-        return requestProperty;
+        return mRequestProperty;
     }
 
     public boolean isDisableSysProperty() {
-        return disableSysProperty;
+        return mDisableSysProperty;
     }
 }

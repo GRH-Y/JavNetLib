@@ -15,50 +15,50 @@ public class XHttpDecoderProcessor implements INetReceiver<MultiLevelBuf> {
     /**
      * 接收体（结果）
      */
-    protected XResponse response;
+    protected XResponse mResponse;
 
     /**
      * 当前模式
      */
-    private XReceiverMode mode = XReceiverMode.RESPONSE;
+    private XReceiverMode mMode = XReceiverMode.RESPONSE;
     /**
      * 当前解析状态
      */
-    private XReceiverStatus status = XReceiverStatus.HEAD;
+    private XReceiverStatus mStatus = XReceiverStatus.HEAD;
 
     /**
      * body数据是否是分段传输
      */
-    private boolean isSubsection = false;
+    private boolean mIsSubsection = false;
     /**
      * body数据大小
      */
-    private int bodySize = -1;
+    private int mBodySize = -1;
     /**
      * 协议头分隔符的位置
      */
-    private int headEndIndex;
+    private int mHeadEndIndex;
 
-    private INetReceiver<XResponse> dataReceiver;
+    private INetReceiver<XResponse> mDataReceiver;
 
     public XHttpDecoderProcessor() {
-        response = new XResponse();
+        mResponse = new XResponse();
     }
 
     public void setDataReceiver(INetReceiver<XResponse> receiver) {
-        this.dataReceiver = receiver;
+        this.mDataReceiver = receiver;
     }
 
     public XReceiverStatus getStatus() {
-        return status;
+        return mStatus;
     }
 
     public XReceiverMode getMode() {
-        return mode;
+        return mMode;
     }
 
     public void setMode(XReceiverMode mode) {
-        this.mode = mode;
+        this.mMode = mode;
     }
 
 
@@ -76,7 +76,7 @@ public class XHttpDecoderProcessor implements INetReceiver<MultiLevelBuf> {
 
 
     protected void onHttpReceive(byte[] data, int len, Throwable e) {
-        if (mode == XReceiverMode.REQUEST) {
+        if (mMode == XReceiverMode.REQUEST) {
             onRequest(data, len, e);
         } else {
             onResponse(data, len, e);
@@ -84,14 +84,14 @@ public class XHttpDecoderProcessor implements INetReceiver<MultiLevelBuf> {
     }
 
     protected void onRequest(byte[] data, int len, Throwable e) {
-        response.appendRawData(data);
+        mResponse.appendRawData(data);
         processHttpHead(data, len);
         processRequestBody(data, len);
         processNotify(e);
     }
 
     protected void onResponse(byte[] data, int len, Throwable e) {
-        response.appendRawData(data);
+        mResponse.appendRawData(data);
         processHttpHead(data, len);
         processResponseBody(data, len);
         processNotify(e);
@@ -101,18 +101,18 @@ public class XHttpDecoderProcessor implements INetReceiver<MultiLevelBuf> {
     }
 
     protected void processHttpHead(byte[] data, int len) {
-        if (status == XReceiverStatus.HEAD) {
-            headEndIndex = XResponseHelper.findHeadEndTag(data, len);
-            if (headEndIndex != -1) {
+        if (mStatus == XReceiverStatus.HEAD) {
+            mHeadEndIndex = XResponseHelper.findHeadEndTag(data, len);
+            if (mHeadEndIndex != -1) {
                 //找到协议头结束标志，则开始解析协议头
-                analysisHead(data, headEndIndex);
-                String length = response.getHeadForKey(XHttpProtocol.XY_CONTENT_LENGTH);
+                analysisHead(data, mHeadEndIndex);
+                String length = mResponse.getHeadForKey(XHttpProtocol.XY_CONTENT_LENGTH);
                 if (StringEnvoy.isNotEmpty(length)) {
-                    bodySize = Integer.parseInt(length);
+                    mBodySize = Integer.parseInt(length);
                 }
-                String transfer = response.getHeadForKey(XHttpProtocol.XY_TRANSFER_ENCODING);
-                isSubsection = StringEnvoy.isNotEmpty(transfer);
-                status = XReceiverStatus.BODY;
+                String transfer = mResponse.getHeadForKey(XHttpProtocol.XY_TRANSFER_ENCODING);
+                mIsSubsection = StringEnvoy.isNotEmpty(transfer);
+                mStatus = XReceiverStatus.BODY;
                 callStatusChange();
             }
         }
@@ -125,21 +125,21 @@ public class XHttpDecoderProcessor implements INetReceiver<MultiLevelBuf> {
      * @param len
      */
     protected void processRequestBody(byte[] data, int len) {
-        if (status == XReceiverStatus.BODY) {
-            if (bodySize != -1) {
-                ByteCacheStream raw = response.getRawData();
-                if (raw.size() - headEndIndex == bodySize) {
-                    byte[] body = new byte[bodySize];
-                    System.arraycopy(raw.getBuf(), headEndIndex, body, 0, body.length);
-                    response.setHttpData(body);
-                    status = XReceiverStatus.OVER;
+        if (mStatus == XReceiverStatus.BODY) {
+            if (mBodySize != -1) {
+                ByteCacheStream raw = mResponse.getRawData();
+                if (raw.size() - mHeadEndIndex == mBodySize) {
+                    byte[] body = new byte[mBodySize];
+                    System.arraycopy(raw.getBuf(), mHeadEndIndex, body, 0, body.length);
+                    mResponse.setHttpData(body);
+                    mStatus = XReceiverStatus.OVER;
                     callStatusChange();
                 }
             } else {
                 //没有请求体
                 int index = XResponseHelper.findHeadEndTag(data, len);
                 if (index != -1) {
-                    status = XReceiverStatus.OVER;
+                    mStatus = XReceiverStatus.OVER;
                     callStatusChange();
                 }
             }
@@ -153,37 +153,37 @@ public class XHttpDecoderProcessor implements INetReceiver<MultiLevelBuf> {
      * @param len
      */
     protected void processResponseBody(byte[] data, int len) {
-        if (status == XReceiverStatus.BODY) {
-            ByteCacheStream raw = response.getRawData();
+        if (mStatus == XReceiverStatus.BODY) {
+            ByteCacheStream raw = mResponse.getRawData();
             byte[] body = null;
             //分段传输方式
-            if (isSubsection) {
+            if (mIsSubsection) {
                 //查找0\r\n结束标志
                 int index = XResponseHelper.findBodyEndTag(data, len);
                 if (index != -1) {
-                    body = new byte[raw.size() - 5 - headEndIndex];
+                    body = new byte[raw.size() - 5 - mHeadEndIndex];
                 }
             } else {
                 //有明确的数据大小
-                if (raw.size() - headEndIndex == bodySize) {
-                    body = new byte[bodySize];
+                if (raw.size() - mHeadEndIndex == mBodySize) {
+                    body = new byte[mBodySize];
                 }
             }
             if (body != null) {
-                System.arraycopy(raw.getBuf(), headEndIndex, body, 0, body.length);
-                response.setHttpData(body);
-                status = XReceiverStatus.OVER;
+                System.arraycopy(raw.getBuf(), mHeadEndIndex, body, 0, body.length);
+                mResponse.setHttpData(body);
+                mStatus = XReceiverStatus.OVER;
                 callStatusChange();
             }
         }
     }
 
     private void processNotify(Throwable e) {
-        if (status == XReceiverStatus.OVER) {
-            if (dataReceiver != null) {
-                dataReceiver.onReceiveFullData(response, e);
+        if (mStatus == XReceiverStatus.OVER) {
+            if (mDataReceiver != null) {
+                mDataReceiver.onReceiveFullData(mResponse, e);
             }
-            status = XReceiverStatus.NONE;
+            mStatus = XReceiverStatus.NONE;
             callStatusChange();
             reset();
         }
@@ -191,14 +191,14 @@ public class XHttpDecoderProcessor implements INetReceiver<MultiLevelBuf> {
 
 
     private void reset() {
-        headEndIndex = -1;
-        status = XReceiverStatus.HEAD;
-        response.reset();
+        mHeadEndIndex = -1;
+        mStatus = XReceiverStatus.HEAD;
+        mResponse.reset();
     }
 
     private void callStatusChange() {
         try {
-            onStatusChange(status);
+            onStatusChange(mStatus);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -206,7 +206,7 @@ public class XHttpDecoderProcessor implements INetReceiver<MultiLevelBuf> {
 
 
     private void analysisHead(byte[] data, int index) {
-        Map<String, String> headMap = response.getHttpHead();
+        Map<String, String> headMap = mResponse.getHttpHead();
         String headStr = new String(data, 0, index);
         String[] arrays = headStr.split("\r\n");
         //第一行不是键值对

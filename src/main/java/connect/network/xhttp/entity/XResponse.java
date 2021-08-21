@@ -10,37 +10,37 @@ public class XResponse {
     /**
      * 完整的http数据
      */
-    private ByteCacheStream raw;
+    private ByteCacheStream mRaw;
     /**
      * http head
      */
-    private Map<String, String> httpHead;
+    private Map<String, String> mHttpHead;
     /**
      * http body
      */
-    private byte[] httpData = null;
+    private byte[] mHttpData = null;
 
     /**
      * body转换成实体结果
      */
-    private Object result = null;
+    private Object mResult = null;
 
 
     public XResponse() {
-        raw = new ByteCacheStream();
-        httpHead = new LinkedHashMap<>();
+        mRaw = new ByteCacheStream();
+        mHttpHead = new LinkedHashMap<>();
     }
 
     public void setHttpData(byte[] httpData) {
-        this.httpData = httpData;
+        this.mHttpData = httpData;
     }
 
     public byte[] getHttpData() {
-        return httpData;
+        return mHttpData;
     }
 
     public <T> void setResult(T result) {
-        this.result = result;
+        this.mResult = result;
     }
 
     public void appendRawData(byte[] data) {
@@ -51,36 +51,36 @@ public class XResponse {
 
     public void appendRawData(byte[] data, int off, int len) {
         if (data != null) {
-            raw.write(data, off, len);
+            mRaw.write(data, off, len);
         }
     }
 
     public ByteCacheStream getRawData() {
-        return raw;
+        return mRaw;
     }
 
     public <T> T getResult() {
-        return (T) result;
+        return (T) mResult;
     }
 
     public Map<String, String> getHttpHead() {
-        return httpHead;
+        return mHttpHead;
     }
 
     public String getHeadForKey(String key) {
         String value = null;
-        if (httpHead != null) {
-            value = httpHead.get(key);
+        if (mHttpHead != null) {
+            value = mHttpHead.get(key);
         }
         return value;
     }
 
     public void reset() {
-        if (httpHead != null) {
-            httpHead.clear();
+        if (mHttpHead != null) {
+            mHttpHead.clear();
         }
-        raw.reset();
-        result = null;
-        httpData = null;
+        mRaw.reset();
+        mResult = null;
+        mHttpData = null;
     }
 }

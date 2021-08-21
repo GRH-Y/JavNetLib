@@ -12,13 +12,13 @@ import java.nio.channels.SocketChannel;
 
 public class NioReceiver {
 
-    protected INetReceiver<MultiLevelBuf> receiver;
+    protected INetReceiver<MultiLevelBuf> mReceiverCallBack;
 
     public NioReceiver() {
     }
 
     public void setDataReceiver(INetReceiver<MultiLevelBuf> receiver) {
-        this.receiver = receiver;
+        this.mReceiverCallBack = receiver;
     }
 
     public void resetMultilevelBuf(MultiLevelBuf buf) {
@@ -54,8 +54,8 @@ public class NioReceiver {
 
     protected void notifyReceiverImp(MultiLevelBuf buf, Throwable exception, long ret) throws Throwable {
         try {
-            if (receiver != null) {
-                receiver.onReceiveFullData(buf, exception);
+            if (mReceiverCallBack != null) {
+                mReceiverCallBack.onReceiveFullData(buf, exception);
             }
         } catch (Throwable e) {
             e.printStackTrace();

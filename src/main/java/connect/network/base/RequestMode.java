@@ -23,13 +23,13 @@ public enum RequestMode {
     TRACE("TRACE");
 
 
-    private String mode;
+    private String mMode;
 
     RequestMode(String mode) {
-        this.mode = mode;
+        this.mMode = mode;
     }
 
     public String getMode() {
-        return mode;
+        return mMode;
     }
 }

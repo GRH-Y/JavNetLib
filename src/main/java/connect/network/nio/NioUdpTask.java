@@ -10,24 +10,24 @@ public class NioUdpTask extends BaseNioNetTask {
 
     private DatagramChannel mChannel;
 
-    private NioUdpReceiver receive;
-    private NioUdpSender sender;
+    private NioUdpReceiver mReceive;
+    private NioUdpSender mSender;
 
-    private boolean isServer = false;
-    private boolean isBroadcast = false;
-    private LiveTime liveTime = LiveTime.LOCAL_AREA;
+    private boolean mIsServer = false;
+    private boolean mIsBroadcast = false;
+    private LiveTime mLiveTime = LiveTime.LOCAL_AREA;
 
 
     public boolean isBroadcast() {
-        return isBroadcast;
+        return mIsBroadcast;
     }
 
     public boolean isServer() {
-        return isServer;
+        return mIsServer;
     }
 
     public LiveTime getLiveTime() {
-        return liveTime;
+        return mLiveTime;
     }
 
     public DatagramChannel getChannel() {
@@ -47,20 +47,20 @@ public class NioUdpTask extends BaseNioNetTask {
     }
 
     public void setSender(NioUdpSender sender) {
-        this.sender = sender;
+        this.mSender = sender;
     }
 
     public void setReceive(NioUdpReceiver receive) {
-        this.receive = receive;
+        this.mReceive = receive;
     }
 
 
     public NioUdpReceiver getReceiver() {
-        return receive;
+        return mReceive;
     }
 
     public NioUdpSender getSender() {
-        return sender;
+        return mSender;
     }
 
     /**

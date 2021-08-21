@@ -9,17 +9,17 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class TcpSender extends BaseNetSender {
 
-    protected Queue<Object> cache;
-    protected OutputStream stream = null;
+    protected Queue<Object> mCache;
+    protected OutputStream mStream = null;
 
     public TcpSender() {
-        cache = new ConcurrentLinkedQueue<>();
+        mCache = new ConcurrentLinkedQueue<>();
     }
 
     @Override
     public void sendData(Object objData) {
         if (objData != null) {
-            cache.add(objData);
+            mCache.add(objData);
         }
     }
 
@@ -35,12 +35,12 @@ public class TcpSender extends BaseNetSender {
 //    }
 
     protected void setStream(OutputStream stream) {
-        this.stream = stream;
+        this.mStream = stream;
     }
 
     protected void onSendNetData() throws Throwable {
-        while (!cache.isEmpty() && stream != null) {
-            Object objData = cache.remove();
+        while (!mCache.isEmpty() && mStream != null) {
+            Object objData = mCache.remove();
             onHandleSendData(objData);
         }
     }
@@ -49,7 +49,7 @@ public class TcpSender extends BaseNetSender {
         if (objData instanceof byte[]) {
             try {
                 byte[] data = (byte[]) objData;
-                stream.write(data);
+                mStream.write(data);
             } catch (Exception e) {
                 if (!(e instanceof SocketTimeoutException)) {
                     throw new Exception(e);

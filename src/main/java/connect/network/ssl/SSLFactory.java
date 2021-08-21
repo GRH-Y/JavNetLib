@@ -11,11 +11,11 @@ import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 
 public class SSLFactory implements ISSLFactory {
-    private SSLContext sslContext;
+    private SSLContext mSSLContext;
 
     public SSLFactory() {
         try {
-            sslContext = SSLContext.getDefault();
+            mSSLContext = SSLContext.getDefault();
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
@@ -28,10 +28,10 @@ public class SSLFactory implements ISSLFactory {
      * @throws Exception
      */
     public SSLFactory(String protocol) throws Exception {
-        sslContext = SSLContext.getInstance(protocol);
+        mSSLContext = SSLContext.getInstance(protocol);
         KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-        sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), new SecureRandom());
+        mSSLContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), new SecureRandom());
     }
 
     /**
@@ -44,7 +44,7 @@ public class SSLFactory implements ISSLFactory {
     public SSLFactory(String protocol, String keyManagerFactory, String keyStoreType, String keyStorePath, String keyPassword) throws Exception {
         char[] password = keyPassword.toCharArray();
 
-        sslContext = SSLContext.getInstance(protocol);
+        mSSLContext = SSLContext.getInstance(protocol);
         KeyManagerFactory kmf = KeyManagerFactory.getInstance(keyManagerFactory);
 //        TrustManagerFactory tmf = TrustManagerFactory.getInstance(keyManagerFactory);
         KeyStore ks = KeyStore.getInstance(keyStoreType);
@@ -53,17 +53,17 @@ public class SSLFactory implements ISSLFactory {
         ks.load(new FileInputStream(keyStorePath), password);
         kmf.init(ks, password);
 //        tmf.init(tks);
-        sslContext.init(kmf.getKeyManagers(), null, null);//tmf.getTrustManagers()
+        mSSLContext.init(kmf.getKeyManagers(), null, null);//tmf.getTrustManagers()
     }
 
     @Override
     public SSLContext getSSLContext() {
-        return sslContext;
+        return mSSLContext;
     }
 
     @Override
     public SSLSocketFactory getSSLSocketFactory() {
-        return sslContext.getSocketFactory();
+        return mSSLContext.getSocketFactory();
     }
 
     @Override

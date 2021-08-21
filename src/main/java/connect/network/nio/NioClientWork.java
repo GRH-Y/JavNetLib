@@ -16,10 +16,10 @@ import java.nio.channels.SocketChannel;
 
 public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
 
-    private ISSLFactory mSslFactory;
+    private ISSLFactory mSSLFactory;
 
     protected NioClientWork(ISSLFactory factory) {
-        this.mSslFactory = factory;
+        this.mSSLFactory = factory;
     }
 
 
@@ -106,7 +106,7 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
 
     private void initSSLConnect(T task, SocketChannel channel) throws Throwable {
         if (task.isTLS()) {
-            SSLContext sslContext = mSslFactory.getSSLContext();
+            SSLContext sslContext = mSSLFactory.getSSLContext();
             SSLEngine sslEngine = sslContext.createSSLEngine(task.getHost(), task.getPort());
             sslEngine.setUseClientMode(true);
             sslEngine.setEnableSessionCreation(true);
@@ -189,6 +189,7 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
         }
     }
 
+
     /**
      * 准备断开链接回调
      *
@@ -201,16 +202,23 @@ public class NioClientWork<T extends NioClientTask> extends NioNetWork<T> {
         } catch (Throwable e) {
             e.printStackTrace();
         } finally {
-            if (task.getChannel() != null) {
+            if (task.mSelectionKey != null) {
                 try {
-                    task.getChannel().close();
-                } catch (IOException e) {
+                    task.mSelectionKey.cancel();
+                } catch (Throwable e) {
                     e.printStackTrace();
                 }
             }
             TLSHandler tlsHandler = task.getTlsHandler();
             if (tlsHandler != null) {
                 tlsHandler.release();
+            }
+            if (task.getChannel() != null) {
+                try {
+                    task.getChannel().close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }

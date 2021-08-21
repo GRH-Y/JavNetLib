@@ -11,28 +11,28 @@ import java.nio.channels.CompletionHandler;
 
 public class AioSender implements INetSender {
 
-    protected AsynchronousSocketChannel channel;
-    protected ISenderFeedback senderFeedback;
-    protected TLSHandler tlsHandler;
-    private HandlerCore handlerCore;
+    protected AsynchronousSocketChannel mChannel;
+    protected ISenderFeedback mSenderFeedback;
+    protected TLSHandler mTLSHandler;
+    private HandlerCore mHandlerCore;
 
     public AioSender(AsynchronousSocketChannel channel) {
-        this.channel = channel;
-        handlerCore = new HandlerCore();
+        this.mChannel = channel;
+        mHandlerCore = new HandlerCore();
     }
 
     public void setChannel(AsynchronousSocketChannel channel) {
-        this.channel = channel;
+        this.mChannel = channel;
     }
 
     public void setTlsHandler(TLSHandler tlsHandler) {
-        this.tlsHandler = tlsHandler;
+        this.mTLSHandler = tlsHandler;
     }
 
 
     @Override
     public void setSenderFeedback(ISenderFeedback feedback) {
-        this.senderFeedback = feedback;
+        this.mSenderFeedback = feedback;
     }
 
     @Override
@@ -40,17 +40,17 @@ public class AioSender implements INetSender {
         if (objData instanceof byte[]) {
             byte[] data = (byte[]) objData;
             ByteBuffer byteBuffer = ByteBuffer.wrap(data);
-            if (tlsHandler != null) {
+            if (mTLSHandler != null) {
                 try {
-                    tlsHandler.wrapAndWrite(channel, byteBuffer, handlerCore);
+                    mTLSHandler.wrapAndWrite(mChannel, byteBuffer, mHandlerCore);
                 } catch (Exception e) {
                     e.printStackTrace();
-                    if (senderFeedback != null) {
-                        senderFeedback.onSenderFeedBack(this, byteBuffer, e);
+                    if (mSenderFeedback != null) {
+                        mSenderFeedback.onSenderFeedBack(this, byteBuffer, e);
                     }
                 }
             } else {
-                channel.write(byteBuffer, byteBuffer, handlerCore);
+                mChannel.write(byteBuffer, byteBuffer, mHandlerCore);
             }
         }
     }
@@ -60,11 +60,11 @@ public class AioSender implements INetSender {
         @Override
         public void completed(Integer result, ByteBuffer byteBuffer) {
             if (byteBuffer.hasRemaining()) {
-                channel.write(byteBuffer, byteBuffer, this);
+                mChannel.write(byteBuffer, byteBuffer, this);
             } else {
                 LogDog.d("发送数据成功");
-                if (senderFeedback != null) {
-                    senderFeedback.onSenderFeedBack(AioSender.this, byteBuffer, null);
+                if (mSenderFeedback != null) {
+                    mSenderFeedback.onSenderFeedBack(AioSender.this, byteBuffer, null);
                 }
             }
         }
@@ -73,8 +73,8 @@ public class AioSender implements INetSender {
         public void failed(Throwable exc, ByteBuffer byteBuffer) {
             LogDog.e("发送数据失败");
             exc.printStackTrace();
-            if (senderFeedback != null) {
-                senderFeedback.onSenderFeedBack(AioSender.this, byteBuffer, exc);
+            if (mSenderFeedback != null) {
+                mSenderFeedback.onSenderFeedBack(AioSender.this, byteBuffer, exc);
             }
         }
     }

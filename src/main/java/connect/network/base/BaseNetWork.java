@@ -46,8 +46,6 @@ public abstract class BaseNetWork<T extends BaseNetTask> {
         onConnectTask(task);
     }
 
-    protected void onExecuteTask() {
-    }
 
     /**
      * 检查要移除任务
@@ -62,6 +60,7 @@ public abstract class BaseNetWork<T extends BaseNetTask> {
     protected void removerTaskImp(T task) {
         task.changeTaskStatus(NetTaskStatus.NONE);
         onDisconnectTask(task);
+        onRecoveryTask(task);
     }
 
 
@@ -80,6 +79,12 @@ public abstract class BaseNetWork<T extends BaseNetTask> {
      * @param task 网络请求任务
      */
     protected void onConnectTask(T task) {
+    }
+
+    /**
+     * 执行任务（读或者写）
+     */
+    protected void onExecuteTask() {
     }
 
     /**

@@ -22,8 +22,6 @@ public class XHttpConnect {
 
     private static XHttpConnect sHttpConnect = null;
 
-    public static long starTime = 0;
-
     private XHttpConnect() {
         mHttpTaskManger = XMultiplexCacheManger.getInstance();
         mNioNetFactory = new NioClientFactory();

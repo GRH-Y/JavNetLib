@@ -13,51 +13,53 @@ import java.util.List;
 public class MultiLevelBuf {
 
     //默认每个buf的大小
-    private final int initSize;
+    private final int mInitSize;
     private final int DEFAULT_SIZE = 16921;
 
     //当前可用的buf在集合的索引
-    private volatile int bufIndex = 0;
+    private volatile int mBufIndex = 0;
     //当前可用buf指针位置
-    private volatile int offset = 0;
+    private volatile int mOffset = 0;
     //标记potions的备份
-    private volatile int mark = -1;
+    private volatile int mMark = -1;
     //当前数据占缓存的容量
-    private volatile int limit;
+    private volatile int mLimit;
     //当前缓存最大的容量
-    private volatile int capacity;
+    private volatile int mCapacity;
 
     //临时缓存，一般用于缓存getUseBuf没有处理完
-    private ByteBuffer[] tmpCacheBuf = null;
+    private ByteBuffer[] mTmpCacheBuf = null;
     //buf集合
-    private final List<ByteBuffer> bufList;
+    private final List<ByteBuffer> mBufList;
 
     //借用数量
-    private int lendCount = 0;
+    private int mLendCount = 0;
 
     public MultiLevelBuf() {
-        bufList = new LinkedList<>();
-        this.initSize = DEFAULT_SIZE;
+        mBufList = new LinkedList<>();
+        this.mInitSize = DEFAULT_SIZE;
         appendBuffer();
     }
 
     public MultiLevelBuf(int initSize) {
-        bufList = new ArrayList<>();
-        this.initSize = initSize;
+        mBufList = new ArrayList<>();
+        this.mInitSize = initSize;
         appendBuffer();
     }
 
 
     public void appendBuffer() {
-        bufList.add(ByteBuffer.allocateDirect(initSize));
-        capacity += initSize;
-        limit += initSize;
-//        LogDog.d("bufList size = " + bufList.size());
+        synchronized (mBufList) {
+            mBufList.add(ByteBuffer.allocateDirect(mInitSize));
+            mCapacity += mInitSize;
+            mLimit += mInitSize;
+//            LogDog.d("bufList size = " + bufList.size());
+        }
     }
 
     public ByteBuffer[] getMarkBuf() {
-        synchronized (bufList) {
-            return tmpCacheBuf;
+        synchronized (mBufList) {
+            return mTmpCacheBuf;
         }
     }
 
@@ -73,16 +75,16 @@ public class MultiLevelBuf {
      * @return
      */
     public final ByteBuffer[] getUseBuf(boolean isFlip) {
-        synchronized (bufList) {
-            if (lendCount > 0) {
+        synchronized (mBufList) {
+            if (mLendCount > 0) {
                 LogDog.e("## getUseBuf buf is use ing !!!");
                 return null;
             }
-            int size = bufIndex + (offset > 0 ? 1 : 0);
+            int size = mBufIndex + (mOffset > 0 ? 1 : 0);
             ByteBuffer[] buffers = new ByteBuffer[size];
             try {
                 for (int index = 0; index < buffers.length; index++) {
-                    ByteBuffer tmp = bufList.get(index);
+                    ByteBuffer tmp = mBufList.get(index);
                     if (isFlip) {
                         tmp.flip();
                     }
@@ -91,10 +93,27 @@ public class MultiLevelBuf {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            lendCount = size;
+            mLendCount = size;
             return buffers;
         }
     }
+
+
+//    /**
+//     * 获取可用的缓存
+//     * @return
+//     */
+//    public final ByteBuffer[] getCanUseBuf() {
+//        synchronized (bufList) {
+//            int canUseSize = bufList.size() - bufIndex;
+//            ByteBuffer[] buffers = new ByteBuffer[canUseSize];
+//            lendCount = canUseSize;
+//            for (int index = 0; index < canUseSize; index++) {
+//                buffers[index] = bufList.get(bufIndex + index);
+//            }
+//            return buffers;
+//        }
+//    }
 
     /**
      * 获取所有的buf
@@ -102,14 +121,14 @@ public class MultiLevelBuf {
      * @return
      */
     public final ByteBuffer[] getAllBuf() {
-        synchronized (bufList) {
-            if (lendCount > 0) {
+        synchronized (mBufList) {
+            if (mLendCount > 0) {
                 LogDog.e("## getAllBuf buf is use ing !!!");
                 return null;
             }
-            ByteBuffer[] buffers = new ByteBuffer[bufList.size()];
-            lendCount = buffers.length;
-            return bufList.toArray(buffers);
+            ByteBuffer[] buffers = new ByteBuffer[mBufList.size()];
+            mLendCount = buffers.length;
+            return mBufList.toArray(buffers);
         }
     }
 
@@ -120,19 +139,19 @@ public class MultiLevelBuf {
      * @return
      */
     public final ByteBuffer getLendBuf() {
-        synchronized (bufList) {
-            if (lendCount > 0) {
+        synchronized (mBufList) {
+            if (mLendCount > 0) {
                 LogDog.e("## getLendBuf buf is use ing !!!");
                 return null;
             }
-            lendCount = 1;
-            return bufList.get(bufIndex);
+            mLendCount = 1;
+            return mBufList.get(mBufIndex);
         }
     }
 
     public final void markBuf(ByteBuffer... buffer) {
-        synchronized (bufList) {
-            this.tmpCacheBuf = buffer;
+        synchronized (mBufList) {
+            this.mTmpCacheBuf = buffer;
         }
     }
 
@@ -143,30 +162,34 @@ public class MultiLevelBuf {
      * @param buffer
      */
     public final void setBackBuf(ByteBuffer... buffer) {
-        synchronized (bufList) {
-            if (lendCount == 0 || buffer == null || buffer.length == 0 || lendCount != buffer.length) {
+        synchronized (mBufList) {
+            if (mLendCount == 0 || buffer == null || buffer.length == 0 || mLendCount != buffer.length) {
+                LogDog.e("## setBackBuf the number of returned buf is inconsistent");
                 return;
             }
             for (ByteBuffer tmp : buffer) {
-                if (!bufList.contains(tmp)) {
+                if (!mBufList.contains(tmp)) {
                     //发现不存在的buf
                     LogDog.e("## Found non-existent buf");
                     return;
                 }
             }
-            lendCount = 0;
+            mLendCount = 0;
             for (int index = 0; index < buffer.length; index++) {
+                if (buffer[index].capacity() != buffer[index].limit()) {
+                    buffer[index].clear();
+                }
                 if (buffer[index].hasRemaining()) {
                     //buf没有存满则认为最后的buf
-                    offset = buffer[index].position();
-                    bufIndex = index;
+                    mOffset = buffer[index].position();
+                    mBufIndex = index;
                     break;
                 } else {
                     if (index == buffer.length - 1) {
                         //最后的buf存满，则扩容
                         appendBuffer();
-                        bufIndex++;
-                        offset = 0;
+                        mBufIndex++;
+                        mOffset = 0;
                     }
                 }
             }
@@ -179,23 +202,23 @@ public class MultiLevelBuf {
      * @return 把数据转换成byte数据返回
      */
     public final byte[] array() {
-        synchronized (bufList) {
-            if (lendCount > 0) {
+        synchronized (mBufList) {
+            if (mLendCount > 0) {
                 throw new IllegalStateException("currently in borrowing state,please call setBackBuf() !!!");
             }
-            if (limit <= 0) {
+            if (mLimit <= 0) {
                 return null;
             }
-            byte[] data = new byte[limit];
+            byte[] data = new byte[mLimit];
             int sumOffset = 0;
 
-            for (int index = 0; index <= bufIndex; index++) {
-                ByteBuffer buffer = bufList.get(index);
+            for (int index = 0; index <= mBufIndex; index++) {
+                ByteBuffer buffer = mBufList.get(index);
                 int length = buffer.position();
                 buffer.flip();
                 buffer.get(data, sumOffset, length);
                 //恢复 limit
-                buffer.limit(initSize);
+                buffer.limit(mInitSize);
                 //恢复 position
                 buffer.position(length);
                 sumOffset += length;
@@ -236,8 +259,8 @@ public class MultiLevelBuf {
      * @return
      */
     private final int position() {
-        synchronized (bufList) {
-            return bufIndex * initSize + offset;
+        synchronized (mBufList) {
+            return mBufIndex * mInitSize + mOffset;
         }
     }
 
@@ -247,8 +270,8 @@ public class MultiLevelBuf {
      * @return
      */
     public final int capacity() {
-        synchronized (bufList) {
-            return capacity;
+        synchronized (mBufList) {
+            return mCapacity;
         }
     }
 
@@ -258,14 +281,14 @@ public class MultiLevelBuf {
      * @return true 还有空间
      */
     public final boolean hasRemaining() {
-        synchronized (bufList) {
-            return position() < capacity;
+        synchronized (mBufList) {
+            return position() < mCapacity;
         }
     }
 
 
     public final boolean isHasData() {
-        synchronized (bufList) {
+        synchronized (mBufList) {
             return position() > 0;
         }
     }
@@ -274,8 +297,8 @@ public class MultiLevelBuf {
      * 反转为读模式（数据大小position的值）
      */
     public final void flip() {
-        synchronized (bufList) {
-            limit = position();
+        synchronized (mBufList) {
+            mLimit = position();
 //            bufIndex = 0;
 //            offset = 0;
         }
@@ -286,15 +309,15 @@ public class MultiLevelBuf {
      * 清除所有的标记
      */
     public final void clear() {
-        synchronized (bufList) {
-            for (ByteBuffer buffer : bufList) {
+        synchronized (mBufList) {
+            for (ByteBuffer buffer : mBufList) {
                 buffer.clear();
             }
-            tmpCacheBuf = null;
-            limit = capacity;
-            bufIndex = 0;
-            offset = 0;
-            mark = -1;
+            mTmpCacheBuf = null;
+            mLimit = mCapacity;
+            mBufIndex = 0;
+            mOffset = 0;
+            mMark = -1;
         }
     }
 
@@ -302,9 +325,9 @@ public class MultiLevelBuf {
      * 释放资源（由于是使用直接字节buf）
      */
     public final void release() {
-        synchronized (bufList) {
+        synchronized (mBufList) {
             clear();
-            bufList.clear();
+            mBufList.clear();
 //            for (ByteBuffer buffer : bufList) {
 //                DirectBufferCleaner.clean(buffer);
 //            }
@@ -314,15 +337,15 @@ public class MultiLevelBuf {
     @Override
     public String toString() {
         return "MultilevelBuf[" +
-                "bufIndex=" + bufIndex +
-                ", offset=" + offset +
-                ", mark=" + mark +
-                ", limit=" + limit +
-                ", capacity=" + capacity +
-                ", bufList=" + bufList +
-                ", initSize=" + initSize +
+                "bufIndex=" + mBufIndex +
+                ", offset=" + mOffset +
+                ", mark=" + mMark +
+                ", limit=" + mLimit +
+                ", capacity=" + mCapacity +
+                ", bufList=" + mBufList +
+                ", initSize=" + mInitSize +
                 ", DEFAULT_SIZE=" + DEFAULT_SIZE +
-                ", lendCount=" + lendCount +
+                ", lendCount=" + mLendCount +
                 ']';
     }
 }

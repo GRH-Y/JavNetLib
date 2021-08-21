@@ -5,14 +5,14 @@ import sun.misc.Unsafe;
 import java.lang.reflect.Field;
 
 public class RepeatableKey {
-    private String key;
+    private String mKey;
 
     public String getKey() {
-        return key;
+        return mKey;
     }
 
     public RepeatableKey(String key) {
-        this.key = key;
+        this.mKey = key;
     }
 
     @Override

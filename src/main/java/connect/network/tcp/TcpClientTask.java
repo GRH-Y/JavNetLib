@@ -8,10 +8,10 @@ import java.net.Socket;
 public class TcpClientTask extends BaseNetTask {
 
     private Socket mSocket = null;
-    private int connectTimeout = 3000;
+    private int mConnectTimeout = 3000;
 
-    private TcpReceive receive = null;
-    private TcpSender sender = null;
+    private TcpReceive mReceive = null;
+    private TcpSender mSender = null;
 
     public TcpClientTask() {
     }
@@ -33,15 +33,15 @@ public class TcpClientTask extends BaseNetTask {
 
 
     public void setReceive(TcpReceive receive) {
-        this.receive = receive;
+        this.mReceive = receive;
     }
 
     public void setSender(TcpSender sender) {
-        this.sender = sender;
+        this.mSender = sender;
     }
 
     public void setConnectTimeout(int connectTimeout) {
-        this.connectTimeout = connectTimeout;
+        this.mConnectTimeout = connectTimeout;
     }
 
     //---------------------------- get ---------------------------------------
@@ -51,15 +51,15 @@ public class TcpClientTask extends BaseNetTask {
     }
 
     public <T extends TcpSender> T getSender() {
-        return (T) sender;
+        return (T) mSender;
     }
 
     public <T extends TcpReceive> T getReceive() {
-        return (T) receive;
+        return (T) mReceive;
     }
 
     public int getConnectTimeout() {
-        return connectTimeout;
+        return mConnectTimeout;
     }
 
     //---------------------------- on ---------------------------------------

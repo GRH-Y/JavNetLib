@@ -25,31 +25,31 @@ import java.net.InetSocketAddress;
 
 public class XAioHttpTask extends AioClientTask implements ISenderFeedback, INetReceiver<XResponse> {
 
-    private XRequest request;
-    private XHttpConfig httpConfig;
-    private AbsNetFactory netFactory;
-    private XHttpProtocol httpProtocol;
+    private XRequest mRequest;
+    private XHttpConfig mHttpConfig;
+    private AbsNetFactory mNetFactory;
+    private XHttpProtocol mHttpProtocol;
 
-    private boolean isRedirect = false;
+    private boolean mIsRedirect = false;
 
 
     XAioHttpTask(AbsNetFactory netFactory, XHttpConfig httpConfig, XRequest request) {
         if (request == null) {
             throw new NullPointerException("request is null !!!");
         }
-        this.httpConfig = httpConfig;
-        this.netFactory = netFactory;
+        this.mHttpConfig = httpConfig;
+        this.mNetFactory = netFactory;
 
-        httpProtocol = new XHttpProtocol();
+        mHttpProtocol = new XHttpProtocol();
         initTask(request);
     }
 
     protected void initTask(XRequest request) {
-        this.request = request;
-        httpProtocol.initProtocol(request);
+        this.mRequest = request;
+        mHttpProtocol.initProtocol(request);
         XUrlMedia httpUrlMedia = request.getUrl();
         String host = httpUrlMedia.getHost();
-        IXHttpDns httpDns = httpConfig.getXHttpDns();
+        IXHttpDns httpDns = mHttpConfig.getXHttpDns();
         if (httpDns != null) {
             String ip = httpDns.getCacheDns(httpUrlMedia.getHost());
             if (StringEnvoy.isNotEmpty(ip)) {
@@ -63,7 +63,7 @@ public class XAioHttpTask extends AioClientTask implements ISenderFeedback, INet
     @Override
     public void onSenderFeedBack(INetSender sender, Object data, Throwable e) {
         if (e != null) {
-            netFactory.removeTask(this);
+            mNetFactory.removeTask(this);
         }
         if (data instanceof MultiLevelBuf) {
             XMultiplexCacheManger.getInstance().lose((MultiLevelBuf) data);
@@ -77,25 +77,25 @@ public class XAioHttpTask extends AioClientTask implements ISenderFeedback, INet
         if (code >= 300 && code < 400) {
             //重定向
             String location = response.getHeadForKey(XHttpProtocol.XY_LOCATION);
-            request.setUrl(location);
-            isRedirect = true;
+            mRequest.setUrl(location);
+            mIsRedirect = true;
         } else {
-            IXHttpResponseConvert responseConvert = httpConfig.getResponseConvert();
+            IXHttpResponseConvert responseConvert = mHttpConfig.getResponseConvert();
             if (responseConvert != null) {
-                responseConvert.handlerEntity(request, response);
+                responseConvert.handlerEntity(mRequest, response);
             }
-            IXSessionNotify sessionNotify = httpConfig.getSessionNotify();
+            IXSessionNotify sessionNotify = mHttpConfig.getSessionNotify();
             if (sessionNotify != null) {
-                sessionNotify.notifyData(request, response, null);
+                sessionNotify.notifyData(mRequest, response, null);
             }
         }
-        netFactory.removeTask(XAioHttpTask.this);
+        mNetFactory.removeTask(XAioHttpTask.this);
     }
 
     @Override
     protected void onConnectCompleteChannel() {
-        XUrlMedia httpUrlMedia = request.getUrl();
-        IXHttpDns httpDns = httpConfig.getXHttpDns();
+        XUrlMedia httpUrlMedia = mRequest.getUrl();
+        IXHttpDns httpDns = mHttpConfig.getXHttpDns();
         if (httpDns != null) {
             InetSocketAddress address = null;
             try {
@@ -128,10 +128,10 @@ public class XAioHttpTask extends AioClientTask implements ISenderFeedback, INet
         }
 
         receiver.triggerReceiver();
-        byte[] head = httpProtocol.toByte();
+        byte[] head = mHttpProtocol.toByte();
         sender.setSenderFeedback(this);
         sender.sendData(head);
-        sender.sendData(request.getSendData());
+        sender.sendData(mRequest.getSendData());
 //        LogDog.d("==> head = " + new String(head));
     }
 
@@ -148,11 +148,11 @@ public class XAioHttpTask extends AioClientTask implements ISenderFeedback, INet
     @Override
     protected void onRecovery() {
         super.onRecovery();
-        if (isRedirect) {
+        if (mIsRedirect) {
             //是否是重定向
-            initTask(request);
-            netFactory.addTask(this);
-            isRedirect = false;
+            initTask(mRequest);
+            mNetFactory.addTask(this);
+            mIsRedirect = false;
         } else {
             //移除任务记录
             XMultiplexCacheManger.getInstance().lose(this);

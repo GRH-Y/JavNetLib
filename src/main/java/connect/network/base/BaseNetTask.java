@@ -8,16 +8,16 @@ public class BaseNetTask {
 
     protected int mPort = -1;
 
-    private volatile NetTaskStatus taskStatus;
+    private volatile NetTaskStatus mTaskStatus;
 
     public BaseNetTask() {
-        taskStatus = NetTaskStatus.NONE;
+        mTaskStatus = NetTaskStatus.NONE;
     }
 
 
     protected void changeTaskStatus(NetTaskStatus status) {
         synchronized (BaseNetTask.class) {
-            this.taskStatus = status;
+            this.mTaskStatus = status;
             onTaskState(status);
         }
     }
@@ -37,7 +37,7 @@ public class BaseNetTask {
      */
     public NetTaskStatus getTaskStatus() {
         synchronized (BaseNetTask.class) {
-            return taskStatus;
+            return mTaskStatus;
         }
     }
 

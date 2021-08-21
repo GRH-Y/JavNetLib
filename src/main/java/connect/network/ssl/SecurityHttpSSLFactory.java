@@ -13,7 +13,7 @@ import java.security.cert.X509Certificate;
 
 public class SecurityHttpSSLFactory extends DefaultHttpSSLFactory {
 
-    private SSLContext sslcontext = null;
+    private SSLContext mSSLContext = null;
 
     public SecurityHttpSSLFactory(String hostname, String protocol) throws Exception {
         init(hostname, protocol, new TrustManager[]{new SimpleX509TrustManager()});
@@ -32,16 +32,16 @@ public class SecurityHttpSSLFactory extends DefaultHttpSSLFactory {
         if (StringEnvoy.isEmpty(hostname)) {
             throw new NullPointerException("hostname is null !!!");
         }
-        sslcontext = SSLContext.getInstance(protocol);
-        sslcontext.init(null, trustManagers, new SecureRandom());
-        this.hostname = hostname.replace("http://", "").replace("https://", "")
+        mSSLContext = SSLContext.getInstance(protocol);
+        mSSLContext.init(null, trustManagers, new SecureRandom());
+        this.mHostname = hostname.replace("http://", "").replace("https://", "")
                 .replace("/", "");
     }
 
 
     @Override
     public SSLSocketFactory getSSLSocketFactory() {
-        return sslcontext != null ? sslcontext.getSocketFactory() : null;
+        return mSSLContext != null ? mSSLContext.getSocketFactory() : null;
     }
 
     @Override

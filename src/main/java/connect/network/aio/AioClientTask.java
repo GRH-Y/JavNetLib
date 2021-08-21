@@ -13,11 +13,11 @@ public class AioClientTask extends BaseTLSTask {
 
     private AsynchronousSocketChannel aSocketChannel;
 
-    private AbsNetFactory factory;
+    private AbsNetFactory mFactory;
 
-    private AioSender sender;
+    private AioSender mSender;
 
-    private AioReceiver receiver;
+    private AioReceiver mReceiver;
 
     public AioClientTask() {
     }
@@ -35,15 +35,15 @@ public class AioClientTask extends BaseTLSTask {
     }
 
     protected void setFactory(AbsNetFactory factory) {
-        this.factory = factory;
+        this.mFactory = factory;
     }
 
     public void setSender(AioSender sender) {
-        this.sender = sender;
+        this.mSender = sender;
     }
 
     public void setReceiver(AioReceiver receiver) {
-        this.receiver = receiver;
+        this.mReceiver = receiver;
     }
 
     //------------------------------------------------------------------------------------------------------
@@ -53,15 +53,15 @@ public class AioClientTask extends BaseTLSTask {
     }
 
     protected AbsNetFactory getFactory() {
-        return factory;
+        return mFactory;
     }
 
     public AioSender getSender() {
-        return sender;
+        return mSender;
     }
 
     public AioReceiver getReceiver() {
-        return receiver;
+        return mReceiver;
     }
 
     public AsynchronousChannelGroup getChannelGroup() {
@@ -112,6 +112,6 @@ public class AioClientTask extends BaseTLSTask {
     protected void onRecovery() {
         super.onRecovery();
         this.aSocketChannel = null;
-        this.factory = null;
+        this.mFactory = null;
     }
 }

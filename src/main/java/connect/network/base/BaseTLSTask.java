@@ -9,20 +9,20 @@ import java.nio.channels.SocketChannel;
 
 public class BaseTLSTask extends BaseNetTask {
 
-    protected boolean isTLS = false;
+    protected boolean mIsTLS = false;
 
-    protected TLSHandler tlsHandler = null;
+    protected TLSHandler mTLSHandler = null;
 
     public void setTLS(boolean TLS) {
-        isTLS = TLS;
+        mIsTLS = TLS;
     }
 
     public boolean isTLS() {
-        return isTLS;
+        return mIsTLS;
     }
 
     protected TLSHandler getTlsHandler() {
-        return tlsHandler;
+        return mTLSHandler;
     }
 
 
@@ -34,12 +34,12 @@ public class BaseTLSTask extends BaseNetTask {
      * @throws Exception
      */
     protected void onHandshake(SSLEngine sslEngine, NetworkChannel channel) throws Throwable {
-        tlsHandler = new TLSHandler(sslEngine);
+        mTLSHandler = new TLSHandler(sslEngine);
         sslEngine.beginHandshake();
         if (channel instanceof SocketChannel) {
-            tlsHandler.doHandshake((SocketChannel) channel);
+            mTLSHandler.doHandshake((SocketChannel) channel);
         } else if (channel instanceof AsynchronousSocketChannel) {
-            tlsHandler.doHandshake((AsynchronousSocketChannel) channel);
+            mTLSHandler.doHandshake((AsynchronousSocketChannel) channel);
         }
     }
 
@@ -48,7 +48,7 @@ public class BaseTLSTask extends BaseNetTask {
     @Override
     protected void onRecovery() {
         super.onRecovery();
-        isTLS = false;
-        tlsHandler = null;
+        mIsTLS = false;
+        mTLSHandler = null;
     }
 }

@@ -9,8 +9,6 @@ import connect.network.ssl.SSLFactory;
 
 public class AioClientFactory extends AbsNetFactory<AioClientTask> {
 
-    public static long starTime = 0;
-
     private static INetFactory<AioClientTask> mFactory = null;
 
     public AioClientFactory() {
@@ -41,7 +39,7 @@ public class AioClientFactory extends AbsNetFactory<AioClientTask> {
 
     @Override
     protected BaseNetWork<AioClientTask> initNetWork() {
-        return new AioNetWork<>(getSslFactory(), this);
+        return new AioNetWork<>(getSSLFactory(), this);
     }
 
     @Override

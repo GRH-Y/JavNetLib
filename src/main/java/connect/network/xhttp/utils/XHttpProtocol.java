@@ -74,14 +74,14 @@ public class XHttpProtocol {
     //需要在表单中进行文件上传时，就需要使用该格式
     public static final String CONTENT_TYPE_DATA = "multipart/form-data";
 
-    private Map<Object, String> headParameterMap = new LinkedHashMap<>();
+    private Map<Object, String> mHeadParameterMap = new LinkedHashMap<>();
 
-    private boolean isDisableSysProperty = false;
+    private boolean mIsDisableSysProperty = false;
 
     public void initProtocol(XRequest request) {
-        headParameterMap.clear();
-        isDisableSysProperty = request.isDisableSysProperty();
-        if (!isDisableSysProperty) {
+        mHeadParameterMap.clear();
+        mIsDisableSysProperty = request.isDisableSysProperty();
+        if (!mIsDisableSysProperty) {
             RequestMode requestMode = request.getRequestMode();
             XUrlMedia httpUrlMedia = request.getUrl();
             byte[] data = request.getSendData();
@@ -91,16 +91,16 @@ public class XHttpProtocol {
                     path = httpUrlMedia.getPath() + new String(data);
                 }
             }
-            headParameterMap.put(requestMode.getMode(), " " + path + " HTTP/1.1\r\n");
-            headParameterMap.put(XY_HOST, httpUrlMedia.getHost());
-            headParameterMap.put(XY_ACCEPT, " */*");
-            headParameterMap.put(XY_ACCEPT_LANGUAGE, "*/*");
-            headParameterMap.put(XY_ACCEPT_ENCODING, "gzip, deflate");
-            headParameterMap.put(XY_USER_AGENT, "XHttp_1.0");
-            headParameterMap.put(XY_CONNECTION, "keep-alive");
-            headParameterMap.put(XY_REFERER, httpUrlMedia.getReferer());
+            mHeadParameterMap.put(requestMode.getMode(), " " + path + " HTTP/1.1\r\n");
+            mHeadParameterMap.put(XY_HOST, httpUrlMedia.getHost());
+            mHeadParameterMap.put(XY_ACCEPT, " */*");
+            mHeadParameterMap.put(XY_ACCEPT_LANGUAGE, "*/*");
+            mHeadParameterMap.put(XY_ACCEPT_ENCODING, "gzip, deflate");
+            mHeadParameterMap.put(XY_USER_AGENT, "XHttp_1.0");
+            mHeadParameterMap.put(XY_CONNECTION, "keep-alive");
+            mHeadParameterMap.put(XY_REFERER, httpUrlMedia.getReferer());
             if (data != null && requestMode != RequestMode.GET) {
-                headParameterMap.put(XY_CONTENT_LENGTH, String.valueOf(data.length));
+                mHeadParameterMap.put(XY_CONTENT_LENGTH, String.valueOf(data.length));
             }
         }
 
@@ -108,41 +108,41 @@ public class XHttpProtocol {
         if (userParameter != null && !userParameter.isEmpty()) {
             Set<Map.Entry<Object, Object>> set = userParameter.entrySet();
             for (Map.Entry<Object, Object> entry : set) {
-                headParameterMap.put(entry.getKey(), String.valueOf(entry.getValue()));
+                mHeadParameterMap.put(entry.getKey(), String.valueOf(entry.getValue()));
             }
         }
     }
 
 
     public Map<Object, String> getHeadParameterMap() {
-        return headParameterMap;
+        return mHeadParameterMap;
     }
 
     public void setHeadParameter(String key, String value) {
-        headParameterMap.put(key, value);
+        mHeadParameterMap.put(key, value);
     }
 
     public void updateHeadParameter(String key, String value) {
-        headParameterMap.replace(key, value);
+        mHeadParameterMap.replace(key, value);
     }
 
     public void updatePath(String requestMode, String path) {
-        headParameterMap.replace(requestMode, " " + path + " HTTP/1.1\r\n");
+        mHeadParameterMap.replace(requestMode, " " + path + " HTTP/1.1\r\n");
     }
 
     public byte[] toByte() {
-        if (headParameterMap.isEmpty()) {
+        if (mHeadParameterMap.isEmpty()) {
             return null;
         }
         StringBuilder builder = new StringBuilder();
         boolean isFirst = true;
-        for (Map.Entry<Object, String> entry : headParameterMap.entrySet()) {
+        for (Map.Entry<Object, String> entry : mHeadParameterMap.entrySet()) {
             Object key = entry.getKey();
             if (key instanceof RepeatableKey) {
                 RepeatableKey repeatableKey = (RepeatableKey) key;
                 key = repeatableKey.getKey();
             }
-            if (isFirst && !isDisableSysProperty) {
+            if (isFirst && !mIsDisableSysProperty) {
                 builder.append(key).append(entry.getValue());
                 isFirst = false;
             } else {

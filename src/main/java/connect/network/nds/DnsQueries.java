@@ -2,20 +2,20 @@ package connect.network.nds;
 
 public class DnsQueries {
 
-    public static DnsQueries dnsQueries;
+    private static DnsQueries sDnsQueries;
 
     private final byte[] start = new byte[]{(byte) 0x5f, 0x48, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     private final byte[] end = new byte[]{0x00, 0x00, 0x01, 0x00, 0x01};
 
     public static DnsQueries getInstance() {
-        if (dnsQueries == null) {
+        if (sDnsQueries == null) {
             synchronized (DnsQueries.class) {
-                if (dnsQueries == null) {
-                    dnsQueries = new DnsQueries();
+                if (sDnsQueries == null) {
+                    sDnsQueries = new DnsQueries();
                 }
             }
         }
-        return dnsQueries;
+        return sDnsQueries;
     }
 
     private DnsQueries() {

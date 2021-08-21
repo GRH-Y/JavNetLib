@@ -10,17 +10,17 @@ import java.nio.channels.SocketChannel;
 
 public class XHttpsReceiver extends NioReceiver {
 
-    protected TLSHandler tlsHandler;
+    protected TLSHandler mTLSHandler;
 
     public XHttpsReceiver(TLSHandler tlsHandler) {
         if (tlsHandler == null) {
             throw new IllegalArgumentException("tlsHandler is null !!!");
         }
-        this.tlsHandler = tlsHandler;
+        this.mTLSHandler = tlsHandler;
     }
 
     public void setTlsHandler(TLSHandler tlsHandler) {
-        this.tlsHandler = tlsHandler;
+        this.mTLSHandler = tlsHandler;
     }
 
     @Override
@@ -32,7 +32,7 @@ public class XHttpsReceiver extends NioReceiver {
         try {
             do {
                 cacheData = buf.getAllBuf();
-                ret = tlsHandler.readAndUnwrap(channel, false, cacheData);
+                ret = mTLSHandler.readAndUnwrap(channel, false, cacheData);
                 if (ret == TLSHandler.NOT_ENOUGH_CAPACITY) {
                     //解码缓存容量不够，则需要多传byteBuffer
                     buf.setBackBuf(cacheData);

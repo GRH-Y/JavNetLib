@@ -23,32 +23,32 @@ import java.nio.channels.SocketChannel;
 
 public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INetReceiver<XResponse> {
 
-    private XRequest request;
-    private XHttpConfig httpConfig;
-    private AbsNetFactory netFactory;
-    private XHttpProtocol httpProtocol;
-    private XHttpDecoderProcessor httpDecodeReceiver;
+    private XRequest mRequest;
+    private XHttpConfig mHttpConfig;
+    private AbsNetFactory mNetFactory;
+    private XHttpProtocol mHttpProtocol;
+    private XHttpDecoderProcessor mHttpDecodeReceiver;
 
-    private boolean isRedirect = false;
+    private boolean mIsRedirect = false;
 
 
     XNioHttpTask(AbsNetFactory netFactory, XHttpConfig httpConfig, XRequest request) {
         if (request == null) {
             throw new NullPointerException("request is null !!!");
         }
-        this.httpConfig = httpConfig;
-        this.netFactory = netFactory;
+        this.mHttpConfig = httpConfig;
+        this.mNetFactory = netFactory;
 
-        httpProtocol = new XHttpProtocol();
+        mHttpProtocol = new XHttpProtocol();
         initTask(request);
     }
 
     protected void initTask(XRequest request) {
-        this.request = request;
-        httpProtocol.initProtocol(request);
+        this.mRequest = request;
+        mHttpProtocol.initProtocol(request);
         XUrlMedia httpUrlMedia = request.getUrl();
         String host = httpUrlMedia.getHost();
-        IXHttpDns httpDns = httpConfig.getXHttpDns();
+        IXHttpDns httpDns = mHttpConfig.getXHttpDns();
         if (httpDns != null) {
             String ip = httpDns.getCacheDns(httpUrlMedia.getHost());
             if (StringEnvoy.isNotEmpty(ip)) {
@@ -57,15 +57,15 @@ public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INet
         }
         setAddress(host, httpUrlMedia.getPort());
         setTLS(httpUrlMedia.isTSL());
-        httpDecodeReceiver = new XHttpDecoderProcessor();
-        httpDecodeReceiver.setDataReceiver(this);
+        mHttpDecodeReceiver = new XHttpDecoderProcessor();
+        mHttpDecodeReceiver.setDataReceiver(this);
     }
 
     @Override
     public void onSenderFeedBack(INetSender sender, Object data, Throwable e) {
         if (e != null) {
             e.printStackTrace();
-            netFactory.removeTask(this);
+            mNetFactory.removeTask(this);
         }
         if (data instanceof MultiLevelBuf) {
             XMultiplexCacheManger.getInstance().lose((MultiLevelBuf) data);
@@ -80,34 +80,34 @@ public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INet
             //重定向
             LogDog.w("## has redirect !!!");
             String location = response.getHeadForKey(XHttpProtocol.XY_LOCATION);
-            request.setUrl(location);
-            isRedirect = true;
+            mRequest.setUrl(location);
+            mIsRedirect = true;
         } else {
-            IXHttpResponseConvert responseConvert = httpConfig.getResponseConvert();
+            IXHttpResponseConvert responseConvert = mHttpConfig.getResponseConvert();
             if (responseConvert != null) {
-                responseConvert.handlerEntity(request, response);
+                responseConvert.handlerEntity(mRequest, response);
             }
-            IXSessionNotify sessionNotify = httpConfig.getSessionNotify();
+            IXSessionNotify sessionNotify = mHttpConfig.getSessionNotify();
             if (sessionNotify != null) {
-                sessionNotify.notifyData(request, response, e);
+                sessionNotify.notifyData(mRequest, response, e);
             }
         }
-        netFactory.removeTask(XNioHttpTask.this);
+        mNetFactory.removeTask(XNioHttpTask.this);
     }
 
 
     @Override
     protected void onConnectError(Throwable throwable) {
-        IXSessionNotify sessionNotify = httpConfig.getSessionNotify();
+        IXSessionNotify sessionNotify = mHttpConfig.getSessionNotify();
         if (sessionNotify != null) {
-            sessionNotify.notifyData(request, null, throwable);
+            sessionNotify.notifyData(mRequest, null, throwable);
         }
     }
 
     @Override
     protected void onConnectCompleteChannel(SocketChannel channel) {
-        XUrlMedia httpUrlMedia = request.getUrl();
-        IXHttpDns httpDns = httpConfig.getXHttpDns();
+        XUrlMedia httpUrlMedia = mRequest.getUrl();
+        IXHttpDns httpDns = mHttpConfig.getXHttpDns();
         if (httpDns != null) {
             InetSocketAddress address = null;
             try {
@@ -124,9 +124,9 @@ public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INet
             if (sender instanceof XHttpsSender) {
                 XHttpsSender httpsSender = (XHttpsSender) sender;
                 httpsSender.setTlsHandler(getTlsHandler());
-                httpsSender.setChannel(selectionKey, channel);
+                httpsSender.setChannel(mSelectionKey, channel);
             } else {
-                setSender(new XHttpsSender(getTlsHandler(), selectionKey, channel));
+                setSender(new XHttpsSender(getTlsHandler(), mSelectionKey, channel));
             }
             if (receiver instanceof XHttpsReceiver) {
                 //说明上次任务也是https，则复用
@@ -134,26 +134,26 @@ public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INet
                 httpsReceiver.setTlsHandler(getTlsHandler());
             } else {
                 receiver = new XHttpsReceiver(getTlsHandler());
-                receiver.setDataReceiver(httpDecodeReceiver);
+                receiver.setDataReceiver(mHttpDecodeReceiver);
                 setReceive(receiver);
             }
         } else {
             if (sender == null || sender instanceof XHttpsSender) {
-                setSender(new NioSender(selectionKey, channel));
+                setSender(new NioSender(mSelectionKey, channel));
             } else {
-                sender.setChannel(selectionKey, channel);
+                sender.setChannel(mSelectionKey, channel);
             }
             if (receiver == null || receiver instanceof XHttpsReceiver) {
                 receiver = new NioReceiver();
-                receiver.setDataReceiver(httpDecodeReceiver);
+                receiver.setDataReceiver(mHttpDecodeReceiver);
                 setReceive(receiver);
             }
         }
 
-        byte[] head = httpProtocol.toByte();
+        byte[] head = mHttpProtocol.toByte();
         getSender().setSenderFeedback(this);
         getSender().sendData(head);
-        getSender().sendData(request.getSendData());
+        getSender().sendData(mRequest.getSendData());
 //        LogDog.d("==> head = " + new String(head));
     }
 
@@ -161,11 +161,11 @@ public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INet
     @Override
     protected void onRecovery() {
         super.onRecovery();
-        if (isRedirect) {
+        if (mIsRedirect) {
             //是否是重定向
-            initTask(request);
-            netFactory.addTask(this);
-            isRedirect = false;
+            initTask(mRequest);
+            mNetFactory.addTask(this);
+            mIsRedirect = false;
         } else {
             //移除任务记录
             XMultiplexCacheManger.getInstance().lose(this);

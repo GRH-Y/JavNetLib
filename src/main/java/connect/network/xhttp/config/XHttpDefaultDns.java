@@ -8,25 +8,25 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class XHttpDefaultDns implements IXHttpDns {
-    private Map<String, String> dnsMpa = new HashMap<>();
+    private Map<String, String> mDnsMpa = new HashMap<>();
 
     @Override
     public void setCacheDns(String host, String ip) {
-        synchronized (dnsMpa) {
-            dnsMpa.put(host, ip);
+        synchronized (mDnsMpa) {
+            mDnsMpa.put(host, ip);
         }
     }
 
     public String getCacheDns(String host) {
-        synchronized (dnsMpa) {
-            return dnsMpa.get(host);
+        synchronized (mDnsMpa) {
+            return mDnsMpa.get(host);
         }
     }
 
     @Override
     public String findCacheDns(String host) {
-        synchronized (dnsMpa) {
-            String ip = dnsMpa.get(host);
+        synchronized (mDnsMpa) {
+            String ip = mDnsMpa.get(host);
             if (StringEnvoy.isEmpty(ip)) {
                 try {
                     InetAddress inetAddress = InetAddress.getByName(host);
@@ -42,8 +42,8 @@ public class XHttpDefaultDns implements IXHttpDns {
 
     @Override
     public void clearCache() {
-        synchronized (dnsMpa) {
-            dnsMpa.clear();
+        synchronized (mDnsMpa) {
+            mDnsMpa.clear();
         }
     }
 }

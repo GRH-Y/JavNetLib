@@ -32,8 +32,8 @@ public class BioServerWork<T extends TcpServerTask> extends BioNetWork<T> {
         try {
             if (serverSocket == null && task.getHost() != null && task.getPort() > 0) {
                 InetSocketAddress address = new InetSocketAddress(task.getHost(), task.getPort());
-                if (task.getPort() == 443 && mFactory.getSslFactory() != null) {
-                    ServerSocketFactory sslServerSocketFactory = mFactory.getSslFactory().getSSLServerSocketFactory();
+                if (task.getPort() == 443 && mFactory.getSSLFactory() != null) {
+                    ServerSocketFactory sslServerSocketFactory = mFactory.getSSLFactory().getSSLServerSocketFactory();
                     SSLServerSocket sslServerSocket = (SSLServerSocket) sslServerSocketFactory.createServerSocket();
                     sslServerSocket.bind(address);
                     sslServerSocket.setUseClientMode(false);

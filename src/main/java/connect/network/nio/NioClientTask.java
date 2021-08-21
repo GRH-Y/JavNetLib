@@ -17,9 +17,9 @@ public class NioClientTask extends BaseNioNetTask {
 
     private SocketChannel mChannel = null;
 
-    private NioSender sender = null;
+    private NioSender mSender = null;
 
-    private NioReceiver receive = null;
+    private NioReceiver mReceive = null;
 
     public NioClientTask() {
     }
@@ -29,17 +29,17 @@ public class NioClientTask extends BaseNioNetTask {
             throw new IllegalStateException("SocketChannel is bed !!! ");
         }
         setChannel(channel);
-        this.tlsHandler = tlsHandler;
+        this.mTLSHandler = tlsHandler;
     }
 
     //---------------------------- set ---------------------------------------
 
     public void setSender(NioSender sender) {
-        this.sender = sender;
+        this.mSender = sender;
     }
 
     public void setReceive(NioReceiver receive) {
-        this.receive = receive;
+        this.mReceive = receive;
     }
 
     protected void setChannel(SocketChannel channel) {
@@ -53,11 +53,11 @@ public class NioClientTask extends BaseNioNetTask {
     }
 
     public <T extends NioSender> T getSender() {
-        return (T) sender;
+        return (T) mSender;
     }
 
     public <T extends NioReceiver> T getReceiver() {
-        return (T) receive;
+        return (T) mReceive;
     }
 
     @Override
@@ -107,8 +107,8 @@ public class NioClientTask extends BaseNioNetTask {
     protected void onRecovery() {
         super.onRecovery();
         mChannel = null;
-        if (sender != null) {
-            sender.clear();
+        if (mSender != null) {
+            mSender.clear();
         }
     }
 }
