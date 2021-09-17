@@ -1,6 +1,6 @@
 package connect.network.xhttp.entity;
 
-public enum XReceiverStatus {
+public enum XHttpDecoderStatus {
     /**
      * 当前解析head
      */
@@ -14,7 +14,7 @@ public enum XReceiverStatus {
      */
     OVER,
     /**
-     * 数据回调完毕
+     * 未知状态
      */
     NONE
 }

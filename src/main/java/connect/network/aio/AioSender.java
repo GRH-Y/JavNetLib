@@ -50,7 +50,14 @@ public class AioSender implements INetSender {
                     }
                 }
             } else {
-                mChannel.write(byteBuffer, byteBuffer, mHandlerCore);
+                try {
+                    mChannel.write(byteBuffer, byteBuffer, mHandlerCore);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    if (mSenderFeedback != null) {
+                        mSenderFeedback.onSenderFeedBack(this, byteBuffer, e);
+                    }
+                }
             }
         }
     }
@@ -60,7 +67,14 @@ public class AioSender implements INetSender {
         @Override
         public void completed(Integer result, ByteBuffer byteBuffer) {
             if (byteBuffer.hasRemaining()) {
-                mChannel.write(byteBuffer, byteBuffer, this);
+                try {
+                    mChannel.write(byteBuffer, byteBuffer, this);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    if (mSenderFeedback != null) {
+                        mSenderFeedback.onSenderFeedBack(AioSender.this, byteBuffer, e);
+                    }
+                }
             } else {
                 LogDog.d("发送数据成功");
                 if (mSenderFeedback != null) {

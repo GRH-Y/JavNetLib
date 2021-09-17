@@ -1,16 +1,13 @@
 package connect.network.xhttp.utils;
 
-import connect.network.base.joggle.INetReceiver;
-import connect.network.xhttp.XMultiplexCacheManger;
+import connect.network.xhttp.entity.XHttpDecoderStatus;
 import connect.network.xhttp.entity.XReceiverMode;
-import connect.network.xhttp.entity.XReceiverStatus;
 import connect.network.xhttp.entity.XResponse;
-import log.LogDog;
 import util.StringEnvoy;
 
 import java.util.Map;
 
-public class XHttpDecoderProcessor implements INetReceiver<MultiLevelBuf> {
+public class XHttpDecoderProcessor {
 
     /**
      * 接收体（结果）
@@ -24,7 +21,7 @@ public class XHttpDecoderProcessor implements INetReceiver<MultiLevelBuf> {
     /**
      * 当前解析状态
      */
-    private XReceiverStatus mStatus = XReceiverStatus.HEAD;
+    private XHttpDecoderStatus mStatus = XHttpDecoderStatus.HEAD;
 
     /**
      * body数据是否是分段传输
@@ -39,17 +36,16 @@ public class XHttpDecoderProcessor implements INetReceiver<MultiLevelBuf> {
      */
     private int mHeadEndIndex;
 
-    private INetReceiver<XResponse> mDataReceiver;
 
     public XHttpDecoderProcessor() {
         mResponse = new XResponse();
     }
 
-    public void setDataReceiver(INetReceiver<XResponse> receiver) {
-        this.mDataReceiver = receiver;
+    public XResponse getResponse() {
+        return mResponse;
     }
 
-    public XReceiverStatus getStatus() {
+    public XHttpDecoderStatus getStatus() {
         return mStatus;
     }
 
@@ -62,46 +58,33 @@ public class XHttpDecoderProcessor implements INetReceiver<MultiLevelBuf> {
     }
 
 
-    @Override
-    public void onReceiveFullData(MultiLevelBuf buf, Throwable e) {
-        byte[] data = buf.array();
+    public void decoderData(byte[] data, int len) {
         if (data != null) {
-            int len = data.length;
-            onHttpReceive(data, len, e);
-        } else {
-            LogDog.w("## http receiver data is null !!!");
-        }
-        XMultiplexCacheManger.getInstance().lose(buf);
-    }
-
-
-    protected void onHttpReceive(byte[] data, int len, Throwable e) {
-        if (mMode == XReceiverMode.REQUEST) {
-            onRequest(data, len, e);
-        } else {
-            onResponse(data, len, e);
+            if (mMode == XReceiverMode.REQUEST) {
+                onRequest(data, len);
+            } else {
+                onResponse(data, len);
+            }
         }
     }
 
-    protected void onRequest(byte[] data, int len, Throwable e) {
+    protected void onRequest(byte[] data, int len) {
         mResponse.appendRawData(data);
         processHttpHead(data, len);
         processRequestBody(data, len);
-        processNotify(e);
     }
 
-    protected void onResponse(byte[] data, int len, Throwable e) {
+    protected void onResponse(byte[] data, int len) {
         mResponse.appendRawData(data);
         processHttpHead(data, len);
         processResponseBody(data, len);
-        processNotify(e);
     }
 
-    protected void onStatusChange(XReceiverStatus status) {
+    protected void onStatusChange(XHttpDecoderStatus status) {
     }
 
     protected void processHttpHead(byte[] data, int len) {
-        if (mStatus == XReceiverStatus.HEAD) {
+        if (mStatus == XHttpDecoderStatus.HEAD) {
             mHeadEndIndex = XResponseHelper.findHeadEndTag(data, len);
             if (mHeadEndIndex != -1) {
                 //找到协议头结束标志，则开始解析协议头
@@ -112,7 +95,7 @@ public class XHttpDecoderProcessor implements INetReceiver<MultiLevelBuf> {
                 }
                 String transfer = mResponse.getHeadForKey(XHttpProtocol.XY_TRANSFER_ENCODING);
                 mIsSubsection = StringEnvoy.isNotEmpty(transfer);
-                mStatus = XReceiverStatus.BODY;
+                mStatus = XHttpDecoderStatus.BODY;
                 callStatusChange();
             }
         }
@@ -125,21 +108,21 @@ public class XHttpDecoderProcessor implements INetReceiver<MultiLevelBuf> {
      * @param len
      */
     protected void processRequestBody(byte[] data, int len) {
-        if (mStatus == XReceiverStatus.BODY) {
+        if (mStatus == XHttpDecoderStatus.BODY) {
             if (mBodySize != -1) {
                 ByteCacheStream raw = mResponse.getRawData();
                 if (raw.size() - mHeadEndIndex == mBodySize) {
                     byte[] body = new byte[mBodySize];
                     System.arraycopy(raw.getBuf(), mHeadEndIndex, body, 0, body.length);
                     mResponse.setHttpData(body);
-                    mStatus = XReceiverStatus.OVER;
+                    mStatus = XHttpDecoderStatus.OVER;
                     callStatusChange();
                 }
             } else {
                 //没有请求体
                 int index = XResponseHelper.findHeadEndTag(data, len);
                 if (index != -1) {
-                    mStatus = XReceiverStatus.OVER;
+                    mStatus = XHttpDecoderStatus.OVER;
                     callStatusChange();
                 }
             }
@@ -153,7 +136,7 @@ public class XHttpDecoderProcessor implements INetReceiver<MultiLevelBuf> {
      * @param len
      */
     protected void processResponseBody(byte[] data, int len) {
-        if (mStatus == XReceiverStatus.BODY) {
+        if (mStatus == XHttpDecoderStatus.BODY) {
             ByteCacheStream raw = mResponse.getRawData();
             byte[] body = null;
             //分段传输方式
@@ -172,27 +155,15 @@ public class XHttpDecoderProcessor implements INetReceiver<MultiLevelBuf> {
             if (body != null) {
                 System.arraycopy(raw.getBuf(), mHeadEndIndex, body, 0, body.length);
                 mResponse.setHttpData(body);
-                mStatus = XReceiverStatus.OVER;
+                mStatus = XHttpDecoderStatus.OVER;
                 callStatusChange();
             }
         }
     }
 
-    private void processNotify(Throwable e) {
-        if (mStatus == XReceiverStatus.OVER) {
-            if (mDataReceiver != null) {
-                mDataReceiver.onReceiveFullData(mResponse, e);
-            }
-            mStatus = XReceiverStatus.NONE;
-            callStatusChange();
-            reset();
-        }
-    }
-
-
-    private void reset() {
+    public void reset() {
         mHeadEndIndex = -1;
-        mStatus = XReceiverStatus.HEAD;
+        mStatus = XHttpDecoderStatus.HEAD;
         mResponse.reset();
     }
 

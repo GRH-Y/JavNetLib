@@ -4,9 +4,9 @@ import connect.network.base.AbsNetEngine;
 
 public class AioEngine extends AbsNetEngine {
 
-    protected AioNetWork mWork;
+    protected AioClientNetWork mWork;
 
-    public AioEngine(AioNetWork work) {
+    public AioEngine(AioClientNetWork work) {
         this.mWork = work;
     }
 
@@ -19,7 +19,7 @@ public class AioEngine extends AbsNetEngine {
 
         if (mExecutor.isLoopState() && mWork.getConnectCache().isEmpty() && mWork.getDestroyCache().isEmpty()) {
             //如果没有任务则休眠
-            mExecutor.waitTask(100);
+            mExecutor.waitTask(0);
         }
     }
 

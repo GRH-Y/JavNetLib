@@ -7,15 +7,15 @@ import connect.network.base.joggle.INetFactory;
 import connect.network.base.joggle.ISSLFactory;
 import connect.network.ssl.SSLFactory;
 
-public class AioClientFactory extends AbsNetFactory<AioClientTask> {
+public class AioServerFactory extends AbsNetFactory<AioServerTask> {
 
-    private static INetFactory<AioClientTask> mFactory = null;
+    private static AioServerFactory mFactory = null;
 
-    public static synchronized INetFactory<AioClientTask> getFactory() {
+    public static synchronized INetFactory<AioServerTask> getFactory() {
         if (mFactory == null) {
-            synchronized (AioClientFactory.class) {
+            synchronized (AioServerFactory.class) {
                 if (mFactory == null) {
-                    mFactory = new AioClientFactory();
+                    mFactory = new AioServerFactory();
                 }
             }
         }
@@ -35,8 +35,8 @@ public class AioClientFactory extends AbsNetFactory<AioClientTask> {
     }
 
     @Override
-    protected BaseNetWork<AioClientTask> initNetWork() {
-        return new AioClientNetWork<>(getSSLFactory(), this);
+    protected BaseNetWork<AioServerTask> initNetWork() {
+        return new AioServerNetWork(getSSLFactory(), this);
     }
 
     @Override
@@ -44,8 +44,9 @@ public class AioClientFactory extends AbsNetFactory<AioClientTask> {
         return new SSLFactory();
     }
 
+
     @Override
-    public boolean addTask(AioClientTask task) {
+    public boolean addTask(AioServerTask task) {
         if (task != null) {
             return super.addTask(task);
         }
@@ -53,7 +54,7 @@ public class AioClientFactory extends AbsNetFactory<AioClientTask> {
     }
 
     @Override
-    public void removeTask(AioClientTask task) {
+    public void removeTask(AioServerTask task) {
         if (task != null) {
             super.removeTask(task);
         }

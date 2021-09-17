@@ -36,9 +36,6 @@ public class NioServerFactory extends AbsNetFactory<NioServerTask> {
         }
     }
 
-    public NioServerFactory() {
-    }
-
     @Override
     protected AbsNetEngine initNetEngine() {
         return new NioEngine(getNetWork());

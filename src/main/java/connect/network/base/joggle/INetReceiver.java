@@ -1,7 +1,7 @@
 package connect.network.base.joggle;
 
 /**
- * 接收
+ * 读取数据回调
  *
  * @author yyz
  */
