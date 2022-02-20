@@ -3,6 +3,7 @@ package com.currency.net.nio;
 import com.currency.net.base.FactoryContext;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -58,7 +59,8 @@ public class NioBalancedClientEngine extends NioNetEngine {
     protected void resumeEngine() {
         super.resumeEngine();
         if (mEngineList != null) {
-            for (NioNetEngine engine : mEngineList) {
+            for (Iterator<NioNetEngine> iterator = mEngineList.iterator(); iterator.hasNext(); ) {
+                NioNetEngine engine = iterator.next();
                 engine.resumeEngine();
             }
         }
@@ -71,7 +73,8 @@ public class NioBalancedClientEngine extends NioNetEngine {
     protected void stopEngine() {
         super.stopEngine();
         if (mEngineList != null) {
-            for (NioNetEngine engine : mEngineList) {
+            for (Iterator<NioNetEngine> iterator = mEngineList.iterator(); iterator.hasNext(); ) {
+                NioNetEngine engine = iterator.next();
                 engine.stopEngine();
             }
         }

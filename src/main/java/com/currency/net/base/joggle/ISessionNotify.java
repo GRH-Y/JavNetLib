@@ -1,7 +1,7 @@
 package com.currency.net.base.joggle;
 
 
-import com.currency.net.http.RequestEntity;
+import com.currency.net.xhttp.entity.XHttpRequestEntity;
 
 /**
  * 会话回调接口
@@ -17,7 +17,7 @@ public interface ISessionNotify {
      *
      * @param request
      */
-    void notifyData(RequestEntity request);
+    void notifyData(XHttpRequestEntity request);
 
     /**
      * 通知处理过程状态
@@ -26,5 +26,5 @@ public interface ISessionNotify {
      * @param bytesRead     已读内容大小
      * @param contentLength 内容的大小
      */
-    void notifyProcess(RequestEntity request, int bytesRead, int contentLength);
+    void notifyProcess(XHttpRequestEntity request, int bytesRead, int contentLength);
 }

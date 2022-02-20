@@ -11,7 +11,7 @@ import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 
 public class SSLFactory implements ISSLFactory {
-    private SSLContext mSSLContext;
+    private final SSLContext mSSLContext;
 
     public SSLFactory() {
         try {
@@ -76,7 +76,7 @@ public class SSLFactory implements ISSLFactory {
         return (string, sslSession) -> true;
     }
 
-    private X509TrustManager x509m = new X509TrustManager() {
+    private final X509TrustManager x509m = new X509TrustManager() {
 
         @Override
         public X509Certificate[] getAcceptedIssuers() {

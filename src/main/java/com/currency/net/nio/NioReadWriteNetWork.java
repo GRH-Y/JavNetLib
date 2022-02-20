@@ -1,10 +1,8 @@
 package com.currency.net.nio;
 
 import com.currency.net.base.FactoryContext;
-import com.currency.net.base.NetTaskStatus;
 import com.currency.net.base.SocketChannelCloseException;
 import com.currency.net.base.joggle.INetTaskContainer;
-import log.LogDog;
 
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -15,7 +13,7 @@ import java.util.Iterator;
  */
 public class NioReadWriteNetWork<T extends NioClientTask, C extends SocketChannel> extends NioClientWork<T, C> {
 
-    private NioClearWork mClearWork;
+    private final NioClearWork mClearWork;
 
     protected NioReadWriteNetWork(FactoryContext context, NioClearWork clearWork) {
         super(context);
@@ -26,18 +24,14 @@ public class NioReadWriteNetWork<T extends NioClientTask, C extends SocketChanne
     public void registerReadWriteEvent(T netTask) {
         SelectionKey selectionKey = netTask.getSelectionKey();
         selectionKey.cancel();
-        netTask.addTaskStatus(NetTaskStatus.ASSIGN);
+
         FactoryContext context = getFactoryContext();
         INetTaskContainer container = context.getNetTaskContainer();
         boolean ret = container.addExecTask(netTask);
         if (ret) {
             mSelector.wakeup();
-            LogDog.e("--> NioReadWriteNetWork registerReadWriteEvent success !!!");
         } else {
-            netTask.delTaskStatus(NetTaskStatus.READY_END);
-            netTask.delTaskStatus(NetTaskStatus.FINISH);
             notifyClearWork(netTask);
-            LogDog.e("--> NioReadWriteNetWork registerReadWriteEvent fails !!!");
         }
     }
 
@@ -65,7 +59,6 @@ public class NioReadWriteNetWork<T extends NioClientTask, C extends SocketChanne
         }
 
         if (count > 0) {
-            LogDog.e("--> NioReadWriteNetWork onRWDataTask count = " + count);
             for (Iterator<SelectionKey> iterator = mSelector.selectedKeys().iterator(); iterator.hasNext(); iterator.remove()) {
                 SelectionKey selectionKey = iterator.next();
                 onSelectionKey(selectionKey);

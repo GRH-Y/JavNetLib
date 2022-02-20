@@ -45,7 +45,7 @@ public class AioClientNetWork<T extends AioClientTask> extends AioNetWork<T> imp
         }
     }
 
-    private void initSSLConnect(T netTask) throws Throwable {
+    private void initSSLConnect(T netTask) {
         if (netTask.isTLS()) {
             ISSLFactory sslFactory = mFactoryContext.getSSLFactory();
             netTask.onCreateSSLContext(sslFactory);

@@ -19,13 +19,4 @@ public interface IXSessionNotify {
      * @param request
      */
     void notifyData(XRequest request, XResponse response, Throwable e);
-
-//    /**
-//     * 通知处理过程状态
-//     *
-//     * @param request
-//     * @param bytesRead     已读内容大小
-//     * @param contentLength 内容的大小
-//     */
-//    void notifyProcess(RequestEntity request, int bytesRead, int contentLength);
 }

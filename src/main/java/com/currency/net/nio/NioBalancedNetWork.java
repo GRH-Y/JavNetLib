@@ -2,7 +2,8 @@ package com.currency.net.nio;
 
 import com.currency.net.base.FactoryContext;
 import com.currency.net.base.NetTaskComponent;
-import com.currency.net.base.NetTaskStatus;
+import com.currency.net.base.NetTaskStatusCode;
+import com.currency.net.base.joggle.INetTaskContainer;
 import log.LogDog;
 
 import java.nio.channels.SelectionKey;
@@ -53,8 +54,6 @@ public class NioBalancedNetWork<T extends NioClientTask, C extends SocketChannel
         clearContext.setNetTaskContainer(mFactoryContext.getNetTaskContainer());
         mClearWork = new NioClearWork(clearContext);
         clearContext.setNetWork(mClearWork);
-        //绑定当前的network,让ClearWork 来处理addUnExecTask
-        mClearWork.bindBalancedNetWork(this);
 
         mRWNetWorkList = new ArrayList<>(workCount);
         for (int index = 0; index < workCount; index++) {
@@ -115,9 +114,17 @@ public class NioBalancedNetWork<T extends NioClientTask, C extends SocketChannel
     }
 
     private void changeSelectReg(T netTask) {
-        if (netTask.isHasStatus(NetTaskStatus.RUN)) {
+        if (netTask.updateTaskStatus(NetTaskStatusCode.RUN, NetTaskStatusCode.NONE)) {
             NioReadWriteNetWork netWork = findOptimalNetWork();
             netWork.registerReadWriteEvent(netTask);
+        } else {
+            //更新ASSIGN状态失败则结束task
+            LogDog.w("## changeSelectReg update status to ASSIGN fails !!!");
+            FactoryContext context = mClearWork.getFactoryContext();
+            INetTaskContainer taskContainer = context.getNetTaskContainer();
+            taskContainer.addUnExecTask(netTask);
+            NioNetEngine netEngine = context.getNetEngine();
+            netEngine.resumeEngine();
         }
     }
 

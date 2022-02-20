@@ -8,7 +8,7 @@ import com.currency.net.base.joggle.INetTaskContainer;
 
 public class NioBalancedClientFactory extends NioClientFactory {
 
-    private static INetFactory<NioClientTask> mFactory = null;
+    private volatile static INetFactory<NioClientTask> mFactory = null;
 
     public static synchronized INetFactory<NioClientTask> getFactory() {
         if (mFactory == null) {

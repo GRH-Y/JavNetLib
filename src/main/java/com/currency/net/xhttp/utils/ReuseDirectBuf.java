@@ -149,7 +149,7 @@ public class ReuseDirectBuf {
         }
     }
 
-    public final void markBuf(ByteBuffer... buffer) {
+    public final void markBuf(ByteBuffer[] buffer) {
         synchronized (mBufList) {
             this.mTmpCacheBuf = buffer;
         }
@@ -258,7 +258,7 @@ public class ReuseDirectBuf {
      *
      * @return
      */
-    private final int position() {
+    private int position() {
         synchronized (mBufList) {
             return mBufIndex * mInitSize + mOffset;
         }

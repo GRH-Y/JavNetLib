@@ -1,7 +1,7 @@
 package com.currency.net.nio;
 
 import com.currency.net.base.BaseNetChannelTask;
-import com.currency.net.base.NetTaskStatus;
+import com.currency.net.base.NetTaskStatusCode;
 import com.currency.net.base.joggle.ISSLFactory;
 
 import java.nio.channels.NetworkChannel;
@@ -14,23 +14,23 @@ public class BaseNioChannelTask<T extends NetworkChannel> extends BaseNetChannel
     }
 
     @Override
-    protected void setTaskStatus(NetTaskStatus... status) {
-        super.setTaskStatus(status);
+    public boolean updateTaskStatus(NetTaskStatusCode expectStatus, NetTaskStatusCode setStatus) {
+        return super.updateTaskStatus(expectStatus, setStatus);
     }
 
     @Override
-    protected void addTaskStatus(NetTaskStatus... status) {
-        super.addTaskStatus(status);
+    protected boolean updateTaskStatus(NetTaskStatusCode expectStatus, NetTaskStatusCode setStatus, boolean isWait) {
+        return super.updateTaskStatus(expectStatus, setStatus, isWait);
     }
 
     @Override
-    protected void waitAndSetTaskStatus(NetTaskStatus waitStatus, NetTaskStatus setStatus) {
-        super.waitAndSetTaskStatus(waitStatus, setStatus);
+    public NetTaskStatusCode getTaskStatus() {
+        return super.getTaskStatus();
     }
 
     @Override
-    protected void delTaskStatus(NetTaskStatus... status) {
-        super.delTaskStatus(status);
+    protected void setTaskStatus(NetTaskStatusCode newStatus) {
+        super.setTaskStatus(newStatus);
     }
 
     @Override

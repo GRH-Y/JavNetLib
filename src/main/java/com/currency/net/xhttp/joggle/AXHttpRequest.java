@@ -1,4 +1,4 @@
-package com.currency.net.http.joggle;
+package com.currency.net.xhttp.joggle;
 
 import com.currency.net.base.RequestMode;
 
@@ -14,7 +14,7 @@ import java.lang.annotation.Target;
 
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface AXRequest {
+public @interface AXHttpRequest {
 
     /**
      * 请求类型（POST 或者 GET）

@@ -74,7 +74,7 @@ public class XHttpProtocol {
     //需要在表单中进行文件上传时，就需要使用该格式
     public static final String CONTENT_TYPE_DATA = "multipart/form-data";
 
-    private Map<Object, String> mHeadParameterMap = new LinkedHashMap<>();
+    private final Map<Object, String> mHeadParameterMap = new LinkedHashMap<>();
 
     private boolean mIsDisableSysProperty = false;
 

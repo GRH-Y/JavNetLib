@@ -11,7 +11,7 @@ import com.currency.net.base.joggle.ISSLFactory;
  */
 public abstract class AbsNetFactory<T extends BaseNetTask> implements INetFactory<T> {
 
-    protected FactoryContext mFactoryIntent;
+    protected final FactoryContext mFactoryIntent;
 
     protected AbsNetFactory() {
         mFactoryIntent = new FactoryContext();
@@ -19,7 +19,7 @@ public abstract class AbsNetFactory<T extends BaseNetTask> implements INetFactor
         ISSLFactory sslFactory = initSSLFactory();
         mFactoryIntent.setSSLFactory(sslFactory);
 
-        BaseNetWork netWork = initNetWork();
+        BaseNetWork<T> netWork = initNetWork();
         if (netWork == null) {
             throw new IllegalStateException("initNetWork() This method returns value can not be null");
         }
@@ -46,8 +46,8 @@ public abstract class AbsNetFactory<T extends BaseNetTask> implements INetFactor
 
     abstract protected ISSLFactory initSSLFactory();
 
-    protected INetTaskContainer initNetTaskFactory() {
-        return new NetTaskComponent(mFactoryIntent);
+    protected INetTaskContainer<T> initNetTaskFactory() {
+        return new NetTaskComponent<>(mFactoryIntent);
     }
 
     //------------------------------------------ init end -----------------------------------------------

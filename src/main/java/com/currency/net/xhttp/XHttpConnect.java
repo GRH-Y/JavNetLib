@@ -4,12 +4,12 @@ import com.currency.net.aio.AioClientFactory;
 import com.currency.net.aio.AioClientTask;
 import com.currency.net.base.AbsNetFactory;
 import com.currency.net.base.joggle.INetTaskContainer;
-import com.currency.net.http.joggle.AXRequest;
-import com.currency.net.http.joggle.IRequestEntity;
 import com.currency.net.nio.NioClientFactory;
 import com.currency.net.nio.NioClientTask;
 import com.currency.net.xhttp.config.XHttpConfig;
 import com.currency.net.xhttp.entity.XRequest;
+import com.currency.net.xhttp.joggle.AXHttpRequest;
+import com.currency.net.xhttp.joggle.IXHttpRequestEntity;
 
 import java.util.LinkedHashMap;
 
@@ -17,17 +17,17 @@ public class XHttpConnect {
 
     private XHttpConfig mHttpConfig;
 
-    private XMultiplexCacheManger mHttpTaskManger;
+    private final XMultiplexCacheManger mHttpTaskManger;
 
-    private AbsNetFactory mNioNetFactory;
+    private final AbsNetFactory mNioNetFactory;
 
-    private AbsNetFactory mAioNetFactory;
+    private final AbsNetFactory mAioNetFactory;
 
-    private static XHttpConnect sHttpConnect = null;
+    private volatile static XHttpConnect sHttpConnect = null;
 
-    private INetTaskContainer<AioClientTask> mAioNetTaskFactory;
+    private final INetTaskContainer<AioClientTask> mAioNetTaskFactory;
 
-    private INetTaskContainer<NioClientTask> mNioNetTaskFactory;
+    private final INetTaskContainer<NioClientTask> mNioNetTaskFactory;
 
     private XHttpConnect() {
         mHttpTaskManger = XMultiplexCacheManger.getInstance();
@@ -70,9 +70,9 @@ public class XHttpConnect {
         return mHttpConfig;
     }
 
-    private XRequest crateRequest(IRequestEntity entity, Object callBackTarget) {
+    private XRequest crateRequest(IXHttpRequestEntity entity, Object callBackTarget) {
         Class clx = entity.getClass();
-        AXRequest request = (AXRequest) clx.getAnnotation(AXRequest.class);
+        AXHttpRequest request = (AXHttpRequest) clx.getAnnotation(AXHttpRequest.class);
         if (request == null) {
             throw new IllegalArgumentException("The entity has no annotations ARequest !!! ");
         }
@@ -94,7 +94,7 @@ public class XHttpConnect {
         return xHttpRequest;
     }
 
-    public boolean submitRequest(IRequestEntity entity, Object callBackTarget) {
+    public boolean submitRequest(IXHttpRequestEntity entity, Object callBackTarget) {
         if (entity == null) {
             throw new NullPointerException("entity is null ");
         }
@@ -102,7 +102,7 @@ public class XHttpConnect {
         return submitRequest(xHttpRequest);
     }
 
-    public boolean submitAioRequest(IRequestEntity entity, Object callBackTarget) {
+    public boolean submitAioRequest(IXHttpRequestEntity entity, Object callBackTarget) {
         if (entity == null) {
             throw new NullPointerException("entity is null ");
         }

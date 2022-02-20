@@ -10,11 +10,11 @@ public class XResponse {
     /**
      * 完整的http数据
      */
-    private ByteCacheStream mRaw;
+    private final ByteCacheStream mRaw;
     /**
      * http head
      */
-    private Map<String, String> mHttpHead;
+    private final Map<String, String> mHttpHead;
     /**
      * http body
      */
@@ -68,19 +68,11 @@ public class XResponse {
     }
 
     public String getHeadForKey(String key) {
-        String value = null;
-        if (mHttpHead != null) {
-            value = mHttpHead.get(key);
-        }
-        return value;
+        return mHttpHead.get(key);
     }
 
     public void reset() {
-        if (mHttpHead != null) {
-            mHttpHead.clear();
-        }
+        mHttpHead.clear();
         mRaw.reset();
-        mResult = null;
-        mHttpData = null;
     }
 }

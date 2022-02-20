@@ -14,7 +14,7 @@ public class AioSender implements INetSender {
     protected AsynchronousSocketChannel mChannel;
     protected ISenderFeedback mSenderFeedback;
     protected TLSHandler mTLSHandler;
-    private HandlerCore mHandlerCore;
+    private final HandlerCore mHandlerCore;
 
     public AioSender(AsynchronousSocketChannel channel) {
         this.mChannel = channel;

@@ -26,7 +26,7 @@ public class NetTaskComponent<T extends BaseNetTask> implements INetTaskContaine
 
     protected FactoryContext mContext;
 
-    private volatile AtomicBoolean isEnable = new AtomicBoolean(true);
+    private final AtomicBoolean isEnable = new AtomicBoolean(true);
 
 
     public NetTaskComponent(FactoryContext context) {
@@ -40,25 +40,25 @@ public class NetTaskComponent<T extends BaseNetTask> implements INetTaskContaine
 
     @Override
     public boolean addExecTask(T task) {
-        if (isEnable.get() == false || task == null) {
+        if (!isEnable.get() || task == null) {
+            return false;
+        }
+        if (!task.getTaskStatus().equals(NetTaskStatusCode.NONE)) {
+            return false;
+        }
+        AbsNetEngine netEngine = mContext.getNetEngine();
+        if (!netEngine.isEngineRunning()) {
             return false;
         }
         boolean ret = false;
-        if (task.isHasStatus(NetTaskStatus.READY_END) || task.isHasStatus(NetTaskStatus.FINISH)) {
-            return false;
-        }
-        if ((task.getTaskStatus() == NetTaskStatus.NONE.getCode() || task.isHasStatus(NetTaskStatus.ASSIGN)) && isEnable.get()) {
-            AbsNetEngine netEngine = mContext.getNetEngine();
-            ret = netEngine.isEngineRunning();
-            if (ret && isEnable.get()) {
-                if (task != null && !mConnectCache.contains(task)) {
-                    ret = mConnectCache.offer(task);
-                    if (ret && !task.isHasStatus(NetTaskStatus.ASSIGN)) {
-                        task.setTaskStatus(NetTaskStatus.LOAD);
-                    }
-                }
+        if (!mConnectCache.contains(task)) {
+            ret = mConnectCache.offer(task);
+            if (ret) {
+                ret = task.updateTaskStatus(NetTaskStatusCode.NONE, NetTaskStatusCode.LOAD);
                 if (ret) {
                     netEngine.resumeEngine();
+                } else {
+                    mConnectCache.remove(task);
                 }
             }
         }
@@ -67,31 +67,29 @@ public class NetTaskComponent<T extends BaseNetTask> implements INetTaskContaine
 
     @Override
     public int addUnExecTask(T task) {
-        if (isEnable.get() == false || task == null) {
-            return UN_EXEC_FALSE;
-        }
-        if (task.getTaskStatus() == NetTaskStatus.NONE.getCode()) {
-            return UN_EXEC_FALSE;
-        }
         int retCode = UN_EXEC_FALSE;
-        if (task.isHasStatus(NetTaskStatus.LOAD)) {
+        if (!isEnable.get() || task == null) {
+            return retCode;
+        }
+        if (task.getTaskStatus().getCode() < NetTaskStatusCode.LOAD.getCode()) {
+            return retCode;
+        }
+        AbsNetEngine netEngine = mContext.getNetEngine();
+        if (!netEngine.isEngineRunning()) {
+            return retCode;
+        }
+        if (task.getTaskStatus().equals(NetTaskStatusCode.LOAD)) {
             boolean ret = mConnectCache.remove(task);
             if (ret) {
                 LogDog.w("## NetTaskComponent remove load status task !!!");
                 return UN_EXEC_SUCCESS;
             }
         }
-        if (!(task.isHasStatus(NetTaskStatus.READY_END) || task.isHasStatus(NetTaskStatus.FINISH))) {
-            AbsNetEngine netEngine = mContext.getNetEngine();
-            if (netEngine.isEngineRunning()) {
-                if (!mDestroyCache.contains(task)) {
-                    boolean ret = mDestroyCache.offer(task);
-                    if (ret) {
-                        task.addTaskStatus(NetTaskStatus.READY_END);
-                        netEngine.resumeEngine();
-                        retCode = UN_EXEC_DELAY_SUCCESS;
-                    }
-                }
+        if (!mDestroyCache.contains(task)) {
+            boolean ret = mDestroyCache.offer(task);
+            if (ret) {
+                netEngine.resumeEngine();
+                retCode = UN_EXEC_DELAY_SUCCESS;
             }
         }
         return retCode;

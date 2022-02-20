@@ -1,4 +1,4 @@
-package com.currency.net.http.tool;
+package com.currency.net.base;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -9,17 +9,17 @@ import java.io.IOException;
  * @author: yyz
  * @createTime: 11/26/2018
  */
-public class RequestMultipartFormData {
+public class RequestUploadData {
 
     //编节符
-    private String boundary = "-------------------------" + System.currentTimeMillis();
-    private String dispositionBoundary = "-----------------------------" + System.currentTimeMillis();
-    private String endDispositionBoundary = "----------------------------";
-    private String contentType = "multipart/form-data; boundary=" + boundary;
+    private final String boundary = "-------------------------" + System.currentTimeMillis();
+    private final String dispositionBoundary = "-----------------------------" + System.currentTimeMillis();
+    private final String endDispositionBoundary = "----------------------------";
+    private final String contentType = "multipart/form-data; boundary=" + boundary;
     //前缀 上传时需要多出两个-- 一定需要注意！！！
-    private String prefix = "--";
+    private final String prefix = "--";
     //这里也需要注意，在html协议中，用 “\r\n” 换行，而不是 “\n”。
-    private String end = "\r\n";
+    private final String end = "\r\n";
 
     private StringBuilder disposition;
 
@@ -41,18 +41,20 @@ public class RequestMultipartFormData {
        ----------------------------
    */
 
-    public RequestMultipartFormData setName(String name, String filePath) {
+    public RequestUploadData setName(String name, String filePath) {
         this.name = name;
         this.filename = filePath;
         return this;
     }
 
-    public RequestMultipartFormData addContentDisposition(String key, String value) {
+    public RequestUploadData addContentDisposition(String key, String value) {
         if (disposition == null) {
             disposition = new StringBuilder();
         }
         disposition.append(dispositionBoundary);
-        disposition.append("Content-Disposition: form-data; name=\"" + key + "\"");
+        disposition.append("Content-Disposition: form-data; name=\"");
+        disposition.append(key);
+        disposition.append("\"");
         disposition.append(end);
         disposition.append(value);
         disposition.append(endDispositionBoundary);
@@ -74,7 +76,9 @@ public class RequestMultipartFormData {
                 //换行
                 builder.append(end);
                 name = name == null ? "file" : name;
-                builder.append("Content-Disposition: form-data; name=\"" + name + "\"; filename=\"");
+                builder.append("Content-Disposition: form-data; name=\"");
+                builder.append(name);
+                builder.append("\"; filename=\"");
                 builder.append(filename);
                 builder.append("\"");
                 //换行
@@ -92,7 +96,7 @@ public class RequestMultipartFormData {
                 builder.append(prefix);
                 builder.append(end);
                 if (disposition != null) {
-                    builder.append(disposition.toString());
+                    builder.append(disposition);
                 }
                 outputStream.write(builder.toString().getBytes());
                 sendData = outputStream.toByteArray();

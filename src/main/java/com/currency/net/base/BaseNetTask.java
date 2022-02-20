@@ -2,94 +2,81 @@ package com.currency.net.base;
 
 import util.StringEnvoy;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 public class BaseNetTask {
 
     protected String mHost = null;
     protected int mPort = -1;
 
-    private volatile AtomicInteger mTaskStatus;
-
-    private final int ACTION_SET = 0;
-    private final int ACTION_ADD = 1;
-    private final int ACTION_DEL = 2;
+    private final NetTaskStatus mTaskStatus;
 
     public BaseNetTask() {
-        mTaskStatus = new AtomicInteger(NetTaskStatus.NONE.getCode());
+        mTaskStatus = new NetTaskStatus(NetTaskStatusCode.NONE);
     }
-
-    protected void setTaskStatus(NetTaskStatus... status) {
-        changeTaskStatus(ACTION_SET, status);
-    }
-
-    protected void addTaskStatus(NetTaskStatus... status) {
-        changeTaskStatus(ACTION_ADD, status);
-    }
-
-    protected void waitAndSetTaskStatus(NetTaskStatus waitStatus, NetTaskStatus setStatus) {
-        while (!mTaskStatus.compareAndSet(waitStatus.getCode(), setStatus.getCode())) {
-            try {
-                synchronized (mTaskStatus) {
-                    mTaskStatus.wait();
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    protected void delTaskStatus(NetTaskStatus... status) {
-        changeTaskStatus(ACTION_DEL, status);
-    }
-
-    private void changeTaskStatus(int action, NetTaskStatus... status) {
-        int statusCode = 0;
-        switch (action) {
-            case ACTION_DEL:
-            case ACTION_ADD:
-                statusCode = mTaskStatus.get();
-            case ACTION_SET:
-                for (NetTaskStatus tmp : status) {
-                    if (ACTION_DEL == action) {
-                        statusCode ^= tmp.getCode();
-                    } else {
-                        statusCode |= tmp.getCode();
-                    }
-                }
-                break;
-        }
-        mTaskStatus.set(statusCode);
-        notifyNetTaskStatusChange();
-        onTaskState(statusCode);
-    }
-
-    private void notifyNetTaskStatusChange() {
-        synchronized (mTaskStatus) {
-            mTaskStatus.notifyAll();
-        }
-    }
-
 
     /**
      * 是否正在关闭
      *
      * @return
      */
-    public int getTaskStatus() {
-        return mTaskStatus.get();
-    }
-
-    public boolean isHasStatus(NetTaskStatus checkStatus) {
-        return (mTaskStatus.get() & checkStatus.getCode()) == checkStatus.getCode();
+    public NetTaskStatusCode getTaskStatus() {
+        return mTaskStatus.getCode();
     }
 
     /**
-     * 任务状态变换回调
+     * 设置状态
+     *
+     * @param newStatus
+     */
+    protected void setTaskStatus(NetTaskStatusCode newStatus) {
+        NetTaskStatusCode statusCode = mTaskStatus.getCode();
+        if (statusCode.getCode() < NetTaskStatusCode.NONE.getCode()) {
+            if (newStatus.getCode() > NetTaskStatusCode.NONE.getCode()) {
+                throw new IllegalStateException("Illegal state, the current state is over and cannot be changed");
+            }
+        }
+        mTaskStatus.setCode(newStatus);
+        onTaskState(mTaskStatus);
+    }
+
+    protected boolean updateTaskStatus(NetTaskStatusCode expectStatus, NetTaskStatusCode setStatus) {
+        return updateTaskStatus(expectStatus, setStatus, false);
+    }
+
+    /**
+     * 符合期望的状态才设置新的状态
+     *
+     * @param expectStatus 期望状态
+     * @param setStatus    新的状态
+     * @param isWait       如果为true则在修改状态失败的时候会进入等待，直到修改状态成功才返回
+     * @return 设置状态成功则返回true
+     */
+    protected boolean updateTaskStatus(NetTaskStatusCode expectStatus, NetTaskStatusCode setStatus, boolean isWait) {
+        boolean result = mTaskStatus.updateCode(expectStatus, setStatus);
+        if (isWait && !result) {
+            synchronized (mTaskStatus) {
+                try {
+                    mTaskStatus.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            result = mTaskStatus.updateCode(expectStatus, setStatus);
+        }
+        if (result) {
+            synchronized (mTaskStatus) {
+                mTaskStatus.notify();
+            }
+            onTaskState(mTaskStatus);
+        }
+        return result;
+    }
+
+    /**
+     * 任务状态变化回调
      *
      * @param status
      */
-    protected void onTaskState(int status) {
+    protected void onTaskState(NetTaskStatus status) {
     }
 
 

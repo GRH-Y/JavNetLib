@@ -28,10 +28,15 @@ public class NioReceiver extends AbsNetReceiver<SocketChannel, ReuseDirectBuf> {
      *
      * @return 如果返回false则会关闭该链接
      */
+    @Override
     protected void onReadNetData(SocketChannel channel) throws Throwable {
         Throwable exception = null;
         ReuseDirectBuf buf = createBuf();
         ByteBuffer[] buffer = buf.getAllBuf();
+        while (buffer == null) {
+            buf = createBuf();
+            buffer = buf.getAllBuf();
+        }
         long ret = IoEnvoy.FAIL;
         try {
             do {
@@ -60,7 +65,7 @@ public class NioReceiver extends AbsNetReceiver<SocketChannel, ReuseDirectBuf> {
         }
         if (exception != null) {
             throw exception;
-        } else if (ret < 0 && exception == null) {
+        } else if (ret < 0) {
             throw new SocketChannelCloseException();
         }
 

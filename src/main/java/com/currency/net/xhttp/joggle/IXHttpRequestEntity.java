@@ -1,9 +1,9 @@
-package com.currency.net.http.joggle;
+package com.currency.net.xhttp.joggle;
 
 import java.io.Serializable;
 import java.util.LinkedHashMap;
 
-public interface IRequestEntity extends Serializable {
+public interface IXHttpRequestEntity extends Serializable {
 
     LinkedHashMap<Object, Object> getRequestProperty();
 

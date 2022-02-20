@@ -22,9 +22,9 @@ import java.nio.channels.AsynchronousSocketChannel;
 public class XAioHttpTask extends AioClientTask implements ISenderFeedback, IAioNetReceiver {
 
     private XRequest mRequest;
-    private XHttpConfig mHttpConfig;
-    private INetTaskContainer<AioClientTask> mNetTaskFactory;
-    private XHttpProtocol mHttpProtocol;
+    private final XHttpConfig mHttpConfig;
+    private final INetTaskContainer<AioClientTask> mNetTaskFactory;
+    private final XHttpProtocol mHttpProtocol;
     private XHttpDecoderProcessor mHttpDecoderProcessor;
 
     private boolean mIsRedirect = false;
@@ -76,13 +76,12 @@ public class XAioHttpTask extends AioClientTask implements ISenderFeedback, IAio
         XUrlMedia httpUrlMedia = mRequest.getUrl();
         IXHttpDns httpDns = mHttpConfig.getXHttpDns();
         if (httpDns != null) {
-            InetSocketAddress address = null;
             try {
-                address = (InetSocketAddress) getChannel().getRemoteAddress();
+                InetSocketAddress address = (InetSocketAddress) getChannel().getRemoteAddress();
+                httpDns.setCacheDns(httpUrlMedia.getHost(), address.getAddress().getHostAddress());
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            httpDns.setCacheDns(httpUrlMedia.getHost(), address.getAddress().getHostAddress());
         }
 
         AioReceiver receiver = getReceiver();
@@ -128,7 +127,7 @@ public class XAioHttpTask extends AioClientTask implements ISenderFeedback, IAio
     protected void onRecovery() {
         super.onRecovery();
         if (mIsRedirect) {
-            //是否是重定向
+            //是不是重定向
             initTask(mRequest);
             mNetTaskFactory.addExecTask(this);
             mIsRedirect = false;
@@ -140,7 +139,7 @@ public class XAioHttpTask extends AioClientTask implements ISenderFeedback, IAio
 
     @Override
     public boolean onCompleted(Integer result, ByteBuffer byteBuffer) {
-        if (result.intValue() == -1) {
+        if (result == -1) {
             mNetTaskFactory.addUnExecTask(this);
         } else {
             byteBuffer.flip();

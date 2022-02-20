@@ -10,11 +10,11 @@ public class NioUdpReceiver extends AbsNetReceiver<DatagramChannel, NioUdpReceiv
 
     private static final int PACKET_MAX_SIZE = 1472;
 
-    private ByteBuffer mBuffer = ByteBuffer.allocate(PACKET_MAX_SIZE);
+    private final ByteBuffer mBuffer = ByteBuffer.allocate(PACKET_MAX_SIZE);
 
     public static class ReceiverPacket {
-        public SocketAddress mFromAddress;
-        public byte[] mData;
+        public final SocketAddress mFromAddress;
+        public final byte[] mData;
 
         public ReceiverPacket(SocketAddress fromAddress, byte[] data) {
             this.mFromAddress = fromAddress;
@@ -22,6 +22,7 @@ public class NioUdpReceiver extends AbsNetReceiver<DatagramChannel, NioUdpReceiv
         }
     }
 
+    @Override
     protected void onReadNetData(DatagramChannel channel) throws Throwable {
         SocketAddress address = channel.receive(mBuffer);
         if (mReceiverCallBack != null) {

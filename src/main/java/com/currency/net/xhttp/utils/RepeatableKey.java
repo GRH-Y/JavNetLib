@@ -5,7 +5,7 @@ import sun.misc.Unsafe;
 import java.lang.reflect.Field;
 
 public class RepeatableKey {
-    private String mKey;
+    private final String mKey;
 
     public String getKey() {
         return mKey;

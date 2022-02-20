@@ -174,7 +174,7 @@ public class TLSHandler implements ITLSHandler {
                         while (mSendBuffer.hasRemaining()) {
                             Future<Integer> future = channel.write(mSendBuffer);
                             Integer ret = future.get();
-                            if (ret.intValue() < 0) {
+                            if (ret < 0) {
                                 throw new SocketChannelCloseException();
                             }
                         }
@@ -229,7 +229,7 @@ public class TLSHandler implements ITLSHandler {
             } else {
                 Future<Integer> future = channel.read(mReceiveBuffer);
                 Integer ret = future.get();
-                if (ret.intValue() < 0) {
+                if (ret < 0) {
                     throw new SocketChannelCloseException();
                 }
             }

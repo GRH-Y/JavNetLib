@@ -1,15 +1,13 @@
 package com.currency.net.base;
 
-import task.executor.BaseLoopTask;
-import task.executor.TaskExecutorPoolManager;
-import task.executor.joggle.ILoopTaskExecutor;
-import task.executor.joggle.ITaskContainer;
 
-public abstract class AbsNetEngine extends BaseLoopTask {
+import task.executor.LoopTask;
+import task.executor.TaskContainer;
+import task.executor.joggle.ILoopTaskExecutor;
+
+public abstract class AbsNetEngine extends LoopTask {
 
     protected ILoopTaskExecutor mExecutor = null;
-    protected ITaskContainer mContainer = null;
-
     protected FactoryContext mFactoryContext;
 
     public AbsNetEngine(FactoryContext context) {
@@ -43,19 +41,17 @@ public abstract class AbsNetEngine extends BaseLoopTask {
     }
 
     protected void startEngine() {
-        if (mContainer == null) {
-            // createLoopTask use time 20 ms
-            mContainer = TaskExecutorPoolManager.getInstance().createLoopTask(this, null);
-            mExecutor = mContainer.getTaskExecutor();
+        if (mExecutor == null) {
+            TaskContainer container = new TaskContainer(this);
+            mExecutor = container.getTaskExecutor();
             mExecutor.startTask();
         }
     }
 
     protected void stopEngine() {
-        if (mContainer != null) {
+        if (mExecutor != null) {
             mExecutor.destroyTask();
             mExecutor = null;
-            mContainer = null;
         }
     }
 

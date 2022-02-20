@@ -37,7 +37,7 @@ public class FactoryContext {
         this.mSSLFactory = sslFactory;
     }
 
-    public INetTaskContainer getNetTaskContainer() {
+    public <T extends BaseNetTask> INetTaskContainer<T> getNetTaskContainer() {
         return mNetTaskContainer;
     }
 

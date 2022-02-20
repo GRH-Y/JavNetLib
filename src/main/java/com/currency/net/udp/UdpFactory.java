@@ -4,11 +4,10 @@ import com.currency.net.base.AbsNetEngine;
 import com.currency.net.base.AbsNetFactory;
 import com.currency.net.base.BaseNetWork;
 import com.currency.net.base.joggle.ISSLFactory;
-import com.currency.net.tcp.BioEngine;
 
 public class UdpFactory extends AbsNetFactory<UdpTask> {
 
-    private static UdpFactory mFactory;
+    private volatile static UdpFactory mFactory;
 
     public UdpFactory() {
     }

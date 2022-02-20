@@ -1,9 +1,9 @@
-package com.currency.net.tcp;
+package com.currency.net.udp;
 
 import com.currency.net.base.BaseNetTask;
 import com.currency.net.base.BaseNetWork;
 import com.currency.net.base.FactoryContext;
-import com.currency.net.base.NetTaskStatus;
+import com.currency.net.base.NetTaskStatusCode;
 import com.currency.net.base.joggle.INetTaskContainer;
 
 import java.util.Queue;
@@ -14,7 +14,7 @@ public class BioNetWork<T extends BaseNetTask> extends BaseNetWork<T> {
     /**
      * 正在执行任务的队列
      */
-    protected Queue<T> mExecutorQueue;
+    protected final Queue<T> mExecutorQueue;
 
     protected BioNetWork(FactoryContext context) {
         super(context);
@@ -40,7 +40,7 @@ public class BioNetWork<T extends BaseNetTask> extends BaseNetWork<T> {
     @Override
     protected void connectTaskImp(T netTask) {
         super.connectTaskImp(netTask);
-        if (netTask.isHasStatus(NetTaskStatus.RUN)) {
+        if (netTask.getTaskStatus().equals(NetTaskStatusCode.RUN)) {
             mExecutorQueue.add(netTask);
         }
     }

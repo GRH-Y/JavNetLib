@@ -10,9 +10,9 @@ import util.MultiplexCache;
 
 public class XMultiplexCacheManger {
 
-    private MultiplexCache<XNioHttpTask> mNioTaskMultiplexCache;
-    private MultiplexCache<XAioHttpTask> mAioTaskMultiplexCache;
-    private MultiplexCache<ReuseDirectBuf> mBufMultiplexCache;
+    private final MultiplexCache<XNioHttpTask> mNioTaskMultiplexCache;
+    private final MultiplexCache<XAioHttpTask> mAioTaskMultiplexCache;
+    private final MultiplexCache<ReuseDirectBuf> mBufMultiplexCache;
     private volatile boolean mIsRelease = false;
 
 
@@ -22,7 +22,7 @@ public class XMultiplexCacheManger {
         mBufMultiplexCache = new MultiplexCache<>();
     }
 
-    private static XMultiplexCacheManger sTaskManger = null;
+    private volatile static XMultiplexCacheManger sTaskManger = null;
 
     public static synchronized XMultiplexCacheManger getInstance() {
         if (sTaskManger == null) {

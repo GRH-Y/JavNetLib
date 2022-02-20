@@ -1,4 +1,4 @@
-package com.currency.net.http.tool;
+package com.currency.net.base;
 
 import util.SpeedReflex;
 

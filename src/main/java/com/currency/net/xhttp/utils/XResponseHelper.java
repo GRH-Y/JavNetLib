@@ -68,11 +68,10 @@ public class XResponseHelper {
         if (response == null) {
             return null;
         }
-        String host = response.getHeadForKey(XHttpProtocol.XY_HOST)
+        return response.getHeadForKey(XHttpProtocol.XY_HOST)
                 .replace("http://", "")
                 .replace("https://", "")
                 .split(":")[0];
-        return host;
     }
 
 

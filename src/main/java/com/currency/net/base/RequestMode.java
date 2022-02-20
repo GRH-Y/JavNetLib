@@ -23,7 +23,7 @@ public enum RequestMode {
     TRACE("TRACE");
 
 
-    private String mMode;
+    private final String mMode;
 
     RequestMode(String mode) {
         this.mMode = mode;

@@ -27,8 +27,9 @@ public class BaseNetWork<T extends BaseNetTask> {
         INetTaskContainer<T> taskFactory = mFactoryContext.getNetTaskContainer();
         T netTask = taskFactory.pollConnectTask();
         if (netTask != null) {
-            netTask.setTaskStatus(NetTaskStatus.RUN);
-            connectTaskImp(netTask);
+            if (netTask.updateTaskStatus(NetTaskStatusCode.LOAD, NetTaskStatusCode.RUN)) {
+                connectTaskImp(netTask);
+            }
         }
     }
 
@@ -49,10 +50,10 @@ public class BaseNetWork<T extends BaseNetTask> {
     }
 
     protected void removerTaskImp(T netTask) {
-        netTask.setTaskStatus(NetTaskStatus.FINISH);
+        netTask.setTaskStatus(NetTaskStatusCode.FINISH);
         onDisconnectTask(netTask);
         onRecoveryTask(netTask);
-        netTask.setTaskStatus(NetTaskStatus.NONE);
+        netTask.setTaskStatus(NetTaskStatusCode.INVALID);
     }
 
 

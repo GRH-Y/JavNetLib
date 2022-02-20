@@ -24,7 +24,7 @@ public class NioServerTask extends BaseNioSelectionTask<ServerSocketChannel> {
     //---------------------------- set ---------------------------------------
 
     public void setMaxConnect(int maxConnect) {
-        this.mMaxConnect = mMaxConnect;
+        this.mMaxConnect = maxConnect;
     }
 
     //---------------------------- get ---------------------------------------

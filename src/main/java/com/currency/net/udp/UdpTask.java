@@ -74,11 +74,16 @@ public class UdpTask extends BaseNetTask {
 
     //---------------------------- on ---------------------------------------
 
+    /**
+     * 配置socket，例子：
+     * // 创建socket并加入组播地址
+     * socket.joinGroup(address);
+     * // 必须是false才能开启广播功能！！
+     * socket.setLoopbackMode(false);
+     *
+     * @param socket
+     */
     protected void onConfigSocket(DatagramSocket socket) {
-//        // 创建socket并加入组播地址
-//        socket.joinGroup(bcAddr);
-//        // 必须是false才能开启广播功能！！
-//        socket.setLoopbackMode(false);
     }
 
 

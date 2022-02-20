@@ -21,9 +21,9 @@ import java.nio.channels.SocketChannel;
 public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INetReceiver<ReuseDirectBuf> {
 
     private XRequest mRequest;
-    private XHttpConfig mHttpConfig;
-    private INetTaskContainer<NioClientTask> mNetTaskFactory;
-    private XHttpProtocol mHttpProtocol;
+    private final XHttpConfig mHttpConfig;
+    private final INetTaskContainer<NioClientTask> mNetTaskFactory;
+    private final XHttpProtocol mHttpProtocol;
     private XHttpDecoderProcessor mHttpDecoderProcessor;
 
     private boolean mIsRedirect = false;
@@ -72,9 +72,12 @@ public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INet
     @Override
     public void onReceiveFullData(ReuseDirectBuf buf, Throwable e) {
         byte[] data = buf.array();
-        mHttpDecoderProcessor.decoderData(data, data.length);
+        XHttpDecoderStatus status = XHttpDecoderStatus.OVER;
+        if (data != null) {
+            mHttpDecoderProcessor.decoderData(data, data.length);
+            status = mHttpDecoderProcessor.getStatus();
+        }
         XMultiplexCacheManger.getInstance().lose(buf);
-        XHttpDecoderStatus status = mHttpDecoderProcessor.getStatus();
         if (status == XHttpDecoderStatus.OVER) {
             XResponse response = mHttpDecoderProcessor.getResponse();
             int code = XResponseHelper.getCode(response);
@@ -113,13 +116,12 @@ public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INet
         XUrlMedia httpUrlMedia = mRequest.getUrl();
         IXHttpDns httpDns = mHttpConfig.getXHttpDns();
         if (httpDns != null) {
-            InetSocketAddress address = null;
             try {
-                address = (InetSocketAddress) channel.getRemoteAddress();
+                InetSocketAddress address = (InetSocketAddress) channel.getRemoteAddress();
+                httpDns.setCacheDns(httpUrlMedia.getHost(), address.getAddress().getHostAddress());
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            httpDns.setCacheDns(httpUrlMedia.getHost(), address.getAddress().getHostAddress());
         }
         NioReceiver receiver = getReceiver();
         NioSender sender = getSender();
@@ -166,7 +168,7 @@ public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INet
     protected void onRecovery() {
         super.onRecovery();
         if (mIsRedirect) {
-            //是否是重定向
+            //是不是重定向
             initTask(mRequest);
             mNetTaskFactory.addExecTask(this);
             mIsRedirect = false;

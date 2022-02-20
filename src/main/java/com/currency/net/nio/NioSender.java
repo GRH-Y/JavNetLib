@@ -17,7 +17,7 @@ public class NioSender extends AbsNetSender {
     protected SelectionKey mSelectionKey;
     private boolean mIsEnablePreStore = false;
 
-    protected LinkedList<Object> mDataQueue = new LinkedList();
+    protected final LinkedList<Object> mDataQueue = new LinkedList();
 
     public NioSender() {
     }
@@ -68,9 +68,11 @@ public class NioSender extends AbsNetSender {
      */
     @Override
     public void sendData(Object objData) {
-        if (objData == null || mSelectionKey == null && mIsEnablePreStore) {
-            Object finalData = onCheckAndChangeData(objData);
-            mDataQueue.add(finalData);
+        if (objData == null || mSelectionKey == null) {
+            if (mIsEnablePreStore) {
+                Object finalData = onCheckAndChangeData(objData);
+                mDataQueue.add(finalData);
+            }
             return;
         }
         if (!mSelectionKey.isValid()) {
@@ -166,7 +168,7 @@ public class NioSender extends AbsNetSender {
             } catch (Throwable e) {
                 exception = e;
             }
-            if (feedback != null && ret != SEND_CHANNEL_BUSY) {
+            if (feedback != null) {
                 feedback.onSenderFeedBack(this, data, exception);
             }
             if (exception == null) {

@@ -17,6 +17,13 @@ public class NioUdpTask extends BaseNioSelectionTask {
     private boolean mIsBroadcast = false;
     private LiveTime mLiveTime = LiveTime.LOCAL_AREA;
 
+    public void setLiveTime(LiveTime liveTime) {
+        this.mLiveTime = liveTime;
+    }
+
+    public void setIsBroadcast(boolean isBroadcast) {
+        this.mIsBroadcast = isBroadcast;
+    }
 
     public boolean isBroadcast() {
         return mIsBroadcast;

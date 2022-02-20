@@ -2,7 +2,6 @@ package com.currency.net.udp;
 
 import com.currency.net.base.FactoryContext;
 import com.currency.net.base.joggle.INetTaskContainer;
-import com.currency.net.tcp.BioNetWork;
 
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;

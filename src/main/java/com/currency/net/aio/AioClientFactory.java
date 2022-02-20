@@ -9,7 +9,7 @@ import com.currency.net.ssl.SSLFactory;
 
 public class AioClientFactory extends AbsNetFactory<AioClientTask> {
 
-    private static INetFactory<AioClientTask> mFactory = null;
+    private volatile static INetFactory<AioClientTask> mFactory = null;
 
     public static synchronized INetFactory<AioClientTask> getFactory() {
         if (mFactory == null) {

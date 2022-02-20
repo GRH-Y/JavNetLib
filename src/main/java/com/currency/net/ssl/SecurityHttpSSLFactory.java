@@ -50,10 +50,10 @@ public class SecurityHttpSSLFactory extends DefaultHttpSSLFactory {
     }
 
 
-    public class SimpleX509TrustManager implements X509TrustManager {
+    public static class SimpleX509TrustManager implements X509TrustManager {
 
         @Override
-        public void checkClientTrusted(X509Certificate client[], String authType) throws CertificateException {
+        public void checkClientTrusted(X509Certificate[] client, String authType) throws CertificateException {
             for (X509Certificate certificate : client) {
                 //检查证书是否有效
                 certificate.checkValidity();
@@ -77,9 +77,9 @@ public class SecurityHttpSSLFactory extends DefaultHttpSSLFactory {
     }
 
 
-    public class CheckCertificate implements X509TrustManager {
+    public static class CheckCertificate implements X509TrustManager {
         //如果需要对证书进行校验，需要这里去实现，如果不实现的话是不安全
-        private X509Certificate mX509Certificate;
+        private final X509Certificate mX509Certificate;
 
 
         public CheckCertificate(X509Certificate x509Certificate) {

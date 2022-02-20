@@ -1,8 +1,8 @@
-package com.currency.net.nds;
+package com.currency.net.dns;
 
 public class DnsQueries {
 
-    private static DnsQueries sDnsQueries;
+    private volatile static DnsQueries sDnsQueries;
 
     private final byte[] start = new byte[]{(byte) 0x5f, 0x48, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     private final byte[] end = new byte[]{0x00, 0x00, 0x01, 0x00, 0x01};
@@ -22,11 +22,13 @@ public class DnsQueries {
     }
 
     public byte[] queries(String hostName) {
+        if (hostName == null || hostName.length() < 7) {
+            return null;
+        }
         String[] arrays = hostName.split("\\.");
         byte[] hostData = new byte[hostName.length() + 1];
         int destPos = 0;
-        for (int index = 0; index < arrays.length; index++) {
-            String str = arrays[index];
+        for (String str : arrays) {
             int length = str.length();
             hostData[destPos] = (byte) length;
             destPos++;

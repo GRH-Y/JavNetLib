@@ -2,7 +2,7 @@ package com.currency.net.nio;
 
 import com.currency.net.base.BaseNetWork;
 import com.currency.net.base.FactoryContext;
-import com.currency.net.base.NetTaskStatus;
+import com.currency.net.base.NetTaskStatusCode;
 import com.currency.net.base.joggle.INetTaskContainer;
 import com.currency.net.base.joggle.ISSLFactory;
 import log.LogDog;
@@ -147,9 +147,9 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
         } catch (Throwable e) {
             e.printStackTrace();
         } finally {
-            if (netTask.mSelectionKey != null) {
+            if (netTask.getSelectionKey() != null) {
                 try {
-                    netTask.mSelectionKey.cancel();
+                    netTask.getSelectionKey().cancel();
                 } catch (Throwable e) {
                     e.printStackTrace();
                 }
@@ -173,22 +173,20 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
      */
     protected void onSelectionKey(SelectionKey selectionKey) {
         T netTask = (T) selectionKey.attachment();
-        if (netTask.isHasStatus(NetTaskStatus.FINISH)) {
+        if (netTask.getTaskStatus().getCode() < NetTaskStatusCode.LOAD.getCode()) {
             return;
         }
+        netTask.setTaskStatus(NetTaskStatusCode.RUN);
         boolean isAcceptable = selectionKey.isValid() && selectionKey.isAcceptable();
         boolean isCanConnect = selectionKey.isValid() && selectionKey.isConnectable();
         boolean isCanRead = selectionKey.isValid() && selectionKey.isReadable();
         boolean isCanWrite = selectionKey.isValid() && selectionKey.isWritable();
+
         if (isCanRead) {
-            netTask.addTaskStatus(NetTaskStatus.READ);
             onReadEvent(selectionKey);
-            netTask.delTaskStatus(NetTaskStatus.READ);
         }
         if (isCanWrite) {
-            netTask.addTaskStatus(NetTaskStatus.WRITE);
             onWriteEvent(selectionKey);
-            netTask.delTaskStatus(NetTaskStatus.WRITE);
         }
         if (isCanConnect) {
             onConnectEvent(selectionKey);
@@ -196,7 +194,7 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
         if (isAcceptable) {
             onAcceptEvent(selectionKey);
         }
-        netTask.addTaskStatus(NetTaskStatus.IDLING);
+        netTask.updateTaskStatus(NetTaskStatusCode.RUN, NetTaskStatusCode.IDLING);
     }
 
     @Override

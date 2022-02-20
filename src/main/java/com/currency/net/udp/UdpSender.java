@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class UdpSender extends AbsNetSender {
 
-    protected Queue<Object> cache;
+    protected final Queue<Object> cache;
     protected DatagramSocket socket = null;
 
     public UdpSender() {
@@ -33,12 +33,11 @@ public class UdpSender extends AbsNetSender {
         return socket;
     }
 
-    protected int onHandleSendData(Object objData) throws Throwable {
+    protected void onHandleSendData(Object objData) throws Throwable {
         if (objData instanceof DatagramPacket) {
             DatagramPacket packet = (DatagramPacket) objData;
             socket.send(packet);
         }
-        return SEND_COMPLETE;
     }
 
     protected void onSendNetData() throws Throwable {

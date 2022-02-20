@@ -8,7 +8,7 @@ import java.net.SocketTimeoutException;
 
 public class UdpReceiver {
 
-    protected INetReceiver<DatagramPacket> mReceive;
+    protected final INetReceiver<DatagramPacket> mReceive;
     protected DatagramSocket socket = null;
 
     public UdpReceiver(INetReceiver<DatagramPacket> receive) {

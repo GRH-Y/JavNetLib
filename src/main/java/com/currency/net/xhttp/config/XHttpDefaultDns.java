@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class XHttpDefaultDns implements IXHttpDns {
-    private Map<String, String> mDnsMpa = new HashMap<>();
+    private final Map<String, String> mDnsMpa = new HashMap<>();
 
     @Override
     public void setCacheDns(String host, String ip) {

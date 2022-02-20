@@ -33,8 +33,7 @@ public class CertificateCoder {
      */
     private static PrivateKey getPrivateKey(String keyStorePath, String alias, String password) throws Exception {
         KeyStore ks = getKeyStore(keyStorePath, password);
-        PrivateKey key = (PrivateKey) ks.getKey(alias, password.toCharArray());
-        return key;
+        return (PrivateKey) ks.getKey(alias, password.toCharArray());
     }
 
     /**
@@ -46,8 +45,7 @@ public class CertificateCoder {
      */
     private static PublicKey getPublicKey(String certificatePath) throws Exception {
         Certificate certificate = getCertificate(certificatePath);
-        PublicKey key = certificate.getPublicKey();
-        return key;
+        return certificate.getPublicKey();
     }
 
     /**
@@ -76,9 +74,7 @@ public class CertificateCoder {
      */
     private static Certificate getCertificate(String keyStorePath, String alias, String password) throws Exception {
         KeyStore ks = getKeyStore(keyStorePath, password);
-        Certificate certificate = ks.getCertificate(alias);
-
-        return certificate;
+        return ks.getCertificate(alias);
     }
 
     /**
@@ -191,7 +187,7 @@ public class CertificateCoder {
      * @return
      */
     public static boolean verifyCertificate(Date date, String certificatePath) {
-        boolean status = true;
+        boolean status;
         try {
             // 取得证书
             Certificate certificate = getCertificate(certificatePath);
@@ -276,7 +272,7 @@ public class CertificateCoder {
      * @return
      */
     public static boolean verifyCertificate(Date date, String keyStorePath, String alias, String password) {
-        boolean status = true;
+        boolean status;
         try {
             Certificate certificate = getCertificate(keyStorePath, alias, password);
             status = verifyCertificate(date, certificate);

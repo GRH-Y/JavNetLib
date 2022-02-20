@@ -16,7 +16,7 @@ import com.currency.net.ssl.SSLFactory;
  */
 public class NioClientFactory extends AbsNetFactory<NioClientTask> {
 
-    private static INetFactory<NioClientTask> mFactory = null;
+    private volatile static INetFactory<NioClientTask> mFactory = null;
 
     public NioClientFactory() {
     }

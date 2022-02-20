@@ -12,8 +12,8 @@ public class AioReceiver {
     protected TLSHandler mTLSHandler;
     private AsynchronousSocketChannel mChannel;
     protected IAioNetReceiver mReceiver;
-    private HandlerCore mHandlerCore;
-    private ByteBuffer mReceiverBuffer = ByteBuffer.allocateDirect(4096);
+    private final HandlerCore mHandlerCore;
+    private final ByteBuffer mReceiverBuffer = ByteBuffer.allocateDirect(4096);
 
     public AioReceiver(AsynchronousSocketChannel channel) {
         this.mChannel = channel;

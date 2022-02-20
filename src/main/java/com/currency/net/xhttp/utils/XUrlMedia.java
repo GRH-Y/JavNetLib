@@ -33,8 +33,11 @@ public class XUrlMedia {
         if (httpIndex == -1) {
             throw new IllegalArgumentException("no protocol : " + url);
         }
+        //解析协议
         this.mProtocol = url.substring(0, httpIndex);
+        //解析是否https
         this.mIsTSL = "https".equalsIgnoreCase(this.mProtocol);
+
         httpIndex += 3;
         int index = url.indexOf("/", httpIndex);
         if (index > 0) {
@@ -48,9 +51,9 @@ public class XUrlMedia {
             if (portIndex == -1 || portIndex > index) {
                 this.mPort = mIsTSL ? 443 : 80;
             } else {
-                int endIndex = index == -1 ? url.length() : index;
+//                int endIndex = index == -1 ? url.length() : index;
                 try {
-                    this.mPort = Integer.parseInt(url.substring(portIndex + 1, endIndex));
+                    this.mPort = Integer.parseInt(url.substring(portIndex + 1, index));
                 } catch (Exception e) {
                     LogDog.e(" url = " + url);
                     e.printStackTrace();
@@ -86,5 +89,9 @@ public class XUrlMedia {
 
     public boolean isTSL() {
         return mIsTSL;
+    }
+
+    public String getProtocol() {
+        return mProtocol;
     }
 }

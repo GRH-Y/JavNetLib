@@ -12,7 +12,7 @@ public class XHttpDecoderProcessor {
     /**
      * 接收体（结果）
      */
-    protected XResponse mResponse;
+    protected final XResponse mResponse;
 
     /**
      * 当前模式

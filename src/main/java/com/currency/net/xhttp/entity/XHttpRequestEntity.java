@@ -1,4 +1,4 @@
-package com.currency.net.http;
+package com.currency.net.xhttp.entity;
 
 
 import com.currency.net.base.RequestMode;
@@ -13,7 +13,7 @@ import java.util.Map;
  *
  * @author yyz
  */
-public class RequestEntity {
+public class XHttpRequestEntity {
 
     /**
      * 默认的请求tag

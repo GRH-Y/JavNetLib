@@ -16,15 +16,15 @@ import com.currency.net.ssl.SSLFactory;
  * @author yyz
  * @version 1.0
  */
-public class NiobalancedServerFactory extends AbsNetFactory<NioServerTask> {
+public class NioBalancedServerFactory extends AbsNetFactory<NioServerTask> {
 
-    private static NiobalancedServerFactory mFactory = null;
+    private volatile static NioBalancedServerFactory mFactory = null;
 
     public static synchronized INetFactory<NioServerTask> getFactory() {
         if (mFactory == null) {
             synchronized (NioClientFactory.class) {
                 if (mFactory == null) {
-                    mFactory = new NiobalancedServerFactory();
+                    mFactory = new NioBalancedServerFactory();
                 }
             }
         }

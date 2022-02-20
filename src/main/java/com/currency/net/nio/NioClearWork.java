@@ -1,16 +1,12 @@
 package com.currency.net.nio;
 
 import com.currency.net.base.FactoryContext;
-import com.currency.net.base.NetTaskStatus;
+import com.currency.net.base.NetTaskStatusCode;
 import com.currency.net.base.joggle.INetTaskContainer;
-import log.LogDog;
 
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -18,8 +14,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class NioClearWork<T extends NioClientTask, C extends SocketChannel> extends NioClientWork<T, C> {
 
-    private Queue<NioClientWork> mRWWorkQueue;
-    private NioClientWork mBalancedNetWork;
+    private final Queue<INetTaskContainer> mRWWorkQueue;
 
     protected NioClearWork(FactoryContext context) {
         super(context);
@@ -28,22 +23,13 @@ public class NioClearWork<T extends NioClientTask, C extends SocketChannel> exte
 
     @Override
     protected void init() {
+        //重写init方法，避免创建Selector
     }
 
-    public void bindBalancedNetWork(NioClientWork netWork) {
-        mBalancedNetWork = netWork;
-    }
 
     public void bindRWNetWork(NioClientWork netWork) {
-        mRWWorkQueue.offer(netWork);
-    }
-
-    public void unBindRWNetWork(NioClientWork netWork) {
-        try {
-            mRWWorkQueue.remove(netWork);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        FactoryContext context = netWork.getFactoryContext();
+        mRWWorkQueue.offer(context.getNetTaskContainer());
     }
 
     @Override
@@ -59,11 +45,8 @@ public class NioClearWork<T extends NioClientTask, C extends SocketChannel> exte
     }
 
     private void checkRemoverRwTask() {
-        Iterator<NioClientWork> iterator = mRWWorkQueue.iterator();
-        while (iterator.hasNext()) {
-            NioClientWork rwNetwork = iterator.next();
-            FactoryContext context = rwNetwork.getFactoryContext();
-            INetTaskContainer rwContainer = context.getNetTaskContainer();
+        for (Iterator<INetTaskContainer> iterator = mRWWorkQueue.iterator(); iterator.hasNext(); ) {
+            INetTaskContainer rwContainer = iterator.next();
             T netTask = (T) rwContainer.pollDestroyTask();
             if (netTask != null) {
                 //这里处理NioReadWriteNetWork添加的netTask
@@ -74,38 +57,26 @@ public class NioClearWork<T extends NioClientTask, C extends SocketChannel> exte
 
     @Override
     protected void removerTaskImp(T netTask) {
-        LogDog.e("--> NioClearWork removerTaskImp  !!!");
-        //这里回调可以确定是NioBalancedNetWork添加的netTask
-//        if (isIllegalNetTask(netTask)) {
         execRemoverTask(netTask);
-//        } else {
-//            LogDog.e("--> NioClearWork isIllegalNetTask status = " + netTask.getTaskStatus());
-//        }
     }
 
-    private boolean isIllegalNetTask(T netTask) {
-        Selector selector = mBalancedNetWork.getSelector();
-        Set<SelectionKey> sets = selector.keys();
-        if (sets.contains(netTask.mSelectionKey)) {
-            return true;
-        }
-        return false;
-    }
 
     private void execRemoverTask(T netTask) {
-        if (!netTask.isHasStatus(NetTaskStatus.FINISH)) {
-            NetTaskStatus waitStatus = new NetTaskStatus(NetTaskStatus.IDLING.getCode() | NetTaskStatus.RUN.getCode());
-            netTask.waitAndSetTaskStatus(waitStatus, NetTaskStatus.FINISH);
+        boolean isWait = false;
+        int tryCount = 3;
+        //等待task状态进入IDLING再执行回收
+        while (!netTask.updateTaskStatus(NetTaskStatusCode.IDLING, NetTaskStatusCode.FINISH, isWait)) {
+            isWait = tryCount <= 0;
+            tryCount--;
         }
         onDisconnectTask(netTask);
         onRecoveryTask(netTask);
-        netTask.setTaskStatus(NetTaskStatus.NONE);
+        netTask.setTaskStatus(NetTaskStatusCode.INVALID);
     }
 
     @Override
     protected void onRecoveryTaskAll() {
         super.onRecoveryTaskAll();
         mRWWorkQueue.clear();
-        mBalancedNetWork = null;
     }
 }
