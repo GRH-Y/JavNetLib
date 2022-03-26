@@ -1,9 +1,9 @@
 package com.currency.net.aio;
 
 
-import com.currency.net.base.FactoryContext;
 import com.currency.net.base.joggle.INetTaskContainer;
 import com.currency.net.base.joggle.ISSLFactory;
+import com.currency.net.entity.FactoryContext;
 import com.currency.net.ssl.TLSHandler;
 
 import java.io.IOException;

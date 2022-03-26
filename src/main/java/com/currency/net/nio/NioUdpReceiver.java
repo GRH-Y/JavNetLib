@@ -8,15 +8,13 @@ import java.nio.channels.DatagramChannel;
 
 public class NioUdpReceiver extends AbsNetReceiver<DatagramChannel, NioUdpReceiver.ReceiverPacket> {
 
-    private static final int PACKET_MAX_SIZE = 1472;
-
-    private final ByteBuffer mBuffer = ByteBuffer.allocate(PACKET_MAX_SIZE);
+    private static final int PACKET_MAX_SIZE = 65535;
 
     public static class ReceiverPacket {
         public final SocketAddress mFromAddress;
-        public final byte[] mData;
+        public ByteBuffer mData;
 
-        public ReceiverPacket(SocketAddress fromAddress, byte[] data) {
+        public ReceiverPacket(SocketAddress fromAddress, ByteBuffer data) {
             this.mFromAddress = fromAddress;
             this.mData = data;
         }
@@ -24,15 +22,10 @@ public class NioUdpReceiver extends AbsNetReceiver<DatagramChannel, NioUdpReceiv
 
     @Override
     protected void onReadNetData(DatagramChannel channel) throws Throwable {
-        SocketAddress address = channel.receive(mBuffer);
+        ByteBuffer buffer = ByteBuffer.allocate(PACKET_MAX_SIZE);
+        SocketAddress address = channel.receive(buffer);
         if (mReceiverCallBack != null) {
-            byte[] data = null;
-            if (mBuffer.limit() > 0) {
-                mBuffer.flip();
-                data = new byte[mBuffer.limit()];
-                mBuffer.get(data);
-            }
-            mReceiverCallBack.onReceiveFullData(new ReceiverPacket(address, data), null);
+            mReceiverCallBack.onReceiveFullData(new ReceiverPacket(address, buffer), null);
         }
     }
 }

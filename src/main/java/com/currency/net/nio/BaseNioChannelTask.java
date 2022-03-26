@@ -1,8 +1,8 @@
 package com.currency.net.nio;
 
 import com.currency.net.base.BaseNetChannelTask;
-import com.currency.net.base.NetTaskStatusCode;
 import com.currency.net.base.joggle.ISSLFactory;
+import com.currency.net.entity.NetTaskStatusCode;
 
 import java.nio.channels.NetworkChannel;
 

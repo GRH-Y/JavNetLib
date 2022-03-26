@@ -1,5 +1,7 @@
 package com.currency.net.base;
 
+import com.currency.net.entity.NetTaskStatus;
+import com.currency.net.entity.NetTaskStatusCode;
 import util.StringEnvoy;
 
 public class BaseNetTask {
@@ -7,10 +9,10 @@ public class BaseNetTask {
     protected String mHost = null;
     protected int mPort = -1;
 
-    private final NetTaskStatus mTaskStatus;
+    private final NetTaskStatus mCurTaskStatus;
 
     public BaseNetTask() {
-        mTaskStatus = new NetTaskStatus(NetTaskStatusCode.NONE);
+        mCurTaskStatus = new NetTaskStatus(NetTaskStatusCode.NONE);
     }
 
     /**
@@ -19,7 +21,7 @@ public class BaseNetTask {
      * @return
      */
     public NetTaskStatusCode getTaskStatus() {
-        return mTaskStatus.getCode();
+        return mCurTaskStatus.getCode();
     }
 
     /**
@@ -28,16 +30,16 @@ public class BaseNetTask {
      * @param newStatus
      */
     protected void setTaskStatus(NetTaskStatusCode newStatus) {
-        NetTaskStatusCode statusCode = mTaskStatus.getCode();
-        if (statusCode.getCode() < NetTaskStatusCode.NONE.getCode()) {
-            if (newStatus.getCode() > NetTaskStatusCode.NONE.getCode()) {
-                throw new IllegalStateException("Illegal state, the current state is over and cannot be changed");
-            }
-        }
-        mTaskStatus.setCode(newStatus);
-        onTaskState(mTaskStatus);
+        mCurTaskStatus.setCode(newStatus);
+        onTaskState(mCurTaskStatus);
     }
 
+    /**
+     * 更新task状态
+     * @param expectStatus
+     * @param setStatus
+     * @return
+     */
     protected boolean updateTaskStatus(NetTaskStatusCode expectStatus, NetTaskStatusCode setStatus) {
         return updateTaskStatus(expectStatus, setStatus, false);
     }
@@ -51,22 +53,22 @@ public class BaseNetTask {
      * @return 设置状态成功则返回true
      */
     protected boolean updateTaskStatus(NetTaskStatusCode expectStatus, NetTaskStatusCode setStatus, boolean isWait) {
-        boolean result = mTaskStatus.updateCode(expectStatus, setStatus);
+        boolean result = mCurTaskStatus.updateCode(expectStatus, setStatus);
         if (isWait && !result) {
-            synchronized (mTaskStatus) {
+            synchronized (mCurTaskStatus) {
                 try {
-                    mTaskStatus.wait();
+                    mCurTaskStatus.wait();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
-            result = mTaskStatus.updateCode(expectStatus, setStatus);
+            result = mCurTaskStatus.updateCode(expectStatus, setStatus);
         }
         if (result) {
-            synchronized (mTaskStatus) {
-                mTaskStatus.notify();
+            synchronized (mCurTaskStatus) {
+                mCurTaskStatus.notify();
             }
-            onTaskState(mTaskStatus);
+            onTaskState(mCurTaskStatus);
         }
         return result;
     }
@@ -103,5 +105,4 @@ public class BaseNetTask {
         mHost = null;
         mPort = -1;
     }
-
 }

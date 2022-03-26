@@ -3,24 +3,36 @@ package com.currency.net.nio;
 
 import com.currency.net.base.AbsNetReceiver;
 import com.currency.net.base.SocketChannelCloseException;
-import com.currency.net.xhttp.XMultiplexCacheManger;
-import com.currency.net.xhttp.utils.ReuseDirectBuf;
+import com.currency.net.entity.MultiByteBuffer;
 import util.IoEnvoy;
+import util.MultiplexCache;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
-public class NioReceiver extends AbsNetReceiver<SocketChannel, ReuseDirectBuf> {
+public class NioReceiver extends AbsNetReceiver<SocketChannel, MultiByteBuffer> {
+
+    protected final MultiplexCache<MultiByteBuffer> mBufCache;
+
+    protected final static int MORE_BUF = 2;
 
     public NioReceiver() {
+        mBufCache = new MultiplexCache();
     }
 
-    public void reuseBuf(ReuseDirectBuf buf) {
-        XMultiplexCacheManger.getInstance().lose(buf);
+    public void reuseBuf(MultiByteBuffer buf) {
+        if (!buf.isIdle()) {
+            throw new RuntimeException("## buf is busy, can not be reset !!!");
+        }
+        mBufCache.resetData(buf);
     }
 
-    protected ReuseDirectBuf createBuf() {
-        return XMultiplexCacheManger.getInstance().obtainBuf();
+    protected MultiByteBuffer getBuf() {
+        MultiByteBuffer buffer = mBufCache.getCanUseData();
+        if (buffer == null) {
+            buffer = new MultiByteBuffer();
+        }
+        return buffer;
     }
 
     /**
@@ -31,43 +43,38 @@ public class NioReceiver extends AbsNetReceiver<SocketChannel, ReuseDirectBuf> {
     @Override
     protected void onReadNetData(SocketChannel channel) throws Throwable {
         Throwable exception = null;
-        ReuseDirectBuf buf = createBuf();
-        ByteBuffer[] buffer = buf.getAllBuf();
-        while (buffer == null) {
-            buf = createBuf();
-            buffer = buf.getAllBuf();
+        MultiByteBuffer arrayBuf = getBuf();
+        ByteBuffer[] buffer = arrayBuf.getAllBuf();
+        if (buffer == null) {
+            throw new RuntimeException("## buf is busy !!!");
         }
-        long ret = IoEnvoy.FAIL;
+        long code = IoEnvoy.FAIL;
         try {
             do {
-                ret = channel.read(buffer);
-                if (ret > 0) {
-                    buf.setBackBuf(buffer);
-                    buffer = buf.getAllBuf();
+                code = channel.read(buffer);
+                if (code == MORE_BUF || arrayBuf.isFull()) {
+                    arrayBuf.setBackBuf(buffer);
+                    buffer = arrayBuf.getAllBuf();
                 }
-            } while (ret > 0);
+            } while (code > 0);
         } catch (Throwable e) {
             exception = e;
         } finally {
-            buf.setBackBuf(buffer);
-            buf.flip();
+            arrayBuf.setBackBuf(buffer);
+            arrayBuf.flip();
         }
-        notifyReceiverImp(buf, exception, ret);
+        notifyReceiverImp(code, arrayBuf, exception);
     }
 
-    protected void notifyReceiverImp(ReuseDirectBuf buf, Throwable exception, long ret) throws Throwable {
-        try {
-            if (mReceiverCallBack != null) {
-                mReceiverCallBack.onReceiveFullData(buf, exception);
-            }
-        } catch (Throwable e) {
-            e.printStackTrace();
+
+    protected void notifyReceiverImp(long code, MultiByteBuffer buf, Throwable exception) throws Throwable {
+        if (mReceiverCallBack != null) {
+            mReceiverCallBack.onReceiveFullData(buf, exception);
         }
         if (exception != null) {
             throw exception;
-        } else if (ret < 0) {
+        } else if (code < 0) {
             throw new SocketChannelCloseException();
         }
-
     }
 }

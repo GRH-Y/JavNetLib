@@ -9,11 +9,13 @@ import java.nio.channels.CompletionHandler;
 
 public class AioReceiver {
 
+    private static final int BUFFER_MAX_SIZE = 65535;
+
     protected TLSHandler mTLSHandler;
     private AsynchronousSocketChannel mChannel;
     protected IAioNetReceiver mReceiver;
     private final HandlerCore mHandlerCore;
-    private final ByteBuffer mReceiverBuffer = ByteBuffer.allocateDirect(4096);
+    private final ByteBuffer mReceiverBuffer = ByteBuffer.allocateDirect(BUFFER_MAX_SIZE);
 
     public AioReceiver(AsynchronousSocketChannel channel) {
         this.mChannel = channel;

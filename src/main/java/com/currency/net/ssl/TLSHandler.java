@@ -2,7 +2,7 @@ package com.currency.net.ssl;
 
 import com.currency.net.base.SocketChannelCloseException;
 import com.currency.net.base.joggle.ITLSHandler;
-import com.currency.net.xhttp.utils.ReuseDirectBuf;
+import com.currency.net.entity.MultiByteBuffer;
 import log.LogDog;
 import util.IoEnvoy;
 import util.SpeedReflex;
@@ -25,7 +25,7 @@ public class TLSHandler implements ITLSHandler {
     protected ByteBuffer mReceiveBuffer;
     protected ByteBuffer mAppDataBuffer;
 
-    protected ReuseDirectBuf mSendBuf;
+    protected MultiByteBuffer mSendBuf;
 
     public static final int NOT_ENOUGH_CAPACITY = 3;
     public static final int OK = 0;
@@ -47,7 +47,7 @@ public class TLSHandler implements ITLSHandler {
         this.mSSLEngine = engine;
         this.mSendBuffer = newPacketBuffer();
         this.mReceiveBuffer = newPacketBuffer();
-        mSendBuf = new ReuseDirectBuf();
+        mSendBuf = new MultiByteBuffer();
         this.mAppDataBuffer = ByteBuffer.allocateDirect(mSSLEngine.getSession().getApplicationBufferSize());
     }
 

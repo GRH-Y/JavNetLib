@@ -67,7 +67,7 @@ public class NioClientTask extends BaseNioSelectionTask<SocketChannel> {
         super.onRecovery();
         mTLSHandler = null;
         if (mSender != null) {
-            mSender.clear();
+            mSender.clearCache();
         }
     }
 }

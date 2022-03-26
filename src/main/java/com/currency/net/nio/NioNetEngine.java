@@ -1,7 +1,7 @@
 package com.currency.net.nio;
 
 import com.currency.net.base.AbsNetEngine;
-import com.currency.net.base.FactoryContext;
+import com.currency.net.entity.FactoryContext;
 
 public class NioNetEngine extends AbsNetEngine {
 

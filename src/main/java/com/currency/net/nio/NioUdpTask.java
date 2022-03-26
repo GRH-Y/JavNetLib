@@ -1,27 +1,36 @@
 package com.currency.net.nio;
 
-import com.currency.net.udp.LiveTime;
-
-import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.channels.DatagramChannel;
 
-public class NioUdpTask extends BaseNioSelectionTask {
-
-    private DatagramChannel mChannel;
+public class NioUdpTask extends BaseNioSelectionTask<DatagramChannel> {
 
     private NioUdpReceiver mReceive;
     private NioUdpSender mSender;
 
     private boolean mIsServer = false;
     private boolean mIsBroadcast = false;
-    private LiveTime mLiveTime = LiveTime.LOCAL_AREA;
+    private LiveTime mLiveTime = LiveTime.EVERYWHERE;
+
+    public enum LiveTime {
+
+        LOCAL_NETWORK(1), NETWORK_SITE(32), LOCAL_AREA(64), LOCAL_CONTINENT(128), EVERYWHERE(255);
+
+        final int ttl;
+
+        LiveTime(int ttl) {
+            this.ttl = ttl;
+        }
+
+        public int getTtl() {
+            return ttl;
+        }
+    }
 
     public void setLiveTime(LiveTime liveTime) {
         this.mLiveTime = liveTime;
     }
 
-    public void setIsBroadcast(boolean isBroadcast) {
+    public void enableBroadcast(boolean isBroadcast) {
         this.mIsBroadcast = isBroadcast;
     }
 
@@ -37,20 +46,8 @@ public class NioUdpTask extends BaseNioSelectionTask {
         return mLiveTime;
     }
 
-    public DatagramChannel getChannel() {
-        return mChannel;
-    }
-
-    protected void setChannel(DatagramChannel channel) {
-        this.mChannel = channel;
-    }
-
-
-    public void bindPort(int port) {
-        if (port < 0) {
-            throw new IllegalStateException("bind port is invalid !!! ");
-        }
-        this.mPort = port;
+    public void bindAddress(String host, int port) {
+        super.setAddress(host, port);
         mIsServer = true;
     }
 
@@ -64,17 +61,17 @@ public class NioUdpTask extends BaseNioSelectionTask {
         this.mSender = sender;
     }
 
-    public void setReceive(NioUdpReceiver receive) {
+    public void setReceiver(NioUdpReceiver receive) {
         this.mReceive = receive;
     }
 
 
-    public NioUdpReceiver getReceiver() {
-        return mReceive;
+    public <T extends NioUdpReceiver> T getReceiver() {
+        return (T) mReceive;
     }
 
-    public NioUdpSender getSender() {
-        return mSender;
+    public <T extends NioUdpSender> T getSender() {
+        return (T) mSender;
     }
 
     /**
@@ -91,34 +88,6 @@ public class NioUdpTask extends BaseNioSelectionTask {
 //        channel.configureBlocking(true);
 //        MulticastChannel multicast = channel;
 //        multicast.join(group.getAddress(), interf);
-
-        try {
-            channel.connect(new InetSocketAddress(getHost(), getPort()));
-//            channel.bind(new InetSocketAddress(getPort()));
-        } catch (
-                IOException e) {
-            e.printStackTrace();
-        }
     }
 
-    /**
-     * DatagramChannel 就绪状态
-     */
-    protected void onReadyChannel() {
-    }
-
-    /**
-     * 准备断开链接回调
-     */
-    protected void onCloseClientChannel() {
-    }
-
-    /**
-     * 断开链接后回调
-     */
-    @Override
-    protected void onRecovery() {
-        super.onRecovery();
-        mChannel = null;
-    }
 }

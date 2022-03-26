@@ -1,6 +1,8 @@
 package com.currency.net.base;
 
 import com.currency.net.base.joggle.INetTaskContainer;
+import com.currency.net.entity.FactoryContext;
+import com.currency.net.entity.NetTaskStatusCode;
 import log.LogDog;
 
 import java.util.Queue;

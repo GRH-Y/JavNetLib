@@ -1,6 +1,6 @@
 package com.currency.net.nio;
 
-import com.currency.net.base.FactoryContext;
+import com.currency.net.entity.FactoryContext;
 
 import java.util.ArrayList;
 import java.util.List;

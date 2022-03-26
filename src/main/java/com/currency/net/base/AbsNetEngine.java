@@ -1,6 +1,7 @@
 package com.currency.net.base;
 
 
+import com.currency.net.entity.FactoryContext;
 import task.executor.LoopTask;
 import task.executor.TaskContainer;
 import task.executor.joggle.ILoopTaskExecutor;

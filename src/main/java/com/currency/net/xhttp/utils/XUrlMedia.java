@@ -5,6 +5,11 @@ import util.StringEnvoy;
 
 public class XUrlMedia {
 
+    private static final String HTTPS = "https";
+    private static final String URL_LOCATOR_SEPARATOR = "://";
+    private static final String URL_SEPARATOR = "/";
+    private static final String URL_COLON = ":";
+
     private String mUrl;
     private String mProtocol;
     private String mReferer = null;
@@ -29,24 +34,24 @@ public class XUrlMedia {
         if (StringEnvoy.isEmpty(url)) {
             throw new NullPointerException("url is null !!!");
         }
-        int httpIndex = url.indexOf("://");
+        int httpIndex = url.indexOf(URL_LOCATOR_SEPARATOR);
         if (httpIndex == -1) {
             throw new IllegalArgumentException("no protocol : " + url);
         }
         //解析协议
         this.mProtocol = url.substring(0, httpIndex);
         //解析是否https
-        this.mIsTSL = "https".equalsIgnoreCase(this.mProtocol);
+        this.mIsTSL = HTTPS.equalsIgnoreCase(this.mProtocol);
 
         httpIndex += 3;
-        int index = url.indexOf("/", httpIndex);
+        int index = url.indexOf(URL_SEPARATOR, httpIndex);
         if (index > 0) {
             this.mPath = url.substring(index);
         } else {
             index = url.length();
         }
 
-        int portIndex = url.indexOf(":", httpIndex);
+        int portIndex = url.indexOf(URL_COLON, httpIndex);
         if (userPort == -1) {
             if (portIndex == -1 || portIndex > index) {
                 this.mPort = mIsTSL ? 443 : 80;

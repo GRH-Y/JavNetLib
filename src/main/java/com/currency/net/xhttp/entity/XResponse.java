@@ -1,5 +1,6 @@
 package com.currency.net.xhttp.entity;
 
+
 import com.currency.net.xhttp.utils.ByteCacheStream;
 
 import java.util.LinkedHashMap;
@@ -15,10 +16,21 @@ public class XResponse {
      * http head
      */
     private final Map<String, String> mHttpHead;
+
     /**
      * http body
      */
     private byte[] mHttpData = null;
+
+    /**
+     * http body 在整个数据的起始地址
+     */
+    private int mDataIndex;
+
+    /**
+     * http body 数据的长度
+     */
+    private int mDataLength;
 
     /**
      * body转换成实体结果
@@ -35,7 +47,20 @@ public class XResponse {
         this.mHttpData = httpData;
     }
 
+    public void setHttpDataInfo(int dataIndex, int dataLength) {
+        this.mDataIndex = dataIndex;
+        this.mDataLength = dataLength;
+    }
+
     public byte[] getHttpData() {
+        if (mHttpData != null) {
+            return mHttpData;
+        }
+        if (mDataLength > 0) {
+            byte[] data = mRaw.getBuf();
+            mHttpData = new byte[mDataLength];
+            System.arraycopy(data, mDataIndex, mHttpData, 0, mHttpData.length);
+        }
         return mHttpData;
     }
 
@@ -44,9 +69,7 @@ public class XResponse {
     }
 
     public void appendRawData(byte[] data) {
-        if (data != null) {
-            appendRawData(data, 0, data.length);
-        }
+        appendRawData(data, 0, data.length);
     }
 
     public void appendRawData(byte[] data, int off, int len) {

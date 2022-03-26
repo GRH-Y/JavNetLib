@@ -1,7 +1,7 @@
 package com.currency.net.xhttp.entity;
 
 
-import com.currency.net.base.RequestMode;
+import com.currency.net.entity.RequestMode;
 
 import java.net.HttpURLConnection;
 import java.util.List;

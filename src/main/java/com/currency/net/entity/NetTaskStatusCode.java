@@ -1,4 +1,4 @@
-package com.currency.net.base;
+package com.currency.net.entity;
 
 public enum NetTaskStatusCode {
 

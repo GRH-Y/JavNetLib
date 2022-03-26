@@ -1,8 +1,8 @@
 package com.currency.net.xhttp;
 
+import com.currency.net.entity.MultiByteBuffer;
 import com.currency.net.nio.NioReceiver;
 import com.currency.net.ssl.TLSHandler;
-import com.currency.net.xhttp.utils.ReuseDirectBuf;
 import util.IoEnvoy;
 
 import java.nio.ByteBuffer;
@@ -26,7 +26,7 @@ public class XHttpsReceiver extends NioReceiver {
     @Override
     protected void onReadNetData(SocketChannel channel) throws Throwable {
         Throwable exception = null;
-        ReuseDirectBuf buf = XMultiplexCacheManger.getInstance().obtainBuf();
+        MultiByteBuffer buf = getBuf();
         int ret = IoEnvoy.FAIL;
         ByteBuffer[] cacheData = null;
         try {
@@ -45,7 +45,7 @@ public class XHttpsReceiver extends NioReceiver {
             buf.setBackBuf(cacheData);
             buf.flip();
         }
-        notifyReceiverImp(buf, exception, ret);
+        notifyReceiverImp(ret, buf, exception);
     }
 
 }

@@ -112,9 +112,7 @@ public class XHttpDecoderProcessor {
             if (mBodySize != -1) {
                 ByteCacheStream raw = mResponse.getRawData();
                 if (raw.size() - mHeadEndIndex == mBodySize) {
-                    byte[] body = new byte[mBodySize];
-                    System.arraycopy(raw.getBuf(), mHeadEndIndex, body, 0, body.length);
-                    mResponse.setHttpData(body);
+                    mResponse.setHttpDataInfo(mHeadEndIndex, mBodySize);
                     mStatus = XHttpDecoderStatus.OVER;
                     callStatusChange();
                 }
@@ -138,24 +136,22 @@ public class XHttpDecoderProcessor {
     protected void processResponseBody(byte[] data, int len) {
         if (mStatus == XHttpDecoderStatus.BODY) {
             ByteCacheStream raw = mResponse.getRawData();
-            byte[] body = null;
             //分段传输方式
             if (mIsSubsection) {
                 //查找0\r\n结束标志
                 int index = XResponseHelper.findBodyEndTag(data, len);
                 if (index != -1) {
-                    body = new byte[raw.size() - 5 - mHeadEndIndex];
+                    mBodySize = raw.size() - 5 - mHeadEndIndex;
+                    mStatus = XHttpDecoderStatus.OVER;
                 }
             } else {
                 //有明确的数据大小
                 if (raw.size() - mHeadEndIndex == mBodySize) {
-                    body = new byte[mBodySize];
+                    mStatus = XHttpDecoderStatus.OVER;
                 }
             }
-            if (body != null) {
-                System.arraycopy(raw.getBuf(), mHeadEndIndex, body, 0, body.length);
-                mResponse.setHttpData(body);
-                mStatus = XHttpDecoderStatus.OVER;
+            if (XHttpDecoderStatus.OVER == mStatus) {
+                mResponse.setHttpDataInfo(mHeadEndIndex, mBodySize);
                 callStatusChange();
             }
         }

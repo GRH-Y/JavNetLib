@@ -1,4 +1,4 @@
-package com.currency.net.base;
+package com.currency.net.entity;
 
 
 import java.util.concurrent.atomic.AtomicInteger;

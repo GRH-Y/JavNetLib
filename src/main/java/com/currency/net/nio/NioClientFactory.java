@@ -16,27 +16,19 @@ import com.currency.net.ssl.SSLFactory;
  */
 public class NioClientFactory extends AbsNetFactory<NioClientTask> {
 
-    private volatile static INetFactory<NioClientTask> mFactory = null;
+    private static final class InnerClass {
+        public static final NioClientFactory sFactory = new NioClientFactory();
+    }
 
     public NioClientFactory() {
     }
 
-    public static synchronized INetFactory<NioClientTask> getFactory() {
-        if (mFactory == null) {
-            synchronized (NioClientFactory.class) {
-                if (mFactory == null) {
-                    mFactory = new NioClientFactory();
-                }
-            }
-        }
-        return mFactory;
+    public static INetFactory<NioClientTask> getFactory() {
+        return InnerClass.sFactory;
     }
 
     public static void destroy() {
-        if (mFactory != null) {
-            mFactory.close();
-            mFactory = null;
-        }
+        InnerClass.sFactory.close();
     }
 
 

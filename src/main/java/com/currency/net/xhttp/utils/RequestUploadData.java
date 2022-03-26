@@ -1,13 +1,10 @@
-package com.currency.net.base;
+package com.currency.net.xhttp.utils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 /**
- * @className: RequestMultipartFormData
- * @classDescription:
- * @author: yyz
- * @createTime: 11/26/2018
+ * http上传文件工具类
  */
 public class RequestUploadData {
 

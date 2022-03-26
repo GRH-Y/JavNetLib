@@ -33,19 +33,18 @@ public class XHttpConnect {
         mHttpTaskManger = XMultiplexCacheManger.getInstance();
         mNioNetFactory = new NioClientFactory();
         mAioNetFactory = new AioClientFactory();
-        mNioNetTaskFactory = mNioNetFactory.open();
-        mAioNetTaskFactory = mAioNetFactory.open();
+        mNioNetTaskFactory = mNioNetFactory.getNetTaskContainer();
+        mAioNetTaskFactory = mAioNetFactory.getNetTaskContainer();
+        mNioNetFactory.open();
+        mAioNetFactory.open();
     }
 
-    public static synchronized XHttpConnect getInstance() {
-        if (sHttpConnect == null) {
-            synchronized (XHttpConnect.class) {
-                if (sHttpConnect == null) {
-                    sHttpConnect = new XHttpConnect();
-                }
-            }
-        }
-        return sHttpConnect;
+    private static final class InnerClass {
+        public static final XHttpConnect sConnect = new XHttpConnect();
+    }
+
+    public static XHttpConnect getInstance() {
+        return InnerClass.sConnect;
     }
 
     public static void destroy() {
@@ -53,7 +52,7 @@ public class XHttpConnect {
             if (sHttpConnect != null) {
                 sHttpConnect.mNioNetFactory.close();
                 sHttpConnect.mAioNetFactory.close();
-                XMultiplexCacheManger.destroy();
+                XMultiplexCacheManger.getInstance().destroy();
                 sHttpConnect = null;
             }
         }

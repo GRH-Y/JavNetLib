@@ -2,35 +2,24 @@ package com.currency.net.nio;
 
 import com.currency.net.base.AbsNetEngine;
 import com.currency.net.base.BaseNetWork;
-import com.currency.net.base.NetTaskComponent;
 import com.currency.net.base.joggle.INetFactory;
-import com.currency.net.base.joggle.INetTaskContainer;
 
 public class NioBalancedClientFactory extends NioClientFactory {
 
-    private volatile static INetFactory<NioClientTask> mFactory = null;
+    public NioBalancedClientFactory() {
+    }
 
-    public static synchronized INetFactory<NioClientTask> getFactory() {
-        if (mFactory == null) {
-            synchronized (NioBalancedClientFactory.class) {
-                if (mFactory == null) {
-                    mFactory = new NioBalancedClientFactory();
-                }
-            }
-        }
-        return mFactory;
+
+    private static final class InnerClass {
+        public static final NioBalancedClientFactory sFactory = new NioBalancedClientFactory();
+    }
+
+    public static INetFactory<NioClientTask> getFactory() {
+        return InnerClass.sFactory;
     }
 
     public static void destroy() {
-        if (mFactory != null) {
-            mFactory.close();
-            mFactory = null;
-        }
-    }
-
-    @Override
-    protected INetTaskContainer initNetTaskFactory() {
-        return new NetTaskComponent(getFactoryIntent());
+        InnerClass.sFactory.close();
     }
 
     @Override

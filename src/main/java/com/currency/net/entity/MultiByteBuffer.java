@@ -1,4 +1,4 @@
-package com.currency.net.xhttp.utils;
+package com.currency.net.entity;
 
 import log.LogDog;
 
@@ -10,7 +10,7 @@ import java.util.List;
 /**
  * 多级直接字节缓存
  */
-public class ReuseDirectBuf {
+public class MultiByteBuffer {
 
     //默认每个buf的大小
     private final int mInitSize;
@@ -35,13 +35,13 @@ public class ReuseDirectBuf {
     //借用数量
     private int mLendCount = 0;
 
-    public ReuseDirectBuf() {
+    public MultiByteBuffer() {
         mBufList = new LinkedList<>();
         this.mInitSize = DEFAULT_SIZE;
         appendBuffer();
     }
 
-    public ReuseDirectBuf(int initSize) {
+    public MultiByteBuffer(int initSize) {
         mBufList = new ArrayList<>();
         this.mInitSize = initSize;
         appendBuffer();
@@ -57,19 +57,18 @@ public class ReuseDirectBuf {
         }
     }
 
-    public ByteBuffer[] getMarkBuf() {
-        synchronized (mBufList) {
-            return mTmpCacheBuf;
-        }
-    }
 
-
+    /**
+     * 获取已用的buf（含有数据的buf）
+     *
+     * @return
+     */
     public final ByteBuffer[] getUseBuf() {
         return getUseBuf(false);
     }
 
     /**
-     * 获取已用的buf
+     * 获取已用的buf（含有数据的buf）
      *
      * @param isFlip 为true则对每个ByteBuffer进行flip调用
      * @return
@@ -83,7 +82,7 @@ public class ReuseDirectBuf {
             int size = mBufIndex + (mOffset > 0 ? 1 : 0);
             ByteBuffer[] buffers = new ByteBuffer[size];
             try {
-                for (int index = 0; index < buffers.length; index++) {
+                for (int index = 0; index < size; index++) {
                     ByteBuffer tmp = mBufList.get(index);
                     if (isFlip) {
                         tmp.flip();
@@ -99,24 +98,8 @@ public class ReuseDirectBuf {
     }
 
 
-//    /**
-//     * 获取可用的缓存
-//     * @return
-//     */
-//    public final ByteBuffer[] getCanUseBuf() {
-//        synchronized (bufList) {
-//            int canUseSize = bufList.size() - bufIndex;
-//            ByteBuffer[] buffers = new ByteBuffer[canUseSize];
-//            lendCount = canUseSize;
-//            for (int index = 0; index < canUseSize; index++) {
-//                buffers[index] = bufList.get(bufIndex + index);
-//            }
-//            return buffers;
-//        }
-//    }
-
     /**
-     * 获取所有的buf
+     * 获取所有的buf(没有条件限制)
      *
      * @return
      */
@@ -138,7 +121,7 @@ public class ReuseDirectBuf {
      *
      * @return
      */
-    public final ByteBuffer getLendBuf() {
+    public final ByteBuffer getSingleBuf() {
         synchronized (mBufList) {
             if (mLendCount > 0) {
                 LogDog.e("## getLendBuf buf is use ing !!!");
@@ -149,10 +132,23 @@ public class ReuseDirectBuf {
         }
     }
 
-    public final void markBuf(ByteBuffer[] buffer) {
-        synchronized (mBufList) {
-            this.mTmpCacheBuf = buffer;
-        }
+    /**
+     * 获取暂存的buf
+     *
+     * @return
+     */
+    public ByteBuffer[] getTmpBuf() {
+        return mTmpCacheBuf;
+    }
+
+
+    /**
+     * 暂存buf
+     *
+     * @param buffer
+     */
+    public final void setTmpBuf(ByteBuffer[] buffer) {
+        this.mTmpCacheBuf = buffer;
     }
 
 
@@ -170,8 +166,7 @@ public class ReuseDirectBuf {
             for (ByteBuffer tmp : buffer) {
                 if (!mBufList.contains(tmp)) {
                     //发现不存在的buf
-                    LogDog.e("## Found non-existent buf");
-                    return;
+                    throw new IllegalStateException("## Found non-existent buf !!!");
                 }
             }
             mLendCount = 0;
@@ -227,32 +222,6 @@ public class ReuseDirectBuf {
         }
     }
 
-//    public final int limit() {
-//        synchronized (bufList) {
-//            return limit;
-//        }
-//    }
-//
-//    public final void limit(int newLimit) {
-//        if ((newLimit > capacity) || (newLimit < 0)) {
-//            throw new IllegalArgumentException();
-//        }
-//        limit = newLimit;
-//        if (position() > limit) {
-//            position(limit);
-//        }
-//    }
-//
-//    private final void position(int position) {
-//        if (position <= 0) {
-//            return;
-//        }
-//        synchronized (bufList) {
-//            bufIndex = position / initSize;
-//            offset = position % initSize;
-//        }
-//    }
-
     /**
      * 当前指针位置（多个缓存buf组合）
      *
@@ -287,7 +256,23 @@ public class ReuseDirectBuf {
     }
 
 
-    public final boolean isHasData() {
+    /**
+     * 当前buf是否是空闲状态
+     *
+     * @return
+     */
+    public final boolean isIdle() {
+        synchronized (mBufList) {
+            return mLendCount == 0;
+        }
+    }
+
+    /**
+     * 当前buf是否是没有数据
+     *
+     * @return
+     */
+    public final boolean isClear() {
         synchronized (mBufList) {
             return position() > 0;
         }
@@ -299,9 +284,17 @@ public class ReuseDirectBuf {
     public final void flip() {
         synchronized (mBufList) {
             mLimit = position();
-//            bufIndex = 0;
-//            offset = 0;
         }
+    }
+
+    /**
+     * 判断有没有可用的容量
+     *
+     * @return
+     */
+    public final boolean isFull() {
+        ByteBuffer buffer = mBufList.get(mBufIndex);
+        return buffer.hasRemaining() && mBufIndex == mBufList.size() - 1;
     }
 
 

@@ -1,6 +1,8 @@
 package com.currency.net.base;
 
 import com.currency.net.base.joggle.INetTaskContainer;
+import com.currency.net.entity.FactoryContext;
+import com.currency.net.entity.NetTaskStatusCode;
 
 public class BaseNetWork<T extends BaseNetTask> {
 
@@ -52,8 +54,8 @@ public class BaseNetWork<T extends BaseNetTask> {
     protected void removerTaskImp(T netTask) {
         netTask.setTaskStatus(NetTaskStatusCode.FINISH);
         onDisconnectTask(netTask);
-        onRecoveryTask(netTask);
         netTask.setTaskStatus(NetTaskStatusCode.INVALID);
+        onRecoveryTask(netTask);
     }
 
 

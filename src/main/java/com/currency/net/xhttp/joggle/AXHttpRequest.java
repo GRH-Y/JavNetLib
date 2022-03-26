@@ -1,6 +1,6 @@
 package com.currency.net.xhttp.joggle;
 
-import com.currency.net.base.RequestMode;
+import com.currency.net.entity.RequestMode;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

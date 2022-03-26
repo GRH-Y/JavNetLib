@@ -5,13 +5,19 @@ import com.currency.net.base.joggle.ISenderFeedback;
 
 public abstract class AbsNetSender implements INetSender {
 
-    public final static int SEND_COMPLETE = 0, SEND_FAIL = -1, SEND_CHANNEL_BUSY = 1;
+    public final static int SEND_COMPLETE = 0, SEND_FAIL = -1, SEND_CHANNEL_BUSY = -2;
 
-    protected ISenderFeedback feedback;
+    protected ISenderFeedback mFeedback;
 
     @Override
     public void setSenderFeedback(ISenderFeedback feedback) {
-        this.feedback = feedback;
+        this.mFeedback = feedback;
     }
+
+    /**
+     * 读事件会触发该回调
+     * @throws Throwable
+     */
+    protected abstract void onSendNetData() throws Throwable;
 
 }

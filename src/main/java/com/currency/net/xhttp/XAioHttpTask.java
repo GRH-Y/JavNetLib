@@ -4,13 +4,17 @@ import com.currency.net.aio.AioClientTask;
 import com.currency.net.aio.AioReceiver;
 import com.currency.net.aio.AioSender;
 import com.currency.net.base.joggle.*;
+import com.currency.net.entity.NetTaskStatusCode;
 import com.currency.net.xhttp.config.XHttpConfig;
 import com.currency.net.xhttp.entity.XHttpDecoderStatus;
 import com.currency.net.xhttp.entity.XRequest;
 import com.currency.net.xhttp.entity.XResponse;
 import com.currency.net.xhttp.joggle.IXHttpDns;
 import com.currency.net.xhttp.joggle.IXHttpResponseConvert;
-import com.currency.net.xhttp.utils.*;
+import com.currency.net.xhttp.utils.XHttpDecoderProcessor;
+import com.currency.net.xhttp.utils.XHttpProtocol;
+import com.currency.net.xhttp.utils.XResponseHelper;
+import com.currency.net.xhttp.utils.XUrlMedia;
 import log.LogDog;
 import util.StringEnvoy;
 
@@ -64,9 +68,6 @@ public class XAioHttpTask extends AioClientTask implements ISenderFeedback, IAio
     public void onSenderFeedBack(INetSender sender, Object data, Throwable e) {
         if (e != null) {
             mNetTaskFactory.addUnExecTask(this);
-        }
-        if (data instanceof ReuseDirectBuf) {
-            XMultiplexCacheManger.getInstance().lose((ReuseDirectBuf) data);
         }
     }
 
@@ -132,7 +133,8 @@ public class XAioHttpTask extends AioClientTask implements ISenderFeedback, IAio
             mNetTaskFactory.addExecTask(this);
             mIsRedirect = false;
         } else {
-            //移除任务记录
+            //复用task
+            setTaskStatus(NetTaskStatusCode.NONE);
             XMultiplexCacheManger.getInstance().lose(this);
         }
     }

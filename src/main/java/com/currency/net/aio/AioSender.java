@@ -3,7 +3,6 @@ package com.currency.net.aio;
 import com.currency.net.base.joggle.INetSender;
 import com.currency.net.base.joggle.ISenderFeedback;
 import com.currency.net.ssl.TLSHandler;
-import log.LogDog;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
@@ -12,13 +11,18 @@ import java.nio.channels.CompletionHandler;
 public class AioSender implements INetSender {
 
     protected AsynchronousSocketChannel mChannel;
-    protected ISenderFeedback mSenderFeedback;
     protected TLSHandler mTLSHandler;
+    protected ISenderFeedback mFeedback;
     private final HandlerCore mHandlerCore;
 
     public AioSender(AsynchronousSocketChannel channel) {
         this.mChannel = channel;
         mHandlerCore = new HandlerCore();
+    }
+
+    @Override
+    public void setSenderFeedback(ISenderFeedback feedback) {
+        this.mFeedback = feedback;
     }
 
     public void setChannel(AsynchronousSocketChannel channel) {
@@ -27,12 +31,6 @@ public class AioSender implements INetSender {
 
     public void setTlsHandler(TLSHandler tlsHandler) {
         this.mTLSHandler = tlsHandler;
-    }
-
-
-    @Override
-    public void setSenderFeedback(ISenderFeedback feedback) {
-        this.mSenderFeedback = feedback;
     }
 
     @Override
@@ -45,8 +43,8 @@ public class AioSender implements INetSender {
                     mTLSHandler.wrapAndWrite(mChannel, byteBuffer, mHandlerCore);
                 } catch (Exception e) {
                     e.printStackTrace();
-                    if (mSenderFeedback != null) {
-                        mSenderFeedback.onSenderFeedBack(this, byteBuffer, e);
+                    if (mFeedback != null) {
+                        mFeedback.onSenderFeedBack(this, byteBuffer, e);
                     }
                 }
             } else {
@@ -54,8 +52,8 @@ public class AioSender implements INetSender {
                     mChannel.write(byteBuffer, byteBuffer, mHandlerCore);
                 } catch (Exception e) {
                     e.printStackTrace();
-                    if (mSenderFeedback != null) {
-                        mSenderFeedback.onSenderFeedBack(this, byteBuffer, e);
+                    if (mFeedback != null) {
+                        mFeedback.onSenderFeedBack(this, byteBuffer, e);
                     }
                 }
             }
@@ -71,24 +69,24 @@ public class AioSender implements INetSender {
                     mChannel.write(byteBuffer, byteBuffer, this);
                 } catch (Exception e) {
                     e.printStackTrace();
-                    if (mSenderFeedback != null) {
-                        mSenderFeedback.onSenderFeedBack(AioSender.this, byteBuffer, e);
+                    if (mFeedback != null) {
+                        mFeedback.onSenderFeedBack(AioSender.this, byteBuffer, e);
                     }
                 }
             } else {
-                LogDog.d("发送数据成功");
-                if (mSenderFeedback != null) {
-                    mSenderFeedback.onSenderFeedBack(AioSender.this, byteBuffer, null);
+//                LogDog.d("发送数据成功");
+                if (mFeedback != null) {
+                    mFeedback.onSenderFeedBack(AioSender.this, byteBuffer, null);
                 }
             }
         }
 
         @Override
         public void failed(Throwable exc, ByteBuffer byteBuffer) {
-            LogDog.e("发送数据失败");
-            exc.printStackTrace();
-            if (mSenderFeedback != null) {
-                mSenderFeedback.onSenderFeedBack(AioSender.this, byteBuffer, exc);
+//            LogDog.e("发送数据失败");
+//            exc.printStackTrace();
+            if (mFeedback != null) {
+                mFeedback.onSenderFeedBack(AioSender.this, byteBuffer, exc);
             }
         }
     }

@@ -2,7 +2,7 @@ package com.currency.net.aio;
 
 import com.currency.net.base.BaseNetTask;
 import com.currency.net.base.BaseNetWork;
-import com.currency.net.base.FactoryContext;
+import com.currency.net.entity.FactoryContext;
 
 public class AioNetWork<T extends BaseNetTask> extends BaseNetWork<T> {
 

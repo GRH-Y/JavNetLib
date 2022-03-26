@@ -1,9 +1,9 @@
 package com.currency.net.nio;
 
-import com.currency.net.base.FactoryContext;
 import com.currency.net.base.NetTaskComponent;
-import com.currency.net.base.NetTaskStatusCode;
 import com.currency.net.base.joggle.INetTaskContainer;
+import com.currency.net.entity.FactoryContext;
+import com.currency.net.entity.NetTaskStatusCode;
 import log.LogDog;
 
 import java.nio.channels.SelectionKey;

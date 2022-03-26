@@ -15,7 +15,11 @@ public interface INetFactory<T extends BaseNetTask> {
     /**
      * 打开
      */
-    INetTaskContainer<T> open();
+    void open();
+
+
+
+    INetTaskContainer getNetTaskContainer();
 
     /**
      * 关闭

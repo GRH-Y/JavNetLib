@@ -1,6 +1,6 @@
 package com.currency.net.xhttp.utils;
 
-import com.currency.net.base.RequestMode;
+import com.currency.net.entity.RequestMode;
 import com.currency.net.xhttp.entity.XRequest;
 
 import java.util.LinkedHashMap;

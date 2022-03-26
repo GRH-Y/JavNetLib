@@ -1,5 +1,8 @@
-package com.currency.net.base;
+package com.currency.net.entity;
 
+import com.currency.net.base.AbsNetEngine;
+import com.currency.net.base.BaseNetTask;
+import com.currency.net.base.BaseNetWork;
 import com.currency.net.base.joggle.INetTaskContainer;
 import com.currency.net.base.joggle.ISSLFactory;
 

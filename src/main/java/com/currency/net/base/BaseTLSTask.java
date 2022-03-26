@@ -18,7 +18,6 @@ public class BaseTLSTask extends BaseNetTask {
      * TLS 握手回调（只有是TLS通讯才会回调）
      *
      * @param sslFactory
-     * @throws Exception
      */
     protected void onCreateSSLContext(ISSLFactory sslFactory) {
     }

@@ -2,13 +2,8 @@ package com.currency.net.nio;
 
 
 import com.currency.net.base.AbsNetEngine;
-import com.currency.net.base.AbsNetFactory;
 import com.currency.net.base.BaseNetWork;
-import com.currency.net.base.NetTaskComponent;
 import com.currency.net.base.joggle.INetFactory;
-import com.currency.net.base.joggle.INetTaskContainer;
-import com.currency.net.base.joggle.ISSLFactory;
-import com.currency.net.ssl.SSLFactory;
 
 /**
  * nio服务端工厂(单线程管理多个ServerSocket)
@@ -16,31 +11,21 @@ import com.currency.net.ssl.SSLFactory;
  * @author yyz
  * @version 1.0
  */
-public class NioBalancedServerFactory extends AbsNetFactory<NioServerTask> {
+public class NioBalancedServerFactory extends NioServerFactory {
 
-    private volatile static NioBalancedServerFactory mFactory = null;
+    public NioBalancedServerFactory() {
+    }
 
-    public static synchronized INetFactory<NioServerTask> getFactory() {
-        if (mFactory == null) {
-            synchronized (NioClientFactory.class) {
-                if (mFactory == null) {
-                    mFactory = new NioBalancedServerFactory();
-                }
-            }
-        }
-        return mFactory;
+    private static final class InnerClass {
+        public static final NioBalancedServerFactory sFactory = new NioBalancedServerFactory();
+    }
+
+    public static INetFactory<NioServerTask> getFactory() {
+        return InnerClass.sFactory;
     }
 
     public static void destroy() {
-        if (mFactory != null) {
-            mFactory.close();
-            mFactory = null;
-        }
-    }
-
-    @Override
-    protected INetTaskContainer initNetTaskFactory() {
-        return new NetTaskComponent(getFactoryIntent());
+        InnerClass.sFactory.close();
     }
 
     @Override
@@ -53,8 +38,4 @@ public class NioBalancedServerFactory extends AbsNetFactory<NioServerTask> {
         return new NioServerWork(getFactoryIntent());
     }
 
-    @Override
-    protected ISSLFactory initSSLFactory() {
-        return new SSLFactory();
-    }
 }

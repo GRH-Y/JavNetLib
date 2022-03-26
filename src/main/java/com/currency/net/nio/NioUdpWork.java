@@ -1,11 +1,12 @@
 package com.currency.net.nio;
 
 
-import com.currency.net.base.FactoryContext;
 import com.currency.net.base.SocketChannelCloseException;
 import com.currency.net.base.joggle.INetTaskContainer;
+import com.currency.net.entity.FactoryContext;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.StandardProtocolFamily;
 import java.net.StandardSocketOptions;
 import java.nio.channels.DatagramChannel;
@@ -27,9 +28,27 @@ public class NioUdpWork<T extends NioUdpTask, C extends DatagramChannel> extends
                 channel = DatagramChannel.open();
             }
             channel.configureBlocking(false);
+            /**
+             * Option Name	        描述
+             * SO_SNDBUF	        The size of the socket send buffer
+             * SO_RCVBUF	        The size of the socket receive buffer
+             * SO_REUSEADDR	        Re-use address
+             * SO_BROADCAST	        Allow transmission of broadcast datagrams
+             * IP_TOS	            The Type of Service (ToS) octet in the Internet Protocol (IP) header
+             * IP_MULTICAST_IF	    The network interface for Internet Protocol (IP) multicast datagrams
+             * IP_MULTICAST_TTL	    The time-to-live for Internet Protocol (IP) multicast datagrams
+             * IP_MULTICAST_LOOP	Loopback for Internet Protocol (IP) multicast datagrams
+             */
             channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
             channel.setOption(StandardSocketOptions.IP_MULTICAST_LOOP, false);
+            channel.setOption(StandardSocketOptions.IP_MULTICAST_TTL, netTask.getLiveTime().getTtl());
             netTask.onConfigChannel(channel);
+            InetSocketAddress address = new InetSocketAddress(netTask.getHost(), netTask.getPort());
+            if (netTask.isServer()) {
+                channel.bind(address);
+            } else {
+                channel.connect(address);
+            }
             netTask.setChannel(channel);
         } catch (Throwable e) {
             callBackInitStatusChannelError(netTask, e);
@@ -38,8 +57,11 @@ public class NioUdpWork<T extends NioUdpTask, C extends DatagramChannel> extends
     }
 
     @Override
-    protected void onInitChannel(T netTask, C channel) {
-        netTask.getSender().setChannel(channel);
+    protected void onInitChannel(T netTask, C channel) throws IOException {
+        if (channel.isBlocking()) {
+            // 设置为非阻塞
+            channel.configureBlocking(false);
+        }
     }
 
     @Override
@@ -47,33 +69,42 @@ public class NioUdpWork<T extends NioUdpTask, C extends DatagramChannel> extends
         try {
             SelectionKey selectionKey = channel.register(mSelector, SelectionKey.OP_READ, netTask);
             netTask.setSelectionKey(selectionKey);
-            netTask.onReadyChannel();
+            netTask.onBeReadyChannel(channel);
         } catch (Throwable e) {
             callBackInitStatusChannelError(netTask, e);
         }
     }
 
     @Override
-    protected void onSelectionKey(SelectionKey selectionKey) {
-        DatagramChannel channel = (DatagramChannel) selectionKey.channel();
+    protected void onReadEvent(SelectionKey key) {
+        DatagramChannel channel = (DatagramChannel) key.channel();
         if (channel == null) {
             return;
         }
-        T task = (T) selectionKey.attachment();
-        boolean isCanRead = selectionKey.isValid() && selectionKey.isReadable();
+        T netTask = (T) key.attachment();
+        NioUdpReceiver receive = netTask.getReceiver();
+        if (receive != null) {
+            try {
+                receive.onReadNetData(channel);
+            } catch (Throwable e) {
+                hasErrorToUnExecTask(netTask, e);
+            }
+        }
+    }
 
-        if (isCanRead) {
-            NioUdpReceiver receiver = task.getReceiver();
-            if (receiver != null) {
-                try {
-                    receiver.onReadNetData(channel);
-                } catch (Throwable e) {
-                    INetTaskContainer taskFactory = mFactoryContext.getNetTaskContainer();
-                    taskFactory.addUnExecTask(task);
-                    if (!(e instanceof SocketChannelCloseException)) {
-                        e.printStackTrace();
-                    }
-                }
+    @Override
+    protected void onWriteEvent(SelectionKey key) {
+        DatagramChannel channel = (DatagramChannel) key.channel();
+        if (channel == null) {
+            return;
+        }
+        T netTask = (T) key.attachment();
+        NioUdpSender sender = netTask.getSender();
+        if (sender != null) {
+            try {
+                sender.onSendNetData();
+            } catch (Throwable e) {
+                hasErrorToUnExecTask(netTask, e);
             }
         }
     }
@@ -86,7 +117,7 @@ public class NioUdpWork<T extends NioUdpTask, C extends DatagramChannel> extends
     @Override
     public void onDisconnectTask(T netTask) {
         try {
-            netTask.onCloseClientChannel();
+            netTask.onCloseChannel();
         } catch (Throwable e) {
             e.printStackTrace();
         } finally {
@@ -97,6 +128,14 @@ public class NioUdpWork<T extends NioUdpTask, C extends DatagramChannel> extends
                     e.printStackTrace();
                 }
             }
+        }
+    }
+
+    protected void hasErrorToUnExecTask(T netTask, Throwable e) {
+        INetTaskContainer taskFactory = mFactoryContext.getNetTaskContainer();
+        taskFactory.addUnExecTask(netTask);
+        if (!(e instanceof SocketChannelCloseException)) {
+            e.printStackTrace();
         }
     }
 }

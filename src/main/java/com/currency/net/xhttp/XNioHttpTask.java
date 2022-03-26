@@ -1,6 +1,8 @@
 package com.currency.net.xhttp;
 
 import com.currency.net.base.joggle.*;
+import com.currency.net.entity.MultiByteBuffer;
+import com.currency.net.entity.NetTaskStatusCode;
 import com.currency.net.nio.NioClientTask;
 import com.currency.net.nio.NioReceiver;
 import com.currency.net.nio.NioSender;
@@ -10,7 +12,10 @@ import com.currency.net.xhttp.entity.XRequest;
 import com.currency.net.xhttp.entity.XResponse;
 import com.currency.net.xhttp.joggle.IXHttpDns;
 import com.currency.net.xhttp.joggle.IXHttpResponseConvert;
-import com.currency.net.xhttp.utils.*;
+import com.currency.net.xhttp.utils.XHttpDecoderProcessor;
+import com.currency.net.xhttp.utils.XHttpProtocol;
+import com.currency.net.xhttp.utils.XResponseHelper;
+import com.currency.net.xhttp.utils.XUrlMedia;
 import log.LogDog;
 import util.StringEnvoy;
 
@@ -18,7 +23,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 
-public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INetReceiver<ReuseDirectBuf> {
+public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INetReceiver<MultiByteBuffer> {
 
     private XRequest mRequest;
     private final XHttpConfig mHttpConfig;
@@ -63,21 +68,18 @@ public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INet
             e.printStackTrace();
             mNetTaskFactory.addUnExecTask(this);
         }
-        if (data instanceof ReuseDirectBuf) {
-            XMultiplexCacheManger.getInstance().lose((ReuseDirectBuf) data);
-        }
     }
 
 
     @Override
-    public void onReceiveFullData(ReuseDirectBuf buf, Throwable e) {
+    public void onReceiveFullData(MultiByteBuffer buf, Throwable e) {
         byte[] data = buf.array();
         XHttpDecoderStatus status = XHttpDecoderStatus.OVER;
         if (data != null) {
             mHttpDecoderProcessor.decoderData(data, data.length);
             status = mHttpDecoderProcessor.getStatus();
         }
-        XMultiplexCacheManger.getInstance().lose(buf);
+        getReceiver().reuseBuf(buf);
         if (status == XHttpDecoderStatus.OVER) {
             XResponse response = mHttpDecoderProcessor.getResponse();
             int code = XResponseHelper.getCode(response);
@@ -145,7 +147,9 @@ public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INet
             }
         } else {
             if (sender == null || sender instanceof XHttpsSender) {
-                setSender(new NioSender(mSelectionKey, channel));
+                sender = new NioSender();
+                sender.setChannel(mSelectionKey, channel);
+                setSender(sender);
             } else {
                 sender.setChannel(mSelectionKey, channel);
             }
@@ -173,7 +177,8 @@ public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INet
             mNetTaskFactory.addExecTask(this);
             mIsRedirect = false;
         } else {
-            //移除任务记录
+            //复用task
+            setTaskStatus(NetTaskStatusCode.NONE);
             XMultiplexCacheManger.getInstance().lose(this);
         }
     }

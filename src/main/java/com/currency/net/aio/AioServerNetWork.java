@@ -1,7 +1,7 @@
 package com.currency.net.aio;
 
 import com.currency.net.base.BaseNetWork;
-import com.currency.net.base.FactoryContext;
+import com.currency.net.entity.FactoryContext;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
