@@ -1,9 +1,7 @@
 package com.currency.net.base.joggle;
 
 
-import com.currency.net.base.BaseNetTask;
-
-public interface INetFactory<T extends BaseNetTask> {
+public interface INetFactory {
 
     /**
      * 是否已启动

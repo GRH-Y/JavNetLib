@@ -15,7 +15,7 @@ public class NioUdpFactory extends AbsNetFactory<NioUdpTask> {
     public NioUdpFactory() {
     }
 
-    public static INetFactory<NioUdpTask> getFactory() {
+    public static INetFactory getFactory() {
         return NioUdpFactory.InnerClass.sFactory;
     }
 

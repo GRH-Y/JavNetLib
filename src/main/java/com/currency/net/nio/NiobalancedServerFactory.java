@@ -20,7 +20,7 @@ public class NioBalancedServerFactory extends NioServerFactory {
         public static final NioBalancedServerFactory sFactory = new NioBalancedServerFactory();
     }
 
-    public static INetFactory<NioServerTask> getFactory() {
+    public static INetFactory getFactory() {
         return InnerClass.sFactory;
     }
 

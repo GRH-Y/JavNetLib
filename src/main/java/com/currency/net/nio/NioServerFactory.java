@@ -23,7 +23,7 @@ public class NioServerFactory extends AbsNetFactory<NioServerTask> {
         public static final NioServerFactory sFactory = new NioServerFactory();
     }
 
-    public static INetFactory<NioServerTask> getFactory() {
+    public static INetFactory getFactory() {
         return InnerClass.sFactory;
     }
 

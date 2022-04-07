@@ -14,7 +14,7 @@ public class NioBalancedClientFactory extends NioClientFactory {
         public static final NioBalancedClientFactory sFactory = new NioBalancedClientFactory();
     }
 
-    public static INetFactory<NioClientTask> getFactory() {
+    public static INetFactory getFactory() {
         return InnerClass.sFactory;
     }
 

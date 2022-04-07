@@ -10,7 +10,7 @@ import com.currency.net.entity.FactoryContext;
  *
  * @param <T>
  */
-public abstract class AbsNetFactory<T extends BaseNetTask> implements INetFactory<T> {
+public abstract class AbsNetFactory<T extends BaseNetTask> implements INetFactory {
 
     protected final FactoryContext mFactoryIntent;
 

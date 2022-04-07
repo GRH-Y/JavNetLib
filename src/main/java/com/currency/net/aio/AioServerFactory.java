@@ -11,7 +11,7 @@ public class AioServerFactory extends AbsNetFactory<AioServerTask> {
 
     private volatile static AioServerFactory mFactory = null;
 
-    public static synchronized INetFactory<AioServerTask> getFactory() {
+    public static synchronized INetFactory getFactory() {
         if (mFactory == null) {
             synchronized (AioServerFactory.class) {
                 if (mFactory == null) {
