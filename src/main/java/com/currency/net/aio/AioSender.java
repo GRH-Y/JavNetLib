@@ -1,5 +1,6 @@
 package com.currency.net.aio;
 
+import com.currency.net.base.SendPacket;
 import com.currency.net.base.joggle.INetSender;
 import com.currency.net.base.joggle.ISenderFeedback;
 import com.currency.net.ssl.TLSHandler;
@@ -34,7 +35,11 @@ public class AioSender implements INetSender {
     }
 
     @Override
-    public void sendData(Object objData) {
+    public void sendData(SendPacket sendPacket) {
+        if (sendPacket == null) {
+            return;
+        }
+        Object objData = sendPacket.getSendData();
         if (objData instanceof byte[]) {
             byte[] data = (byte[]) objData;
             ByteBuffer byteBuffer = ByteBuffer.wrap(data);

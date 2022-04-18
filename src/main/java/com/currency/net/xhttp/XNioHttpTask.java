@@ -1,5 +1,6 @@
 package com.currency.net.xhttp;
 
+import com.currency.net.base.SendPacket;
 import com.currency.net.base.joggle.*;
 import com.currency.net.entity.MultiByteBuffer;
 import com.currency.net.entity.NetTaskStatusCode;
@@ -162,8 +163,8 @@ public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INet
 
         byte[] head = mHttpProtocol.toByte();
         getSender().setSenderFeedback(this);
-        getSender().sendData(head);
-        getSender().sendData(mRequest.getSendData());
+        getSender().sendData(SendPacket.getInstance(head));
+        getSender().sendData(SendPacket.getInstance(mRequest.getSendData()));
 //        LogDog.d("==> head = " + new String(head));
     }
 

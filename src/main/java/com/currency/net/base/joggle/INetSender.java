@@ -1,6 +1,8 @@
 package com.currency.net.base.joggle;
 
 
+import com.currency.net.base.SendPacket;
+
 /**
  * 发送者接口
  *
@@ -10,6 +12,7 @@ public interface INetSender {
 
     /**
      * 设置发送回调反馈
+     *
      * @param feedback
      */
     void setSenderFeedback(ISenderFeedback feedback);
@@ -17,8 +20,8 @@ public interface INetSender {
     /**
      * 发送数据
      *
-     * @param objData
+     * @param sendPacket
      */
-    void sendData(Object objData);
+    void sendData(SendPacket sendPacket);
 
 }

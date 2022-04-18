@@ -1,6 +1,7 @@
 package com.currency.net.nio;
 
 import com.currency.net.base.AbsNetSender;
+import com.currency.net.base.SendPacket;
 import com.currency.net.entity.MultiByteBuffer;
 
 import java.nio.ByteBuffer;
@@ -49,20 +50,23 @@ public abstract class AbsNioCacheNetSender extends AbsNetSender {
     }
 
     /**
-     * 发送数据,支持 byte[] ，ByteBuffer，ReuseDirectBuf 三种数据类型
+     * 发送数据
      *
-     * @param objData
+     * @param sendPacket
      */
     @Override
-    public void sendData(Object objData) {
-        if (objData == null || mSelectionKey == null) {
+    public void sendData(SendPacket sendPacket) {
+        if (sendPacket == null) {
+            return;
+        }
+        if (mSelectionKey == null) {
             if (mIsEnablePreStore) {
-                Object finalData = onCheckAndChangeData(objData);
+                Object finalData = onCheckAndChangeData(sendPacket.getSendData());
                 if (finalData != null) {
                     mDataQueue.add(finalData);
                 } else {
                     if (mFeedback != null) {
-                        mFeedback.onSenderFeedBack(this, objData, null);
+                        mFeedback.onSenderFeedBack(this, sendPacket.getSendData(), null);
                     }
                 }
             }
@@ -71,7 +75,7 @@ public abstract class AbsNioCacheNetSender extends AbsNetSender {
         if (!mSelectionKey.isValid()) {
             return;
         }
-        Object finalData = onCheckAndChangeData(objData);
+        Object finalData = onCheckAndChangeData(sendPacket.getSendData());
         if (finalData != null) {
             try {
                 mDataQueue.add(finalData);
@@ -84,7 +88,7 @@ public abstract class AbsNioCacheNetSender extends AbsNetSender {
             }
         } else {
             if (mFeedback != null) {
-                mFeedback.onSenderFeedBack(this, objData, null);
+                mFeedback.onSenderFeedBack(this, sendPacket.getSendData(), null);
             }
         }
     }
@@ -120,6 +124,7 @@ public abstract class AbsNioCacheNetSender extends AbsNetSender {
 
     /**
      * 根据不同类型的数据处理
+     *
      * @param data
      * @return
      * @throws Throwable
@@ -192,6 +197,7 @@ public abstract class AbsNioCacheNetSender extends AbsNetSender {
 
     /**
      * 具体实现发送数据
+     *
      * @param data
      * @return
      * @throws Throwable

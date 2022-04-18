@@ -3,6 +3,7 @@ package com.currency.net.xhttp;
 import com.currency.net.aio.AioClientTask;
 import com.currency.net.aio.AioReceiver;
 import com.currency.net.aio.AioSender;
+import com.currency.net.base.SendPacket;
 import com.currency.net.base.joggle.*;
 import com.currency.net.entity.NetTaskStatusCode;
 import com.currency.net.xhttp.config.XHttpConfig;
@@ -109,8 +110,8 @@ public class XAioHttpTask extends AioClientTask implements ISenderFeedback, IAio
         receiver.triggerReceiver();
         byte[] head = mHttpProtocol.toByte();
         sender.setSenderFeedback(this);
-        sender.sendData(head);
-        sender.sendData(mRequest.getSendData());
+        sender.sendData(SendPacket.getInstance(head));
+        sender.sendData(SendPacket.getInstance(mRequest.getSendData()));
 //        LogDog.d("==> head = " + new String(head));
     }
 
