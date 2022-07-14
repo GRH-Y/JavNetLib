@@ -4,3 +4,5 @@ out/
 .gradle/
 classes/
 src/test/
+src/.DS_Store
+build/
