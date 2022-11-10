@@ -9,11 +9,11 @@ import com.jav.net.entity.MultiByteBuffer;
  *
  * @author yyz
  */
-public class ByteBufferComponent implements IBufferComponent {
+public class CacheByteBufferComponent implements IBufferComponent<MultiByteBuffer> {
 
     private final MultiplexCache<MultiByteBuffer> mBufCache;
 
-    public ByteBufferComponent() {
+    public CacheByteBufferComponent() {
         mBufCache = new MultiplexCache();
     }
 
@@ -29,11 +29,16 @@ public class ByteBufferComponent implements IBufferComponent {
 
 
     @Override
-    public <T> void reuseBuffer(T buffer) {
-        MultiByteBuffer byteBuffer = (MultiByteBuffer) buffer;
-        if (!byteBuffer.isIdle()) {
+    public void reuseBuffer(MultiByteBuffer buffer) {
+        if (!buffer.isIdle()) {
             throw new RuntimeException("## buf is busy, can not be reset !!!");
         }
-        mBufCache.resetData(byteBuffer);
+        buffer.clear();
+        mBufCache.resetData(buffer);
+    }
+
+    @Override
+    public void release() {
+        mBufCache.release();
     }
 }

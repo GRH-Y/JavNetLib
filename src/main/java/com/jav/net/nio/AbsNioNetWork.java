@@ -2,14 +2,13 @@ package com.jav.net.nio;
 
 import com.jav.common.log.LogDog;
 import com.jav.net.base.BaseNetWork;
-import com.jav.net.base.joggle.INetTaskContainer;
-import com.jav.net.base.joggle.ISSLFactory;
+import com.jav.net.base.NetTaskStatus;
+import com.jav.net.base.joggle.INetTaskComponent;
+import com.jav.net.base.joggle.ISSLComponent;
 import com.jav.net.entity.FactoryContext;
-import com.jav.net.entity.NetTaskStatusCode;
-import sun.rmi.runtime.Log;
+import com.jav.net.state.joggle.IStateMachine;
 
 import java.io.IOException;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NetworkChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -24,22 +23,44 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
         super(context);
     }
 
+    @Override
     protected void init() {
-        if (mSelector == null) {
-            try {
-                //use time 310ms
-                mSelector = Selector.open();
-            } catch (IOException e) {
-                throw new IllegalArgumentException(e);
-            }
+        try {
+            // use time 310ms
+            mSelector = Selector.open();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
+    /**
+     * Callback for the beginning of a network task,
+     * If the link is empty, it is generally used to create a link.
+     *
+     * @param netTask
+     * @return
+     * @throws IOException
+     */
     protected abstract C onCreateChannel(T netTask) throws IOException;
 
+    /**
+     * The channel used to initialize the link.
+     *
+     * @param netTask
+     * @param channel
+     * @throws IOException
+     */
     protected abstract void onInitChannel(T netTask, C channel) throws IOException;
 
-    protected abstract void onRegisterChannel(T netTask, C channel) throws ClosedChannelException;
+    /**
+     * Register events that need to be handled for this channel
+     *
+     * @param netTask
+     * @param channel
+     * @throws IOException
+     */
+    protected abstract void onRegisterChannel(T netTask, C channel) throws IOException;
+
 
     protected void onAcceptEvent(SelectionKey key) {
     }
@@ -53,41 +74,70 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
     protected void onWriteEvent(SelectionKey key) {
     }
 
+    //------------------------------------------------------------------------------------------------------------------
+
     protected Selector getSelector() {
         return mSelector;
     }
 
-    /**
-     * 检查要链接任务
-     */
-    @Override
-    protected void onCheckConnectTask() {
-        super.onCheckConnectTask();
+
+    protected void initSSLConnect(T netTask) {
+        if (netTask.isTls()) {
+            ISSLComponent sslFactory = mFactoryContext.getSSLFactory();
+            netTask.onCreateSSLContext(sslFactory);
+        }
     }
 
+    protected void callChannelError(T netTask, Throwable e) {
+        try {
+            netTask.onErrorChannel(e);
+        } catch (Throwable e1) {
+            e.printStackTrace();
+        } finally {
+            // 有异常，结束任务
+            INetTaskComponent taskFactory = mFactoryContext.getNetTaskComponent();
+            taskFactory.addUnExecTask(netTask);
+        }
+    }
+
+    //------------------------------------------------------------------------------------------------------------------
+
+    /**
+     * 1.检查要链接任务
+     */
+    @Override
+    protected void onCreateTask() {
+        super.onCreateTask();
+    }
+
+    /**
+     * 2.处理链接
+     *
+     * @param netTask 网络请求任务
+     */
     @Override
     protected void onConnectTask(T netTask) {
         C channel = (C) netTask.getChannel();
         try {
             if (channel == null) {
-                //创建通道
+                // 创建通道
                 channel = onCreateChannel(netTask);
             }
             onInitChannel(netTask, channel);
             onRegisterChannel(netTask, channel);
         } catch (Throwable e) {
             LogDog.e("## onConnectTask has error , url = " + netTask.getHost() + " port = " + netTask.getPort());
-            callBackInitStatusChannelError(netTask, e);
+            callChannelError(netTask, e);
         }
     }
 
     /**
-     * 获取准备好的任务
+     * 3.获取准备好的任务
      */
     @Override
-    protected void onRWDataTask() {
+    protected void onSelectEvent() {
         int count = 0;
-        INetTaskContainer taskFactory = mFactoryContext.getNetTaskContainer();
+        INetTaskComponent taskFactory = mFactoryContext.getNetTaskComponent();
         if (taskFactory.isConnectQueueEmpty() && taskFactory.isDestroyQueueEmpty()) {
             try {
                 count = mSelector.select();
@@ -109,35 +159,19 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
         }
     }
 
+    /**
+     * 4.处理销毁的任务
+     */
     @Override
-    protected void onCheckRemoverTask() {
-        super.onCheckRemoverTask();
+    protected void onDestroyTask() {
+        super.onDestroyTask();
     }
 
     @Override
-    protected void removerTaskImp(T netTask) {
+    protected void destroyTaskImp(T netTask) {
         Set<SelectionKey> sets = mSelector.keys();
         if (sets.contains(netTask.mSelectionKey)) {
-            super.removerTaskImp(netTask);
-        }
-    }
-
-    protected void initSSLConnect(T netTask) {
-        if (netTask.isTLS()) {
-            ISSLFactory sslFactory = mFactoryContext.getSSLFactory();
-            netTask.onCreateSSLContext(sslFactory);
-        }
-    }
-
-    protected void callBackInitStatusChannelError(T netTask, Throwable e) {
-        try {
-            netTask.onErrorChannel(e);
-        } catch (Throwable e1) {
-            e.printStackTrace();
-        } finally {
-            INetTaskContainer taskFactory = mFactoryContext.getNetTaskContainer();
-            //该通道有异常，结束任务
-            taskFactory.addUnExecTask(netTask);
+            super.destroyTaskImp(netTask);
         }
     }
 
@@ -165,7 +199,6 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
         }
     }
 
-    //------------------------------------------------------------------------------------------------------------------
 
     /**
      * 处理通道事件
@@ -173,15 +206,22 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
      * @param selectionKey
      */
     protected void onSelectionKey(SelectionKey selectionKey) {
-        T netTask = (T) selectionKey.attachment();
-        if (netTask.getTaskStatus().getCode() < NetTaskStatusCode.LOAD.getCode()) {
+        if (!selectionKey.isValid()) {
             return;
         }
-        netTask.setTaskStatus(NetTaskStatusCode.RUN);
-        boolean isAcceptable = selectionKey.isValid() && selectionKey.isAcceptable();
-        boolean isCanConnect = selectionKey.isValid() && selectionKey.isConnectable();
-        boolean isCanRead = selectionKey.isValid() && selectionKey.isReadable();
-        boolean isCanWrite = selectionKey.isValid() && selectionKey.isWritable();
+        T netTask = (T) selectionKey.attachment();
+        IStateMachine<Integer> stateMachine = netTask.getStatusMachine();
+        if (stateMachine.getStatus() <= NetTaskStatus.LOAD) {
+            selectionKey.cancel();
+            LogDog.e("## AbsNioNetWork onSelectionKey status code = " + stateMachine.getStatus());
+            return;
+        }
+        stateMachine.updateState(NetTaskStatus.IDLING, NetTaskStatus.RUN);
+
+        boolean isAcceptable = selectionKey.isAcceptable();
+        boolean isCanConnect = selectionKey.isConnectable();
+        boolean isCanRead = selectionKey.isReadable();
+        boolean isCanWrite = selectionKey.isWritable();
 
         if (isCanRead) {
             onReadEvent(selectionKey);
@@ -195,27 +235,21 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
         if (isAcceptable) {
             onAcceptEvent(selectionKey);
         }
-        netTask.updateTaskStatus(NetTaskStatusCode.RUN, NetTaskStatusCode.IDLING);
+        stateMachine.updateState(NetTaskStatus.RUN, NetTaskStatus.IDLING);
     }
 
     @Override
-    protected void onRecoveryTaskAll() {
+    protected void onDestroyTaskAll() {
         if (mSelector != null) {
-            //线程准备结束，释放所有链接
+            // 线程准备结束，释放所有链接
             for (SelectionKey selectionKey : mSelector.keys()) {
-                if (selectionKey.isValid()) {
-                    T task = (T) selectionKey.attachment();
-                    removerTaskImp(task);
+                T task = (T) selectionKey.attachment();
+                if (task != null) {
+                    destroyTaskImp(task);
                 }
             }
-            try {
-                mSelector.close();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            mSelector = null;
         }
-        INetTaskContainer taskFactory = mFactoryContext.getNetTaskContainer();
+        INetTaskComponent taskFactory = mFactoryContext.getNetTaskComponent();
         taskFactory.clearAllQueue();
     }
 

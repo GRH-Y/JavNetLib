@@ -1,8 +1,8 @@
 package com.jav.net.aio;
 
 
-import com.jav.net.base.joggle.INetTaskContainer;
-import com.jav.net.base.joggle.ISSLFactory;
+import com.jav.net.base.joggle.INetTaskComponent;
+import com.jav.net.base.joggle.ISSLComponent;
 import com.jav.net.entity.FactoryContext;
 import com.jav.net.ssl.TLSHandler;
 
@@ -21,8 +21,8 @@ public class AioClientNetWork<T extends AioClientTask> extends AioNetWork<T> imp
     }
 
     @Override
-    protected void onCheckConnectTask() {
-        super.onCheckConnectTask();
+    protected void onCreateTask() {
+        super.onCreateTask();
     }
 
     @Override
@@ -36,7 +36,7 @@ public class AioClientNetWork<T extends AioClientTask> extends AioNetWork<T> imp
             //Re-use address
             channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
             netTask.setChannel(channel);
-            INetTaskContainer netTaskFactory = mFactoryContext.getNetTaskContainer();
+            INetTaskComponent netTaskFactory = mFactoryContext.getNetTaskComponent();
             netTask.setNetTaskFactory(netTaskFactory);
             netTask.onConfigChannel(channel);
             channel.connect(new InetSocketAddress(netTask.getHost(), netTask.getPort()), netTask, this);
@@ -46,20 +46,20 @@ public class AioClientNetWork<T extends AioClientTask> extends AioNetWork<T> imp
     }
 
     private void initSSLConnect(T netTask) {
-        if (netTask.isTLS()) {
-            ISSLFactory sslFactory = mFactoryContext.getSSLFactory();
+        if (netTask.isTls()) {
+            ISSLComponent sslFactory = mFactoryContext.getSSLFactory();
             netTask.onCreateSSLContext(sslFactory);
         }
     }
 
     @Override
-    protected void onCheckRemoverTask() {
-        super.onCheckRemoverTask();
+    protected void onDestroyTask() {
+        super.onDestroyTask();
     }
 
     @Override
-    protected void onRecoveryTaskAll() {
-        super.onRecoveryTaskAll();
+    protected void onDestroyTaskAll() {
+        super.onDestroyTaskAll();
     }
 
     @Override
@@ -108,7 +108,7 @@ public class AioClientNetWork<T extends AioClientTask> extends AioNetWork<T> imp
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            removerTaskImp(task);
+            destroyTaskImp(task);
         }
     }
 }

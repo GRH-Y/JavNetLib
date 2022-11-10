@@ -4,8 +4,8 @@ import com.jav.net.base.AbsNetEngine;
 import com.jav.net.base.AbsNetFactory;
 import com.jav.net.base.BaseNetWork;
 import com.jav.net.base.joggle.INetFactory;
-import com.jav.net.base.joggle.ISSLFactory;
-import com.jav.net.ssl.SSLFactory;
+import com.jav.net.base.joggle.ISSLComponent;
+import com.jav.net.ssl.SSLComponent;
 
 public class AioClientFactory extends AbsNetFactory<AioClientTask> {
 
@@ -31,16 +31,16 @@ public class AioClientFactory extends AbsNetFactory<AioClientTask> {
 
     @Override
     protected AbsNetEngine initNetEngine() {
-        return new AioEngine(getFactoryIntent());
+        return new AioEngine(getFactoryContext());
     }
 
     @Override
     protected BaseNetWork<AioClientTask> initNetWork() {
-        return new AioClientNetWork(getFactoryIntent());
+        return new AioClientNetWork(getFactoryContext());
     }
 
     @Override
-    protected ISSLFactory initSSLFactory() {
-        return new SSLFactory();
+    protected ISSLComponent initSSLComponent() {
+        return new SSLComponent();
     }
 }

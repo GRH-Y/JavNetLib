@@ -1,18 +1,24 @@
 package com.jav.net.nio;
 
 
-import com.jav.net.base.SocketChannelCloseException;
-import com.jav.net.base.joggle.INetTaskContainer;
+import com.jav.common.log.LogDog;
+import com.jav.net.base.joggle.INetTaskComponent;
 import com.jav.net.entity.FactoryContext;
 import com.jav.net.ssl.TLSHandler;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
+/**
+ * 非阻塞客户端事务,处理net work的生命周期事件
+ *
+ * @param <T> 网络任务
+ * @param <C> 通道对象
+ * @author yyz
+ */
 public class NioClientWork<T extends NioClientTask, C extends SocketChannel> extends AbsNioNetWork<T, C> {
 
     protected NioClientWork(FactoryContext context) {
@@ -27,6 +33,7 @@ public class NioClientWork<T extends NioClientTask, C extends SocketChannel> ext
      * @param netTask
      * @return
      */
+    @Override
     protected C onCreateChannel(T netTask) throws IOException {
         InetSocketAddress address = new InetSocketAddress(netTask.getHost(), netTask.getPort());
         SocketChannel channel = SocketChannel.open();
@@ -49,14 +56,18 @@ public class NioClientWork<T extends NioClientTask, C extends SocketChannel> ext
         }
     }
 
+    protected void registerEvent(T netTask, C channel) throws IOException {
+        initSSLConnect(netTask);
+        SelectionKey selectionKey = channel.register(mSelector, SelectionKey.OP_READ, netTask);
+        netTask.setSelectionKey(selectionKey);
+        netTask.onBeReadyChannel(channel);
+        netTask.setChannel(channel);
+    }
+
     @Override
-    protected void onRegisterChannel(T netTask, C channel) throws ClosedChannelException {
+    protected void onRegisterChannel(T netTask, C channel) throws IOException {
         if (channel.isConnected()) {
-            initSSLConnect(netTask);
-            SelectionKey selectionKey = channel.register(mSelector, SelectionKey.OP_READ, netTask);
-            netTask.setSelectionKey(selectionKey);
-            netTask.onBeReadyChannel(channel);
-            netTask.setChannel(channel);
+            registerEvent(netTask, channel);
         } else {
             SelectionKey selectionKey = channel.register(mSelector, SelectionKey.OP_CONNECT, netTask);
             netTask.setSelectionKey(selectionKey);
@@ -73,14 +84,15 @@ public class NioClientWork<T extends NioClientTask, C extends SocketChannel> ext
         try {
             boolean isConnect = channel.finishConnect();
             if (isConnect) {
-                initSSLConnect(netTask);
-                channel.register(mSelector, SelectionKey.OP_READ, netTask);
-                netTask.setSelectionKey(key);
-                netTask.onBeReadyChannel(channel);
-                netTask.setChannel(channel);
+                registerEvent(netTask, (C) channel);
+            } else {
+                // 连接失败，则结束任务
+                INetTaskComponent taskFactory = mFactoryContext.getNetTaskComponent();
+                taskFactory.addUnExecTask(netTask);
+                LogDog.e("## NioClientWork onConnectEvent task fails !!!");
             }
         } catch (Throwable e) {
-            callBackInitStatusChannelError(netTask, e);
+            callChannelError(netTask, e);
         }
     }
 
@@ -96,7 +108,7 @@ public class NioClientWork<T extends NioClientTask, C extends SocketChannel> ext
             try {
                 receive.onReadNetData(channel);
             } catch (Throwable e) {
-                hasErrorToUnExecTask(netTask, e);
+                callChannelError(netTask, e);
             }
         }
     }
@@ -113,16 +125,8 @@ public class NioClientWork<T extends NioClientTask, C extends SocketChannel> ext
             try {
                 sender.onSendNetData();
             } catch (Throwable e) {
-                hasErrorToUnExecTask(netTask, e);
+                callChannelError(netTask, e);
             }
-        }
-    }
-
-    protected void hasErrorToUnExecTask(T netTask, Throwable e) {
-        INetTaskContainer taskFactory = mFactoryContext.getNetTaskContainer();
-        taskFactory.addUnExecTask(netTask);
-        if (!(e instanceof SocketChannelCloseException)) {
-            e.printStackTrace();
         }
     }
 

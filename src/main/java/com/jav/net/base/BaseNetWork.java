@@ -1,9 +1,20 @@
 package com.jav.net.base;
 
-import com.jav.net.base.joggle.INetTaskContainer;
+import com.jav.net.base.joggle.INetTaskComponent;
 import com.jav.net.entity.FactoryContext;
-import com.jav.net.entity.NetTaskStatusCode;
+import com.jav.net.state.joggle.IStateMachine;
 
+/**
+ * 基本网络事务,提供事务的生命周期回调方法
+ * init()
+ * onCreateTask()
+ * onSelectEvent()
+ * onDestroyTask()
+ * onRecoveryTaskAll()
+ *
+ * @param <T>
+ * @author yyz
+ */
 public class BaseNetWork<T extends BaseNetTask> {
 
     protected FactoryContext mFactoryContext;
@@ -22,51 +33,66 @@ public class BaseNetWork<T extends BaseNetTask> {
     //------------------------------------------------------------------------------------
 
     /**
-     * 检查要链接任务
+     * 初始化操作,engine触发执行
      */
-    protected void onCheckConnectTask() {
-        //检测是否有新的任务添加
-        INetTaskContainer<T> taskFactory = mFactoryContext.getNetTaskContainer();
+    protected void init() {
+    }
+
+    /**
+     * 检查要链接任务,engine触发执行
+     */
+    protected void onCreateTask() {
+        // 检测是否有新的任务添加
+        INetTaskComponent<T> taskFactory = mFactoryContext.getNetTaskComponent();
         T netTask = taskFactory.pollConnectTask();
         if (netTask != null) {
-            if (netTask.updateTaskStatus(NetTaskStatusCode.LOAD, NetTaskStatusCode.RUN)) {
-                connectTaskImp(netTask);
+            IStateMachine stateMachine = netTask.getStatusMachine();
+            if (stateMachine.updateState(NetTaskStatus.LOAD, NetTaskStatus.RUN)) {
+                createTaskImp(netTask);
             }
         }
     }
 
-    protected void connectTaskImp(T netTask) {
+    protected void createTaskImp(T netTask) {
         onConnectTask(netTask);
     }
 
 
     /**
-     * 检查要移除任务
+     * 执行事件,engine触发执行
      */
-    protected void onCheckRemoverTask() {
-        INetTaskContainer<T> taskFactory = mFactoryContext.getNetTaskContainer();
+    protected void onSelectEvent() {
+    }
+
+
+    /**
+     * 检查要移除任务,engine触发执行
+     */
+    protected void onDestroyTask() {
+        INetTaskComponent<T> taskFactory = mFactoryContext.getNetTaskComponent();
         T netTask = taskFactory.pollDestroyTask();
         if (netTask != null) {
-            removerTaskImp(netTask);
+            destroyTaskImp(netTask);
         }
     }
 
-    protected void removerTaskImp(T netTask) {
-        netTask.setTaskStatus(NetTaskStatusCode.FINISH);
+    protected void destroyTaskImp(T netTask) {
+        IStateMachine stateMachine = netTask.getStatusMachine();
+        stateMachine.setStatus(NetTaskStatus.FINISHING);
         onDisconnectTask(netTask);
-        netTask.setTaskStatus(NetTaskStatusCode.INVALID);
+        stateMachine.setStatus(NetTaskStatus.INVALID);
         onRecoveryTask(netTask);
     }
 
 
     /**
-     * 销毁所有的链接任务
+     * 销毁所有任务,engine触发执行
      */
-    protected void onRecoveryTaskAll() {
+    protected void onDestroyTaskAll() {
     }
 
 
-    //------------------------------------------------------------------------------------
+    //----------------------------------- on -------------------------------------------------
 
     /**
      * 准备链接
@@ -76,11 +102,6 @@ public class BaseNetWork<T extends BaseNetTask> {
     protected void onConnectTask(T netTask) {
     }
 
-    /**
-     * 执行任务（读或者写）
-     */
-    protected void onRWDataTask() {
-    }
 
     /**
      * 准备断开链接回调
@@ -89,7 +110,6 @@ public class BaseNetWork<T extends BaseNetTask> {
      */
     protected void onDisconnectTask(T netTask) {
     }
-
 
     /**
      * 断开链接后回调

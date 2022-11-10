@@ -1,20 +1,24 @@
 package com.jav.net.entity;
 
 import com.jav.net.base.AbsNetEngine;
-import com.jav.net.base.BaseNetTask;
 import com.jav.net.base.BaseNetWork;
-import com.jav.net.base.joggle.INetTaskContainer;
-import com.jav.net.base.joggle.ISSLFactory;
+import com.jav.net.base.joggle.INetTaskComponent;
+import com.jav.net.base.joggle.ISSLComponent;
 
+/**
+ * 网络工厂上下文,提供基本的对象访问
+ *
+ * @author yyz
+ */
 public class FactoryContext {
 
     private AbsNetEngine mNetEngine;
 
     private BaseNetWork mNetWork;
 
-    private ISSLFactory mSSLFactory;
+    private ISSLComponent mSSLFactory;
 
-    private INetTaskContainer mNetTaskContainer;
+    private INetTaskComponent mNetTaskComponent;
 
     public <T extends AbsNetEngine> T getNetEngine() {
         return (T) mNetEngine;
@@ -32,19 +36,19 @@ public class FactoryContext {
         this.mNetWork = work;
     }
 
-    public ISSLFactory getSSLFactory() {
+    public ISSLComponent getSSLFactory() {
         return mSSLFactory;
     }
 
-    public void setSSLFactory(ISSLFactory sslFactory) {
+    public void setSSLFactory(ISSLComponent sslFactory) {
         this.mSSLFactory = sslFactory;
     }
 
-    public <T extends BaseNetTask> INetTaskContainer<T> getNetTaskContainer() {
-        return mNetTaskContainer;
+    public <T extends INetTaskComponent> T getNetTaskComponent() {
+        return (T) mNetTaskComponent;
     }
 
-    public void setNetTaskContainer(INetTaskContainer container) {
-        this.mNetTaskContainer = container;
+    public void setNetTaskComponent(INetTaskComponent component) {
+        this.mNetTaskComponent = component;
     }
 }

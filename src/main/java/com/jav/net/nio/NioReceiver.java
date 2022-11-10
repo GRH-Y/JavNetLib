@@ -1,10 +1,9 @@
 package com.jav.net.nio;
 
 
-import com.jav.common.util.IoEnvoy;
 import com.jav.net.base.AbsNetReceiver;
 import com.jav.net.base.SocketChannelCloseException;
-import com.jav.net.component.ByteBufferComponent;
+import com.jav.net.component.DefaultByteBufferComponent;
 import com.jav.net.component.joggle.IBufferComponent;
 import com.jav.net.entity.MultiByteBuffer;
 
@@ -13,13 +12,13 @@ import java.nio.channels.SocketChannel;
 
 public class NioReceiver extends AbsNetReceiver<SocketChannel, MultiByteBuffer> {
 
-    protected final IBufferComponent mBufferComponent;
+    protected final IBufferComponent<MultiByteBuffer> mBufferComponent;
 
     public NioReceiver() {
-        mBufferComponent = new ByteBufferComponent();
+        mBufferComponent = new DefaultByteBufferComponent();
     }
 
-    public NioReceiver(IBufferComponent component) {
+    public NioReceiver(IBufferComponent<MultiByteBuffer> component) {
         if (component == null) {
             throw new NullPointerException("BufferComponent can be not null !!!");
         }
@@ -37,13 +36,28 @@ public class NioReceiver extends AbsNetReceiver<SocketChannel, MultiByteBuffer> 
      */
     @Override
     protected void onReadNetData(SocketChannel channel) throws Throwable {
-        Throwable exception = null;
+        Throwable catchException = null;
         MultiByteBuffer arrayBuf = mBufferComponent.useBuffer();
+
+        try {
+            onReadImp(channel, arrayBuf);
+        } catch (Throwable e) {
+            catchException = e;
+        } finally {
+            notifyReceiverImp(arrayBuf, catchException);
+        }
+
+        if (catchException != null) {
+            throw catchException;
+        }
+    }
+
+    protected void onReadImp(SocketChannel channel, MultiByteBuffer arrayBuf) throws Throwable {
+        long code;
         ByteBuffer[] buffer = arrayBuf.getAllBuf();
         if (buffer == null) {
             throw new RuntimeException("## buf is busy !!!");
         }
-        long code = IoEnvoy.FAIL;
         try {
             do {
                 code = channel.read(buffer);
@@ -53,23 +67,23 @@ public class NioReceiver extends AbsNetReceiver<SocketChannel, MultiByteBuffer> 
                 }
             } while (code > 0);
         } catch (Throwable e) {
-            exception = e;
+            throw e;
         } finally {
             arrayBuf.setBackBuf(buffer);
             arrayBuf.flip();
         }
-        notifyReceiverImp(code, arrayBuf, exception);
+        if (code < 0) {
+            throw new SocketChannelCloseException();
+        }
     }
 
 
-    protected void notifyReceiverImp(long code, MultiByteBuffer buf, Throwable exception) throws Throwable {
+    protected void notifyReceiverImp(MultiByteBuffer buf, Throwable exception) {
         if (mReceiverCallBack != null) {
-            mReceiverCallBack.onReceiveFullData(buf, exception);
-        }
-        if (exception != null) {
-            throw exception;
-        } else if (code < 0) {
-            throw new SocketChannelCloseException();
+            boolean ret = mReceiverCallBack.onReceiveFullData(buf, exception);
+            if (ret) {
+                mBufferComponent.reuseBuffer(buf);
+            }
         }
     }
 }

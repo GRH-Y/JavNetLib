@@ -5,7 +5,7 @@ import com.jav.net.entity.MultiByteBuffer;
 
 import java.nio.ByteBuffer;
 
-public class DefaultClearCallBack implements ICacheComponent.IClearCallBack {
+public class DefaultCacheComponentPicker implements ICacheComponent.IClearPolicy {
 
     @Override
     public void clear(Object data) {

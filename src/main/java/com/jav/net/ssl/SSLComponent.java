@@ -1,7 +1,7 @@
 package com.jav.net.ssl;
 
 import com.jav.common.log.LogDog;
-import com.jav.net.base.joggle.ISSLFactory;
+import com.jav.net.base.joggle.ISSLComponent;
 
 import javax.net.ServerSocketFactory;
 import javax.net.ssl.*;
@@ -10,10 +10,10 @@ import java.security.KeyStore;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 
-public class SSLFactory implements ISSLFactory {
+public class SSLComponent implements ISSLComponent {
     private final SSLContext mSSLContext;
 
-    public SSLFactory() {
+    public SSLComponent() {
         try {
             mSSLContext = SSLContext.getDefault();
         } catch (Exception e) {
@@ -27,7 +27,7 @@ public class SSLFactory implements ISSLFactory {
      * @param protocol TLSv1.2
      * @throws Exception
      */
-    public SSLFactory(String protocol) throws Exception {
+    public SSLComponent(String protocol) throws Exception {
         mSSLContext = SSLContext.getInstance(protocol);
         KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
@@ -41,7 +41,7 @@ public class SSLFactory implements ISSLFactory {
      * @param keyStorePath      "C:\Program Files\Java\jdk1.8.0_161\jre\lib\security"
      * @param keyPassword       "changeit"
      */
-    public SSLFactory(String protocol, String keyManagerFactory, String keyStoreType, String keyStorePath, String keyPassword) throws Exception {
+    public SSLComponent(String protocol, String keyManagerFactory, String keyStoreType, String keyStorePath, String keyPassword) throws Exception {
         char[] password = keyPassword.toCharArray();
 
         mSSLContext = SSLContext.getInstance(protocol);

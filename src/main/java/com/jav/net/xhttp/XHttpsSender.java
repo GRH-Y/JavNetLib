@@ -1,6 +1,5 @@
 package com.jav.net.xhttp;
 
-import com.jav.net.base.AbsNetSender;
 import com.jav.net.nio.NioSender;
 import com.jav.net.ssl.TLSHandler;
 
@@ -25,9 +24,13 @@ public class XHttpsSender extends NioSender {
     }
 
     @Override
-    protected int sendDataImp(ByteBuffer[] buffers) throws Throwable {
-        mTLSHandler.wrapAndWrite(mChannel, buffers);
-        return AbsNetSender.SEND_COMPLETE;
+    protected int sendDataImp(ByteBuffer[] buffers) {
+        try {
+            mTLSHandler.wrapAndWrite(mChannel, buffers);
+        } catch (Throwable e) {
+            return SEND_FAIL;
+        }
+        return SEND_COMPLETE;
     }
 
 }

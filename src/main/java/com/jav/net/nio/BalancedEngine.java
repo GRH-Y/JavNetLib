@@ -7,37 +7,33 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * 高性能的engine
+ * 高性能engine,对connect,read,write和disConnect事件分离
+ *
+ * @author yyz
  */
-public class NioBalancedClientEngine extends NioNetEngine {
+public class BalancedEngine extends NioNetEngine {
 
-    private List<NioNetEngine> mEngineList;
+    protected List<NioNetEngine> mEngineList;
 
-    private NioNetEngine clearEngine;
+    protected NioNetEngine mClearEngine;
 
-    /**
-     * 高性能的engine
-     *
-     * @param context 集成环境所需的对象
-     */
-    public NioBalancedClientEngine(FactoryContext context) {
+    public BalancedEngine(FactoryContext context) {
         super(context);
-        setWorkStep((byte) (CONNECT | RW));
+        setWorkStep((byte) (CREATE | SELECT));
     }
-
 
     @Override
     protected void onInitTask() {
         super.onInitTask();
-        //新建独立的 NioEngine 绑定  NioClearWork
+        // 新建独立的 NioEngine 绑定  NioClearWork
         NioBalancedNetWork mainNetWork = mFactoryContext.getNetWork();
         NioClearWork clearWork = mainNetWork.getClearWork();
         FactoryContext clearContext = clearWork.getFactoryContext();
-        clearEngine = new NioNetEngine(clearWork.getFactoryContext());
-        clearContext.setNetEngine(clearEngine);
-        //只负责断开链接任务
-        clearEngine.setWorkStep(NioNetEngine.DISCONNECT);
-        clearEngine.startEngine();
+        mClearEngine = new NioNetEngine(clearContext);
+        clearContext.setNetEngine(mClearEngine);
+        // 只负责断开链接任务
+        mClearEngine.setWorkStep(NioNetEngine.DESTROY);
+        mClearEngine.startEngine();
 
         List<NioReadWriteNetWork> subNetWorkList = mainNetWork.getSubNetWorkList();
         if (subNetWorkList != null) {
@@ -45,10 +41,10 @@ public class NioBalancedClientEngine extends NioNetEngine {
             for (NioReadWriteNetWork subNetWork : subNetWorkList) {
                 FactoryContext context = subNetWork.getFactoryContext();
                 NioNetEngine netEngine = new NioNetEngine(context);
-                //绑定net engine
+                // 绑定net engine
                 context.setNetEngine(netEngine);
-                //只负责读写的任务
-                netEngine.setWorkStep((byte) (NioNetEngine.CONNECT | NioNetEngine.RW));
+                // 只负责读写的任务
+                netEngine.setWorkStep(SELECT);
                 netEngine.startEngine();
                 mEngineList.add(netEngine);
             }
@@ -56,18 +52,13 @@ public class NioBalancedClientEngine extends NioNetEngine {
     }
 
     @Override
-    protected void resumeEngine() {
-        super.resumeEngine();
-        if (mEngineList != null) {
-            for (Iterator<NioNetEngine> iterator = mEngineList.iterator(); iterator.hasNext(); ) {
-                NioNetEngine engine = iterator.next();
-                engine.resumeEngine();
-            }
-        }
-        if (clearEngine != null) {
-            clearEngine.resumeEngine();
+    protected void onDestroyTask() {
+        super.onDestroyTask();
+        if (mClearEngine != null) {
+            mClearEngine.stopEngine();
         }
     }
+
 
     @Override
     protected void stopEngine() {
@@ -77,9 +68,6 @@ public class NioBalancedClientEngine extends NioNetEngine {
                 NioNetEngine engine = iterator.next();
                 engine.stopEngine();
             }
-        }
-        if (clearEngine != null) {
-            clearEngine.stopEngine();
         }
     }
 }

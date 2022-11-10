@@ -3,14 +3,27 @@ package com.jav.net.nio;
 import com.jav.net.base.AbsNetEngine;
 import com.jav.net.entity.FactoryContext;
 
+/**
+ * nio网络引擎,执行net work
+ *
+ * @author yyz
+ */
 public class NioNetEngine extends AbsNetEngine {
 
-    public static final byte CONNECT = 1;
-    public static final byte RW = 2;
-    public static final byte DISCONNECT = 4;
-    public static final byte ACCEPT = 8;
+    /**
+     * 创建任务
+     */
+    public static final byte CREATE = 1;
+    /**
+     * 处理select的事件
+     */
+    public static final byte SELECT = 2;
+    /**
+     * 销毁任务
+     */
+    public static final byte DESTROY = 4;
 
-    private byte mWorkStep = (byte) (CONNECT | RW | DISCONNECT);
+    private byte mWorkStep = (byte) (CREATE | SELECT | DESTROY);
 
 
     public NioNetEngine(FactoryContext context) {
@@ -31,17 +44,17 @@ public class NioNetEngine extends AbsNetEngine {
     @Override
     protected void onEngineRun() {
         AbsNioNetWork netWork = mFactoryContext.getNetWork();
-        if ((mWorkStep & CONNECT) == CONNECT) {
-            //检测是否有新的任务添加
-            netWork.onCheckConnectTask();
+        if ((mWorkStep & CREATE) == CREATE) {
+            // 检测是否有新的任务添加
+            netWork.onCreateTask();
         }
-        if ((mWorkStep & RW) == RW) {
-            //检查是否有读写任务
-            netWork.onRWDataTask();
+        if ((mWorkStep & SELECT) == SELECT) {
+            // 检查是否有读写任务
+            netWork.onSelectEvent();
         }
-        if ((mWorkStep & DISCONNECT) == DISCONNECT) {
-            //清除要结束的任务
-            netWork.onCheckRemoverTask();
+        if ((mWorkStep & DESTROY) == DESTROY) {
+            // 清除要结束的任务
+            netWork.onDestroyTask();
         }
     }
 
@@ -53,16 +66,19 @@ public class NioNetEngine extends AbsNetEngine {
     @Override
     protected void resumeEngine() {
         super.resumeEngine();
-        AbsNioNetWork netWork = mFactoryContext.getNetWork();
-        if (netWork.getSelector() != null) {
-            netWork.getSelector().wakeup();
+        if (mFactoryContext != null) {
+            AbsNioNetWork netWork = mFactoryContext.getNetWork();
+            if (netWork.getSelector() != null) {
+                netWork.getSelector().wakeup();
+            }
         }
     }
 
     @Override
     protected void onDestroyTask() {
         AbsNioNetWork netWork = mFactoryContext.getNetWork();
-        netWork.onRecoveryTaskAll();
+        netWork.onDestroyTaskAll();
+        release();
     }
 
     @Override
@@ -74,6 +90,5 @@ public class NioNetEngine extends AbsNetEngine {
     protected void stopEngine() {
         super.stopEngine();
         resumeEngine();
-        super.destroyEngine();
     }
 }

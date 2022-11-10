@@ -2,7 +2,6 @@ package com.jav.net.ssl;
 
 
 import com.jav.common.util.StringEnvoy;
-import sun.security.x509.X509CertImpl;
 
 import javax.net.ssl.*;
 import java.io.InputStream;
@@ -11,15 +10,15 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 
-public class SecurityHttpSSLFactory extends DefaultHttpSSLFactory {
+public class SecurityHttpSSLComponent extends DefaultHttpSSLComponent {
 
     private SSLContext mSSLContext = null;
 
-    public SecurityHttpSSLFactory(String hostname, String protocol) throws Exception {
+    public SecurityHttpSSLComponent(String hostname, String protocol) throws Exception {
         init(hostname, protocol, new TrustManager[]{new SimpleX509TrustManager()});
     }
 
-    public SecurityHttpSSLFactory(String hostname, String protocol, InputStream certificate) throws Exception {
+    public SecurityHttpSSLComponent(String hostname, String protocol, InputStream certificate) throws Exception {
         //get certificate
         X509Certificate x509Certificate = getX509Certificate(certificate);
         //check certificate
@@ -107,7 +106,7 @@ public class SecurityHttpSSLFactory extends DefaultHttpSSLFactory {
 
         @Override
         public X509Certificate[] getAcceptedIssuers() {
-            return new X509CertImpl[0];
+            return new X509Certificate[0];
         }
     }
 

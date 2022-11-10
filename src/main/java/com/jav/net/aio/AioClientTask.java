@@ -1,6 +1,6 @@
 package com.jav.net.aio;
 
-import com.jav.net.base.joggle.INetTaskContainer;
+import com.jav.net.base.joggle.INetTaskComponent;
 import com.jav.net.ssl.TLSHandler;
 
 import java.nio.channels.AsynchronousChannelGroup;
@@ -9,7 +9,7 @@ import java.nio.channels.AsynchronousSocketChannel;
 public class AioClientTask extends BaseAioChannelTask<AsynchronousSocketChannel> {
 
 
-    private INetTaskContainer mNetTaskFactory;
+    private INetTaskComponent mNetTaskFactory;
 
     private AioSender mSender;
 
@@ -27,7 +27,7 @@ public class AioClientTask extends BaseAioChannelTask<AsynchronousSocketChannel>
 
     //---------------------------------- set ---------------------------------------------
 
-    protected void setNetTaskFactory(INetTaskContainer factory) {
+    protected void setNetTaskFactory(INetTaskComponent factory) {
         this.mNetTaskFactory = factory;
     }
 
@@ -45,7 +45,7 @@ public class AioClientTask extends BaseAioChannelTask<AsynchronousSocketChannel>
 
     //----------------------------------- get ---------------------------------------------
 
-    protected INetTaskContainer getFactory() {
+    protected INetTaskComponent getFactory() {
         return mNetTaskFactory;
     }
 

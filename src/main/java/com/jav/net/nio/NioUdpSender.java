@@ -51,16 +51,20 @@ public class NioUdpSender extends AbsNioCacheNetSender<NioUdpSender.SenderPacket
     }
 
     @Override
-    protected int sendDataImp(ByteBuffer[] buffers) throws Throwable {
+    protected int sendDataImp(ByteBuffer[] buffers) {
         if (mChannel == null || buffers == null || !mChannel.isOpen()) {
             return SEND_FAIL;
         }
         do {
-            long ret = mChannel.write(buffers);
-            if (ret < 0) {
-                throw new IOException("## failed to send data. The socket channel may be closed !!! ");
-            } else if (ret == 0 && mChannel.isOpen()) {
-                return hasRemaining(buffers) ? SEND_CHANNEL_BUSY : SEND_FAIL;
+            try {
+                long ret = mChannel.write(buffers);
+                if (ret < 0) {
+                    return SEND_FAIL;
+                } else if (ret == 0 && mChannel.isOpen()) {
+                    return hasRemaining(buffers) ? SEND_CHANNEL_BUSY : SEND_FAIL;
+                }
+            } catch (Throwable e) {
+                return SEND_FAIL;
             }
         } while (hasRemaining(buffers) && mChannel.isOpen());
         return SEND_COMPLETE;

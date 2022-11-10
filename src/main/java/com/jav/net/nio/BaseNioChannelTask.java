@@ -1,36 +1,21 @@
 package com.jav.net.nio;
 
 import com.jav.net.base.BaseNetChannelTask;
-import com.jav.net.base.joggle.ISSLFactory;
-import com.jav.net.entity.NetTaskStatusCode;
+import com.jav.net.base.joggle.ISSLComponent;
+import com.jav.net.state.joggle.IStateMachine;
 
 import java.nio.channels.NetworkChannel;
 
 public class BaseNioChannelTask<T extends NetworkChannel> extends BaseNetChannelTask<T> {
 
     @Override
-    protected void onCreateSSLContext(ISSLFactory sslFactory) {
+    protected void onCreateSSLContext(ISSLComponent sslFactory) {
         super.onCreateSSLContext(sslFactory);
     }
 
     @Override
-    public boolean updateTaskStatus(NetTaskStatusCode expectStatus, NetTaskStatusCode setStatus) {
-        return super.updateTaskStatus(expectStatus, setStatus);
-    }
-
-    @Override
-    protected boolean updateTaskStatus(NetTaskStatusCode expectStatus, NetTaskStatusCode setStatus, boolean isWait) {
-        return super.updateTaskStatus(expectStatus, setStatus, isWait);
-    }
-
-    @Override
-    public NetTaskStatusCode getTaskStatus() {
-        return super.getTaskStatus();
-    }
-
-    @Override
-    protected void setTaskStatus(NetTaskStatusCode newStatus) {
-        super.setTaskStatus(newStatus);
+    protected IStateMachine getStatusMachine() {
+        return super.getStatusMachine();
     }
 
     @Override

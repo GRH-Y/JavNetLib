@@ -8,8 +8,14 @@ import com.jav.net.xhttp.entity.XResponse;
 public class XHttpDefaultSessionNotify implements IXSessionNotify {
 
     @Override
-    public void notifyData(XRequest request, XResponse response, Throwable e) {
-        ReflectionCall.invoke(request.getCallBackTarget(), request.getCallBackMethod(),
-                new Class[]{XRequest.class, XResponse.class, Throwable.class}, request, response, e);
+    public void notifySuccess(XRequest request, XResponse response) {
+        ReflectionCall.invoke(request.getCallBackTarget(), request.getCallBackSuccessMethod(),
+                new Class[]{XRequest.class, XResponse.class}, request, response);
+    }
+
+    @Override
+    public void notifyError(XRequest request, Throwable e) {
+        ReflectionCall.invoke(request.getCallBackTarget(), request.getCallBackErrorMethod(),
+                new Class[]{XRequest.class, Throwable.class}, request, e);
     }
 }

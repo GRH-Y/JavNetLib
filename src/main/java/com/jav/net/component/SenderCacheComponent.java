@@ -4,6 +4,11 @@ import com.jav.net.component.joggle.ICacheComponent;
 
 import java.util.LinkedList;
 
+/**
+ * 发送者缓存组件
+ *
+ * @author yyz
+ */
 public class SenderCacheComponent implements ICacheComponent<Object> {
 
     protected final LinkedList<Object> mDataQueue = new LinkedList();
@@ -43,13 +48,13 @@ public class SenderCacheComponent implements ICacheComponent<Object> {
     }
 
     @Override
-    public void clearCache(IClearCallBack callBack) {
+    public void clearCache(IClearPolicy picker) {
         if (mDataQueue.isEmpty()) {
             return;
         }
-        if (callBack != null) {
+        if (picker != null) {
             for (Object data : mDataQueue) {
-                callBack.clear(data);
+                picker.clear(data);
             }
         }
         mDataQueue.clear();

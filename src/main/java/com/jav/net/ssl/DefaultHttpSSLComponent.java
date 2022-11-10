@@ -2,19 +2,19 @@ package com.jav.net.ssl;
 
 
 import com.jav.common.util.StringEnvoy;
-import com.jav.net.base.joggle.ISSLFactory;
+import com.jav.net.base.joggle.ISSLComponent;
 
 import javax.net.ServerSocketFactory;
 import javax.net.ssl.*;
 
-public class DefaultHttpSSLFactory implements ISSLFactory, HostnameVerifier {
+public class DefaultHttpSSLComponent implements ISSLComponent, HostnameVerifier {
 
     protected String mHostname;
 
-    public DefaultHttpSSLFactory() {
+    public DefaultHttpSSLComponent() {
     }
 
-    public DefaultHttpSSLFactory(String hostname) {
+    public DefaultHttpSSLComponent(String hostname) {
         if (StringEnvoy.isEmpty(hostname)) {
             throw new NullPointerException("hostname is null !!!");
         }

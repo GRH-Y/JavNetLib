@@ -12,7 +12,7 @@ public class AioServerTask extends BaseAioChannelTask<AsynchronousServerSocketCh
 
     protected void onAcceptServerChannel(AsynchronousSocketChannel channel) {
         AioClientTask clientTask = new AioClientTask(channel);
-        AioClientFactory.getFactory().getNetTaskContainer().addExecTask(clientTask);
+        AioClientFactory.getFactory().getNetTaskComponent().addExecTask(clientTask);
     }
 
 }

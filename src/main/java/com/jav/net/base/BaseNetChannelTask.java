@@ -2,7 +2,13 @@ package com.jav.net.base;
 
 import java.nio.channels.NetworkChannel;
 
-public class BaseNetChannelTask<T extends NetworkChannel> extends BaseTLSTask {
+/**
+ * 基本网络通道任务，提供基本的NetworkChannel管理
+ *
+ * @param <T>
+ * @author yyz
+ */
+public class BaseNetChannelTask<T extends NetworkChannel> extends BaseTlsTask {
 
     protected NetworkChannel mChannel;
 

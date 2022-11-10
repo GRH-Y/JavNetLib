@@ -1,81 +1,103 @@
 package com.jav.net.base;
 
 import com.jav.net.base.joggle.INetFactory;
-import com.jav.net.base.joggle.INetTaskContainer;
-import com.jav.net.base.joggle.ISSLFactory;
+import com.jav.net.base.joggle.INetTaskComponent;
+import com.jav.net.base.joggle.ISSLComponent;
 import com.jav.net.entity.FactoryContext;
 
 /**
  * 复用的工厂
  *
  * @param <T>
+ * @author yyz
  */
-public abstract class AbsNetFactory<T extends BaseNetTask> implements INetFactory {
+public abstract class AbsNetFactory<T extends BaseNetTask> implements INetFactory<T> {
 
-    protected final FactoryContext mFactoryIntent;
+    protected final FactoryContext mFactoryContext;
 
     protected AbsNetFactory() {
-        mFactoryIntent = new FactoryContext();
+        mFactoryContext = new FactoryContext();
 
-        ISSLFactory sslFactory = initSSLFactory();
-        mFactoryIntent.setSSLFactory(sslFactory);
+        ISSLComponent sslFactory = initSSLComponent();
+        mFactoryContext.setSSLFactory(sslFactory);
 
         BaseNetWork<T> netWork = initNetWork();
         if (netWork == null) {
             throw new IllegalStateException("initNetWork() This method returns value can not be null");
         }
-        mFactoryIntent.setNetWork(netWork);
+        mFactoryContext.setNetWork(netWork);
 
         AbsNetEngine netEngine = initNetEngine();
         if (netEngine == null) {
             throw new IllegalStateException("initNetEngine() This method returns value can not be null");
         }
-        mFactoryIntent.setNetEngine(netEngine);
+        mFactoryContext.setNetEngine(netEngine);
 
-        INetTaskContainer<T> netTaskFactory = initNetTaskFactory();
-        if (netTaskFactory == null) {
-            throw new IllegalStateException("initTaskQueueFactory() This method returns value can not be null");
+        INetTaskComponent<T> netTaskComponent = initNetTaskComponent();
+        if (netTaskComponent == null) {
+            throw new IllegalStateException("initNetTaskComponent() This method returns value can not be null");
         }
-        mFactoryIntent.setNetTaskContainer(netTaskFactory);
+        mFactoryContext.setNetTaskComponent(netTaskComponent);
     }
 
     //---------------------------------------- init start ----------------------------------------------
 
+    /**
+     * 初始化网络引擎，用于执行netWork
+     *
+     * @return 返回实例
+     */
     abstract protected AbsNetEngine initNetEngine();
 
+    /**
+     * 初始化网络事物，处理网络任务的周期事件
+     *
+     * @return
+     */
     abstract protected BaseNetWork<T> initNetWork();
 
-    abstract protected ISSLFactory initSSLFactory();
+    /**
+     * 初始化ssl
+     *
+     * @return
+     */
+    abstract protected ISSLComponent initSSLComponent();
 
-    protected INetTaskContainer<T> initNetTaskFactory() {
-        return new NetTaskComponent<>(mFactoryIntent);
+    /**
+     * 初始化网络任务组件
+     *
+     * @return
+     */
+    protected INetTaskComponent<T> initNetTaskComponent() {
+        return new NetTaskComponent<>(mFactoryContext);
     }
 
     //------------------------------------------ init end -----------------------------------------------
 
-    protected FactoryContext getFactoryIntent() {
-        return mFactoryIntent;
+    protected FactoryContext getFactoryContext() {
+        return mFactoryContext;
     }
 
     //-----------------------------------------------------------------------------------------
 
     @Override
-    public void open() {
-        mFactoryIntent.getNetEngine().startEngine();
+    public INetFactory<T> open() {
+        mFactoryContext.getNetEngine().startEngine();
+        return this;
     }
 
     @Override
-    public INetTaskContainer getNetTaskContainer() {
-        return mFactoryIntent.getNetTaskContainer();
+    public INetTaskComponent<T> getNetTaskComponent() {
+        return mFactoryContext.getNetTaskComponent();
     }
 
     @Override
     public void close() {
-        mFactoryIntent.getNetEngine().stopEngine();
+        mFactoryContext.getNetEngine().stopEngine();
     }
 
     @Override
     public boolean isOpen() {
-        return mFactoryIntent.getNetEngine().isEngineRunning();
+        return mFactoryContext.getNetEngine().isEngineRunning();
     }
 }

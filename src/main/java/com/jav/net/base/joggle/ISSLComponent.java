@@ -5,7 +5,7 @@ import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 
-public interface ISSLFactory {
+public interface ISSLComponent {
 
     SSLContext  getSSLContext();
     

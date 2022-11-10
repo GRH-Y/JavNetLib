@@ -1,7 +1,7 @@
 package com.jav.net.aio;
 
 import com.jav.net.base.AbsNetEngine;
-import com.jav.net.base.joggle.INetTaskContainer;
+import com.jav.net.base.joggle.INetTaskComponent;
 import com.jav.net.entity.FactoryContext;
 
 public class AioEngine extends AbsNetEngine {
@@ -13,11 +13,11 @@ public class AioEngine extends AbsNetEngine {
     @Override
     protected void onEngineRun() {
         AioNetWork netWork = mFactoryContext.getNetWork();
-        INetTaskContainer taskFactory = mFactoryContext.getNetTaskContainer();
-        //检测是否有新的任务添加
-        netWork.onCheckConnectTask();
+        INetTaskComponent taskFactory = mFactoryContext.getNetTaskComponent();
+        //检查是否有新的任务添加
+        netWork.onCreateTask();
         //清除要结束的任务
-        netWork.onCheckRemoverTask();
+        netWork.onDestroyTask();
 
         if (mExecutor.isLoopState() && taskFactory.isConnectQueueEmpty() && taskFactory.isDestroyQueueEmpty()) {
             //如果没有任务则休眠
@@ -28,6 +28,6 @@ public class AioEngine extends AbsNetEngine {
     @Override
     protected void onDestroyTask() {
         AioNetWork netWork = mFactoryContext.getNetWork();
-        netWork.onRecoveryTaskAll();
+        netWork.onDestroyTaskAll();
     }
 }

@@ -6,3 +6,4 @@ classes/
 src/test/
 src/.DS_Store
 build/
+.vscode

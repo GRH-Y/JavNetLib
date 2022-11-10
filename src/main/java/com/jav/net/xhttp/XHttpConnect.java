@@ -3,7 +3,7 @@ package com.jav.net.xhttp;
 import com.jav.net.aio.AioClientFactory;
 import com.jav.net.aio.AioClientTask;
 import com.jav.net.base.AbsNetFactory;
-import com.jav.net.base.joggle.INetTaskContainer;
+import com.jav.net.base.joggle.INetTaskComponent;
 import com.jav.net.nio.NioClientFactory;
 import com.jav.net.nio.NioClientTask;
 import com.jav.net.xhttp.config.XHttpConfig;
@@ -25,16 +25,16 @@ public class XHttpConnect {
 
     private volatile static XHttpConnect sHttpConnect = null;
 
-    private final INetTaskContainer<AioClientTask> mAioNetTaskFactory;
+    private final INetTaskComponent<AioClientTask> mAioNetTaskFactory;
 
-    private final INetTaskContainer<NioClientTask> mNioNetTaskFactory;
+    private final INetTaskComponent<NioClientTask> mNioNetTaskFactory;
 
     private XHttpConnect() {
         mHttpTaskManger = XMultiplexCacheManger.getInstance();
         mNioNetFactory = new NioClientFactory();
         mAioNetFactory = new AioClientFactory();
-        mNioNetTaskFactory = mNioNetFactory.getNetTaskContainer();
-        mAioNetTaskFactory = mAioNetFactory.getNetTaskContainer();
+        mNioNetTaskFactory = mNioNetFactory.getNetTaskComponent();
+        mAioNetTaskFactory = mAioNetFactory.getNetTaskComponent();
         mNioNetFactory.open();
         mAioNetFactory.open();
     }
@@ -81,7 +81,8 @@ public class XHttpConnect {
         xHttpRequest.setRequestProperty(property);
         xHttpRequest.setCallBackTarget(callBackTarget);
         xHttpRequest.setSendData(entity.getSendData());
-        xHttpRequest.setCallBackMethod(request.callBackMethod());
+        xHttpRequest.setCallBackSuccessMethod(request.callBackSuccessMethod());
+        xHttpRequest.setCallBackErrorMethod(request.callBackErrorMethod());
         xHttpRequest.setProcessMethod(request.processMethod());
         xHttpRequest.setResultType(request.resultType());
         xHttpRequest.setRequestMode(request.requestMode());
@@ -93,12 +94,24 @@ public class XHttpConnect {
         return xHttpRequest;
     }
 
-    public boolean submitRequest(IXHttpRequestEntity entity, Object callBackTarget) {
+
+    public boolean submitNioRequest(IXHttpRequestEntity entity, Object callBackTarget) {
         if (entity == null) {
             throw new NullPointerException("entity is null ");
         }
         XRequest xHttpRequest = crateRequest(entity, callBackTarget);
-        return submitRequest(xHttpRequest);
+        return submitNioRequest(xHttpRequest);
+    }
+
+    public boolean submitNioRequest(XRequest request) {
+        if (request == null) {
+            throw new NullPointerException("request is null ");
+        }
+        if (mHttpConfig == null) {
+            mHttpConfig = XHttpConfig.getDefaultConfig();
+        }
+        XNioHttpTask requestTask = mHttpTaskManger.obtainNioTask(mNioNetTaskFactory, mHttpConfig, request);
+        return mNioNetTaskFactory.addExecTask(requestTask);
     }
 
     public boolean submitAioRequest(IXHttpRequestEntity entity, Object callBackTarget) {
@@ -109,16 +122,6 @@ public class XHttpConnect {
         return submitAioRequest(xHttpRequest);
     }
 
-    public boolean submitRequest(XRequest request) {
-        if (request == null) {
-            throw new NullPointerException("request is null ");
-        }
-        if (mHttpConfig == null) {
-            mHttpConfig = XHttpConfig.getDefaultConfig();
-        }
-        XNioHttpTask requestTask = mHttpTaskManger.obtainNioTask(mNioNetTaskFactory, mHttpConfig, request);
-        return mNioNetTaskFactory.addExecTask(requestTask);
-    }
 
     public boolean submitAioRequest(XRequest request) {
         if (request == null) {

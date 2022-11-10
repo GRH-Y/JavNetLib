@@ -1,6 +1,6 @@
 package com.jav.net.ssl;
 
-import com.jav.net.base.joggle.ISSLFactory;
+import com.jav.net.base.joggle.ISSLComponent;
 
 import javax.net.ServerSocketFactory;
 import javax.net.SocketFactory;
@@ -8,7 +8,7 @@ import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 
-public class DefaultSSLFactory implements ISSLFactory {
+public class DefaultSSLComponent implements ISSLComponent {
 
     @Override
     public SSLContext getSSLContext() {

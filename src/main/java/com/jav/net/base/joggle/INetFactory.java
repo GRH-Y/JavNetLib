@@ -1,7 +1,13 @@
 package com.jav.net.base.joggle;
 
+import com.jav.net.base.BaseNetTask;
 
-public interface INetFactory {
+/**
+ * 网络工厂，控制开启,关闭和获取任务容器控制添加网络任务
+ *
+ * @author yyz
+ */
+public interface INetFactory<T extends BaseNetTask> {
 
     /**
      * 是否已启动
@@ -12,12 +18,18 @@ public interface INetFactory {
 
     /**
      * 打开
+     *
+     * @return 返回接口
      */
-    void open();
+    INetFactory<T> open();
 
 
-
-    INetTaskContainer getNetTaskContainer();
+    /**
+     * 获取task组件
+     *
+     * @return
+     */
+    INetTaskComponent<T> getNetTaskComponent();
 
     /**
      * 关闭

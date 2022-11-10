@@ -4,7 +4,7 @@ import com.jav.net.base.AbsNetEngine;
 import com.jav.net.base.AbsNetFactory;
 import com.jav.net.base.BaseNetWork;
 import com.jav.net.base.joggle.INetFactory;
-import com.jav.net.base.joggle.ISSLFactory;
+import com.jav.net.base.joggle.ISSLComponent;
 
 public class NioUdpFactory extends AbsNetFactory<NioUdpTask> {
 
@@ -25,16 +25,16 @@ public class NioUdpFactory extends AbsNetFactory<NioUdpTask> {
 
     @Override
     protected AbsNetEngine initNetEngine() {
-        return new NioNetEngine(getFactoryIntent());
+        return new NioNetEngine(getFactoryContext());
     }
 
     @Override
     protected BaseNetWork<NioUdpTask> initNetWork() {
-        return new NioUdpWork(getFactoryIntent());
+        return new NioUdpWork(getFactoryContext());
     }
 
     @Override
-    protected ISSLFactory initSSLFactory() {
+    protected ISSLComponent initSSLComponent() {
         return null;
     }
 

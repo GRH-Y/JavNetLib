@@ -2,7 +2,7 @@ package com.jav.net.nio;
 
 
 import com.jav.net.base.SocketChannelCloseException;
-import com.jav.net.base.joggle.INetTaskContainer;
+import com.jav.net.base.joggle.INetTaskComponent;
 import com.jav.net.entity.FactoryContext;
 
 import java.io.IOException;
@@ -51,7 +51,7 @@ public class NioUdpWork<T extends NioUdpTask, C extends DatagramChannel> extends
             }
             netTask.setChannel(channel);
         } catch (Throwable e) {
-            callBackInitStatusChannelError(netTask, e);
+            callChannelError(netTask, e);
         }
         return (C) channel;
     }
@@ -71,7 +71,7 @@ public class NioUdpWork<T extends NioUdpTask, C extends DatagramChannel> extends
             netTask.setSelectionKey(selectionKey);
             netTask.onBeReadyChannel(channel);
         } catch (Throwable e) {
-            callBackInitStatusChannelError(netTask, e);
+            callChannelError(netTask, e);
         }
     }
 
@@ -132,7 +132,7 @@ public class NioUdpWork<T extends NioUdpTask, C extends DatagramChannel> extends
     }
 
     protected void hasErrorToUnExecTask(T netTask, Throwable e) {
-        INetTaskContainer taskFactory = mFactoryContext.getNetTaskContainer();
+        INetTaskComponent taskFactory = mFactoryContext.getNetTaskComponent();
         taskFactory.addUnExecTask(netTask);
         if (!(e instanceof SocketChannelCloseException)) {
             e.printStackTrace();

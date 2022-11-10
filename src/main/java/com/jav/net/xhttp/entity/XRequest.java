@@ -17,12 +17,21 @@ public class XRequest {
     private XUrlMedia mHttpUrlMedia;
     private RequestMode mRequestMode = RequestMode.GET;
 
-    //禁用系統的header参数，完全用户自定义
+    /**
+     * 禁用系統的header参数，完全用户自定义
+     */
     private boolean mDisableSysProperty = false;
 
     private byte[] mSendData = null;
 
-    private String mCallBackMethod = null;
+    /**
+     * 成功回调方法名
+     */
+    private String mCallBackSuccessMethod = null;
+    /**
+     * 失败回调方法名
+     */
+    private String mCallBackErrorMethod = null;
     private String mProcessMethod = null;
 
     /**
@@ -69,8 +78,12 @@ public class XRequest {
         return mResultType;
     }
 
-    public String getCallBackMethod() {
-        return mCallBackMethod;
+    public String getCallBackErrorMethod() {
+        return mCallBackErrorMethod;
+    }
+
+    public String getCallBackSuccessMethod() {
+        return mCallBackSuccessMethod;
     }
 
     public void setUrl(String url) {
@@ -101,10 +114,13 @@ public class XRequest {
     }
 
 
-    public void setCallBackMethod(String callBackMethod) {
-        this.mCallBackMethod = callBackMethod;
+    public void setCallBackSuccessMethod(String method) {
+        this.mCallBackSuccessMethod = method;
     }
 
+    public void setCallBackErrorMethod(String method) {
+        this.mCallBackErrorMethod = method;
+    }
 
     public String getProcessMethod() {
         return mProcessMethod;

@@ -1,10 +1,7 @@
 package com.jav.net.nio;
 
-import com.jav.common.log.LogDog;
 import com.jav.net.base.NetTaskComponent;
-import com.jav.net.base.joggle.INetTaskContainer;
 import com.jav.net.entity.FactoryContext;
-import com.jav.net.entity.NetTaskStatusCode;
 
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -13,10 +10,13 @@ import java.util.List;
 
 /**
  * NioBalancedNetWork 只处理连接请求的事件,把链接成功的channel分发到NioReadWriteWork来处理读写事件
+ *
+ * @author yyz
  */
 public class NioBalancedNetWork<T extends NioClientTask, C extends SocketChannel> extends NioClientWork<T, C> {
 
     private List<NioReadWriteNetWork> mRWNetWorkList;
+
 
     private final int DEFAULT_WORK_COUNT = 3;
 
@@ -24,49 +24,23 @@ public class NioBalancedNetWork<T extends NioClientTask, C extends SocketChannel
 
     private NioClearWork mClearWork;
 
-    public NioBalancedNetWork(FactoryContext intent) {
-        super(intent);
+
+    public NioBalancedNetWork(FactoryContext context) {
+        super(context);
     }
 
     /**
      * 均衡分配的net work
      *
-     * @param intent
+     * @param context
      * @param workCount net work的数量
      */
-    public NioBalancedNetWork(FactoryContext intent, int workCount) {
-        super(intent);
+    public NioBalancedNetWork(FactoryContext context, int workCount) {
+        super(context);
         if (workCount <= 0) {
             workCount = DEFAULT_WORK_COUNT;
         }
         mConfigWorkCount = workCount;
-    }
-
-    @Override
-    protected void init() {
-        super.init();
-        initRWNetWork(mConfigWorkCount);
-    }
-
-    private void initRWNetWork(int workCount) {
-        FactoryContext clearContext = new FactoryContext();
-        //跟NioBalancedNetWork共享同个NetTaskContainer
-        clearContext.setNetTaskContainer(mFactoryContext.getNetTaskContainer());
-        mClearWork = new NioClearWork(clearContext);
-        clearContext.setNetWork(mClearWork);
-
-        mRWNetWorkList = new ArrayList<>(workCount);
-        for (int index = 0; index < workCount; index++) {
-            FactoryContext rwContext = new FactoryContext();
-            rwContext.setSSLFactory(mFactoryContext.getSSLFactory());
-            rwContext.setNetTaskContainer(new NetTaskComponent(rwContext));
-            NioReadWriteNetWork netWork = new NioReadWriteNetWork<>(rwContext, mClearWork);
-            netWork.init();
-            rwContext.setNetWork(netWork);
-            mRWNetWorkList.add(netWork);
-            //绑定当前的NioReadWriteNetWork 让ClearWork 来处理addUnExecTask
-            mClearWork.bindRWNetWork(netWork);
-        }
     }
 
     public List<NioReadWriteNetWork> getSubNetWorkList() {
@@ -78,56 +52,51 @@ public class NioBalancedNetWork<T extends NioClientTask, C extends SocketChannel
     }
 
     @Override
-    protected void onRegisterChannel(T netTask, C channel) {
-        try {
-            if (channel.isConnected()) {
-                //改变channel注册到其它的Selector
-                changeSelectReg(netTask);
-            } else {
-                SelectionKey selectionKey = channel.register(mSelector, SelectionKey.OP_CONNECT, netTask);
-                netTask.setSelectionKey(selectionKey);
-            }
-        } catch (Throwable e) {
-            LogDog.e("## channel register error , url = " + netTask.getHost() + " port = " + netTask.getPort() + " exception = " + e.getMessage());
-            callBackInitStatusChannelError(netTask, e);
+    protected void init() {
+        super.init();
+        initRWNetWork(mConfigWorkCount);
+    }
+
+    private void initRWNetWork(int workCount) {
+        // 设置监听主Component，用于唤醒clear engine处理移除task
+        FactoryContext mainContext = getFactoryContext();
+        NetTaskComponent mainComponent = mainContext.getNetTaskComponent();
+
+        FactoryContext clearContext = new FactoryContext();
+        clearContext.setNetTaskComponent(mainComponent);
+        mClearWork = new NioClearWork(clearContext);
+        clearContext.setNetWork(mClearWork);
+        mainComponent.setDestroyFactoryContext(clearContext);
+
+        mRWNetWorkList = new ArrayList<>(workCount);
+        for (int index = 0; index < workCount; index++) {
+            FactoryContext rwContext = new FactoryContext();
+            rwContext.setNetTaskComponent(mainComponent);
+            rwContext.setSSLFactory(mainContext.getSSLFactory());
+            NioReadWriteNetWork netWork = new NioReadWriteNetWork<>(rwContext);
+            rwContext.setNetWork(netWork);
+            netWork.init();
+            mRWNetWorkList.add(netWork);
         }
     }
+
 
     @Override
-    protected void onConnectEvent(SelectionKey key) {
-        C channel = (C) key.channel();
-        if (channel == null) {
-            return;
+    protected void registerEvent(T netTask, C channel) {
+        SelectionKey selectionKey = netTask.getSelectionKey();
+        if (selectionKey != null) {
+            // 解绑当前的selector,取消通道注册
+            selectionKey.cancel();
         }
-        T netTask = (T) key.attachment();
-        try {
-            boolean isConnect = channel.finishConnect();
-            if (isConnect) {
-                //改变channel注册到其它的Selector
-                changeSelectReg(netTask);
-            } else {
-                callBackInitStatusChannelError(netTask, null);
-            }
-        } catch (Throwable e) {
-            callBackInitStatusChannelError(netTask, e);
-        }
+        NioReadWriteNetWork netWork = findOptimalNetWork();
+        netWork.registerReadWriteEvent(netTask);
     }
 
-    private void changeSelectReg(T netTask) {
-        if (netTask.updateTaskStatus(NetTaskStatusCode.RUN, NetTaskStatusCode.NONE)) {
-            NioReadWriteNetWork netWork = findOptimalNetWork();
-            netWork.registerReadWriteEvent(netTask);
-        } else {
-            //更新ASSIGN状态失败则结束task
-            LogDog.w("## changeSelectReg update status to ASSIGN fails !!!");
-            FactoryContext context = mClearWork.getFactoryContext();
-            INetTaskContainer taskContainer = context.getNetTaskContainer();
-            taskContainer.addUnExecTask(netTask);
-            NioNetEngine netEngine = context.getNetEngine();
-            netEngine.resumeEngine();
-        }
-    }
-
+    /**
+     * 匹配最优的work，根据work当前的task数量选最少的
+     *
+     * @return
+     */
     private NioReadWriteNetWork findOptimalNetWork() {
         NioReadWriteNetWork target = null;
         for (NioReadWriteNetWork netWork : mRWNetWorkList) {

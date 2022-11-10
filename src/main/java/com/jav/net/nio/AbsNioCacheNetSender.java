@@ -5,6 +5,7 @@ import com.jav.net.component.SenderCacheComponent;
 import com.jav.net.component.joggle.ICacheComponent;
 import com.jav.net.entity.MultiByteBuffer;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 
@@ -24,7 +25,7 @@ public abstract class AbsNioCacheNetSender<T> extends AbsNetSender<T> {
         }
     }
 
-    protected ICacheComponent getCacheComponent() {
+    public ICacheComponent getCacheComponent() {
         return mCacheComponent;
     }
 
@@ -70,6 +71,10 @@ public abstract class AbsNioCacheNetSender<T> extends AbsNetSender<T> {
         int ret = SEND_COMPLETE;
         if (data instanceof MultiByteBuffer) {
             MultiByteBuffer buffer = (MultiByteBuffer) data;
+            if (buffer.isClear()) {
+                //当前buf没有数据
+                return SEND_COMPLETE;
+            }
             ByteBuffer[] sendDataBuf = buffer.getTmpBuf();
             if (sendDataBuf == null) {
                 // sendDataBuf 为null 说明是第一次处理数据，不为null说明上次数据发送不完整
@@ -96,12 +101,15 @@ public abstract class AbsNioCacheNetSender<T> extends AbsNetSender<T> {
      */
     @Override
     protected void onSendNetData() throws Throwable {
-        Object data = mCacheComponent.pollLastData();
+        Object data = mCacheComponent.pollFirstData();
         Throwable exception = null;
         try {
             int ret = onHandleSendData(data);
             if (ret == SEND_CHANNEL_BUSY) {
                 return;
+            }
+            if (ret == SEND_FAIL) {
+                exception = new IOException("## failed to send data. The socket channel may be closed !!! ");
             }
         } catch (Throwable e) {
             exception = e;
@@ -136,7 +144,6 @@ public abstract class AbsNioCacheNetSender<T> extends AbsNetSender<T> {
      *
      * @param data
      * @return
-     * @throws Throwable
      */
-    protected abstract int sendDataImp(ByteBuffer[] data) throws Throwable;
+    protected abstract int sendDataImp(ByteBuffer[] data);
 }

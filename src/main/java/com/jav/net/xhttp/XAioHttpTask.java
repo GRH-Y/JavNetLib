@@ -5,8 +5,9 @@ import com.jav.common.util.StringEnvoy;
 import com.jav.net.aio.AioClientTask;
 import com.jav.net.aio.AioReceiver;
 import com.jav.net.aio.AioSender;
+import com.jav.net.base.NetTaskStatus;
 import com.jav.net.base.joggle.*;
-import com.jav.net.entity.NetTaskStatusCode;
+import com.jav.net.state.joggle.IStateMachine;
 import com.jav.net.xhttp.config.XHttpConfig;
 import com.jav.net.xhttp.entity.XHttpDecoderStatus;
 import com.jav.net.xhttp.entity.XRequest;
@@ -27,7 +28,7 @@ public class XAioHttpTask extends AioClientTask implements ISenderFeedback, IAio
 
     private XRequest mRequest;
     private final XHttpConfig mHttpConfig;
-    private final INetTaskContainer<AioClientTask> mNetTaskFactory;
+    private final INetTaskComponent<AioClientTask> mNetTaskFactory;
     private final XHttpProtocol mHttpProtocol;
     private XHttpDecoderProcessor mHttpDecoderProcessor;
 
@@ -35,7 +36,7 @@ public class XAioHttpTask extends AioClientTask implements ISenderFeedback, IAio
     private boolean mIsComplete = false;
 
 
-    XAioHttpTask(INetTaskContainer<AioClientTask> taskFactory, XHttpConfig httpConfig, XRequest request) {
+    XAioHttpTask(INetTaskComponent<AioClientTask> taskFactory, XHttpConfig httpConfig, XRequest request) {
         if (request == null) {
             throw new NullPointerException("request is null !!!");
         }
@@ -60,7 +61,7 @@ public class XAioHttpTask extends AioClientTask implements ISenderFeedback, IAio
             }
         }
         setAddress(host, httpUrlMedia.getPort());
-        setTLS(httpUrlMedia.isTSL());
+        setTls(httpUrlMedia.isTSL());
         mHttpDecoderProcessor = new XHttpDecoderProcessor();
     }
 
@@ -134,7 +135,8 @@ public class XAioHttpTask extends AioClientTask implements ISenderFeedback, IAio
             mIsRedirect = false;
         } else {
             //复用task
-            setTaskStatus(NetTaskStatusCode.NONE);
+            IStateMachine stateMachine = getStatusMachine();
+            stateMachine.setStatus(NetTaskStatus.NONE);
             XMultiplexCacheManger.getInstance().lose(this);
         }
     }
@@ -166,7 +168,7 @@ public class XAioHttpTask extends AioClientTask implements ISenderFeedback, IAio
                     }
                     IXSessionNotify sessionNotify = mHttpConfig.getSessionNotify();
                     if (sessionNotify != null) {
-                        sessionNotify.notifyData(mRequest, response, null);
+                        sessionNotify.notifySuccess(mRequest, response);
                     }
                     mIsComplete = true;
                 }

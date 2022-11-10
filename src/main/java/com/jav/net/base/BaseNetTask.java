@@ -1,84 +1,42 @@
 package com.jav.net.base;
 
 import com.jav.common.util.StringEnvoy;
-import com.jav.net.entity.NetTaskStatus;
-import com.jav.net.entity.NetTaskStatusCode;
+import com.jav.net.state.joggle.IStateChangeListener;
+import com.jav.net.state.joggle.IStateMachine;
 
+/**
+ * 基本网络任务,创建网络链接通信
+ *
+ * @author yyz
+ */
 public class BaseNetTask {
 
     protected String mHost = null;
     protected int mPort = -1;
 
-    private final NetTaskStatus mCurTaskStatus;
+    private final NetStateMachine mStatusMachine;
+
+
+    private IStateChangeListener mListener = (IStateChangeListener<Integer>) state -> {
+        onTaskState(state);
+    };
+
 
     public BaseNetTask() {
-        mCurTaskStatus = new NetTaskStatus(NetTaskStatusCode.NONE);
+        mStatusMachine = new NetStateMachine(new NetTaskStatus());
+        mStatusMachine.regStateChangeListener(mListener);
     }
 
-    /**
-     * 是否正在关闭
-     *
-     * @return
-     */
-    public NetTaskStatusCode getTaskStatus() {
-        return mCurTaskStatus.getCode();
-    }
-
-    /**
-     * 设置状态
-     *
-     * @param newStatus
-     */
-    protected void setTaskStatus(NetTaskStatusCode newStatus) {
-        mCurTaskStatus.setCode(newStatus);
-        onTaskState(mCurTaskStatus);
-    }
-
-    /**
-     * 更新task状态
-     * @param expectStatus
-     * @param setStatus
-     * @return
-     */
-    protected boolean updateTaskStatus(NetTaskStatusCode expectStatus, NetTaskStatusCode setStatus) {
-        return updateTaskStatus(expectStatus, setStatus, false);
-    }
-
-    /**
-     * 符合期望的状态才设置新的状态
-     *
-     * @param expectStatus 期望状态
-     * @param setStatus    新的状态
-     * @param isWait       如果为true则在修改状态失败的时候会进入等待，直到修改状态成功才返回
-     * @return 设置状态成功则返回true
-     */
-    protected boolean updateTaskStatus(NetTaskStatusCode expectStatus, NetTaskStatusCode setStatus, boolean isWait) {
-        boolean result = mCurTaskStatus.updateCode(expectStatus, setStatus);
-        if (isWait && !result) {
-            synchronized (mCurTaskStatus) {
-                try {
-                    mCurTaskStatus.wait();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-            result = mCurTaskStatus.updateCode(expectStatus, setStatus);
-        }
-        if (result) {
-            synchronized (mCurTaskStatus) {
-                mCurTaskStatus.notify();
-            }
-            onTaskState(mCurTaskStatus);
-        }
-        return result;
+    protected IStateMachine<Integer> getStatusMachine() {
+        return mStatusMachine;
     }
 
     /**
      * 任务状态变化回调
      *
-     * @param status
+     * @param statCode
      */
-    protected void onTaskState(NetTaskStatus status) {
+    protected void onTaskState(int statCode) {
     }
 
 
@@ -102,6 +60,7 @@ public class BaseNetTask {
      * 当前状态链接彻底关闭，可以做资源回收工作
      */
     protected void onRecovery() {
+        mStatusMachine.unRegStateChangeListener(mListener);
         mHost = null;
         mPort = -1;
     }

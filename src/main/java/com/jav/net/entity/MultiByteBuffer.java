@@ -1,40 +1,58 @@
 package com.jav.net.entity;
 
 
-import com.jav.common.log.LogDog;
-
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * 多级直接字节缓存
+ *
+ * @author yyz
  */
 public class MultiByteBuffer {
 
     private boolean mIsDirect;
 
-    //默认每个buf的大小
+    /**
+     * 默认每个buf的大小
+     */
     private final int mBufSize;
-    private static final int DEFAULT_SIZE = 16921;
+    public static final int DEFAULT_SIZE = 16921;
 
-    //当前可用的buf在集合的索引
+    /**
+     * 当前可用的buf在集合的索引
+     */
     private volatile int mBufIndex = 0;
-    //当前可用buf指针位置
+    /**
+     * 当前可用buf指针位置
+     */
     private volatile int mOffset = 0;
-    //标记potions的备份
+    /**
+     * 标记potions的备份
+     */
     private volatile int mMark = -1;
-    //当前数据占缓存的容量
+    /**
+     * 当前数据占缓存的容量
+     */
     private volatile int mLimit;
-    //当前缓存最大的容量
+    /**
+     * 当前缓存最大的容量
+     */
     private volatile int mCapacity;
 
-    //临时缓存，一般用于缓存getUseBuf没有处理完
+    /**
+     * 临时缓存，一般用于缓存getUseBuf没有处理完
+     */
     private ByteBuffer[] mTmpCacheBuf = null;
-    //buf集合
+    /**
+     * buf集合
+     */
     private final List<ByteBuffer> mBufList;
 
-    //借用数量
+    /**
+     * 借用数量
+     */
     private int mLendCount = 0;
 
     public MultiByteBuffer(byte[] data) {
@@ -44,6 +62,8 @@ public class MultiByteBuffer {
         ByteBuffer buffer = ByteBuffer.wrap(data);
         buffer.position(buffer.limit());
         mBufList.add(buffer);
+        mCapacity = mBufSize;
+        mLimit = mBufSize;
     }
 
     public MultiByteBuffer(ByteBuffer data) {
@@ -75,7 +95,6 @@ public class MultiByteBuffer {
             }
             mCapacity += mBufSize;
             mLimit += mBufSize;
-//            LogDog.d("bufList size = " + bufList.size());
         }
     }
 
@@ -98,21 +117,16 @@ public class MultiByteBuffer {
     public final ByteBuffer[] getUseBuf(boolean isFlip) {
         synchronized (mBufList) {
             if (mLendCount > 0) {
-                LogDog.e("## getUseBuf buf is use ing !!!");
-                return null;
+                throw new IllegalStateException("## getUseBuf buf is use ing !!!");
             }
             int size = mBufIndex + (mOffset > 0 ? 1 : 0);
             ByteBuffer[] buffers = new ByteBuffer[size];
-            try {
-                for (int index = 0; index < size; index++) {
-                    ByteBuffer tmp = mBufList.get(index);
-                    if (isFlip) {
-                        tmp.flip();
-                    }
-                    buffers[index] = tmp;
+            for (int index = 0; index < size; index++) {
+                ByteBuffer tmp = mBufList.get(index);
+                if (isFlip) {
+                    tmp.flip();
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
+                buffers[index] = tmp;
             }
             mLendCount = size;
             return buffers;
@@ -128,8 +142,7 @@ public class MultiByteBuffer {
     public final ByteBuffer[] getAllBuf() {
         synchronized (mBufList) {
             if (mLendCount > 0) {
-                LogDog.e("## getAllBuf buf is use ing !!!");
-                return null;
+                throw new IllegalStateException("## getAllBuf buf is use ing !!!");
             }
             ByteBuffer[] buffers = new ByteBuffer[mBufList.size()];
             mLendCount = buffers.length;
@@ -146,8 +159,7 @@ public class MultiByteBuffer {
     public final ByteBuffer getSingleBuf() {
         synchronized (mBufList) {
             if (mLendCount > 0) {
-                LogDog.e("## getLendBuf buf is use ing !!!");
-                return null;
+                throw new IllegalStateException("## getLendBuf buf is use ing !!!");
             }
             mLendCount = 1;
             return mBufList.get(mBufIndex);
@@ -182,8 +194,7 @@ public class MultiByteBuffer {
     public final void setBackBuf(ByteBuffer... buffer) {
         synchronized (mBufList) {
             if (mLendCount == 0 || buffer == null || buffer.length == 0 || mLendCount != buffer.length) {
-                LogDog.e("## setBackBuf the number of returned buf is inconsistent");
-                return;
+                throw new IllegalStateException("## setBackBuf the number of returned buf is inconsistent");
             }
             for (ByteBuffer tmp : buffer) {
                 if (!mBufList.contains(tmp)) {
@@ -193,9 +204,6 @@ public class MultiByteBuffer {
             }
             mLendCount = 0;
             for (int index = 0; index < buffer.length; index++) {
-//                if (buffer[index].capacity() != buffer[index].limit()) {
-//                    buffer[index].clear();
-//                }
                 if (buffer[index].hasRemaining()) {
                     //buf没有存满则认为最后的buf
                     mOffset = buffer[index].position();
@@ -343,9 +351,6 @@ public class MultiByteBuffer {
         synchronized (mBufList) {
             clear();
             mBufList.clear();
-//            for (ByteBuffer buffer : bufList) {
-//                DirectBufferCleaner.clean(buffer);
-//            }
         }
     }
 

@@ -10,8 +10,9 @@ import java.lang.annotation.Target;
 /**
  * 网络请求注解
  * Created by No.9 on 2018/2/22.
+ *
+ * @author yyz
  */
-
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface AXHttpRequest {
@@ -31,12 +32,20 @@ public @interface AXHttpRequest {
     String url();
 
     /**
-     * 请求回调结果的方法名JavKeep
-     * 方法参数必须是（XRequest request, XResponse response,Exception ex）
+     * 配置成功回调方法名,需要用@JavKeep注解，避免混淆
+     * 方法参数必须是（XRequest request, XResponse response）
      *
      * @return
      */
-    String callBackMethod() default "";
+    String callBackSuccessMethod() default "";
+
+    /**
+     * 配置错误回调方法名,需要用@JavKeep注解，避免混淆
+     * 方法参数必须是（XRequest request,Throwable ex）
+     *
+     * @return
+     */
+    String callBackErrorMethod() default "";
 
     /**
      * 本次请求过程状态回调方法名

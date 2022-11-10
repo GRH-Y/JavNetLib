@@ -1,65 +1,61 @@
 package com.jav.net.nio;
 
-import com.jav.net.base.SocketChannelCloseException;
-import com.jav.net.base.joggle.INetTaskContainer;
 import com.jav.net.entity.FactoryContext;
 
+import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * NioAcceptWork 只处理读写请求的事件
+ *
+ * @author yyz
  */
 public class NioReadWriteNetWork<T extends NioClientTask, C extends SocketChannel> extends NioClientWork<T, C> {
 
-    private final NioClearWork mClearWork;
+    private List<T> mWaiteRegNetTaskList;
 
-    protected NioReadWriteNetWork(FactoryContext context, NioClearWork clearWork) {
+    protected NioReadWriteNetWork(FactoryContext context) {
         super(context);
-        this.mClearWork = clearWork;
+        mWaiteRegNetTaskList = new ArrayList<>();
     }
-
 
     public void registerReadWriteEvent(T netTask) {
-        SelectionKey selectionKey = netTask.getSelectionKey();
-        if (selectionKey != null) {
-            selectionKey.cancel();
+        synchronized (mWaiteRegNetTaskList) {
+            mWaiteRegNetTaskList.add(netTask);
         }
+        mSelector.wakeup();
+    }
 
-        FactoryContext context = getFactoryContext();
-        INetTaskContainer container = context.getNetTaskContainer();
-        boolean ret = container.addExecTask(netTask);
-        if (ret) {
-            mSelector.wakeup();
-        } else {
-            notifyClearWork(netTask);
+    private void regWaitNetTask() {
+        synchronized (mWaiteRegNetTaskList) {
+            for (T netTask : mWaiteRegNetTaskList) {
+                try {
+                    registerEvent(netTask, (C) netTask.getChannel());
+                } catch (IOException e) {
+                    callChannelError(netTask, e);
+                }
+            }
+            mWaiteRegNetTaskList.clear();
         }
     }
 
-
     public int getPressureValue() {
-        return mSelector.selectedKeys().size();
+        return mSelector.keys().size();
     }
 
     @Override
-    protected void onRWDataTask() {
+    protected void onSelectEvent() {
         int count = 0;
-        INetTaskContainer taskFactory = mFactoryContext.getNetTaskContainer();
-        if (taskFactory.isConnectQueueEmpty()) {
-            try {
-                count = mSelector.select();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        } else {
-            try {
-                count = mSelector.selectNow();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        try {
+            count = mSelector.select();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-
+        regWaitNetTask();
         if (count > 0) {
             for (Iterator<SelectionKey> iterator = mSelector.selectedKeys().iterator(); iterator.hasNext(); iterator.remove()) {
                 SelectionKey selectionKey = iterator.next();
@@ -68,36 +64,4 @@ public class NioReadWriteNetWork<T extends NioClientTask, C extends SocketChanne
         }
     }
 
-    @Override
-    protected void hasErrorToUnExecTask(T netTask, Throwable e) {
-        if (!(e instanceof SocketChannelCloseException)) {
-            e.printStackTrace();
-        }
-        notifyClearWork(netTask);
-    }
-
-    @Override
-    protected void callBackInitStatusChannelError(T netTask, Throwable e) {
-        try {
-            netTask.onErrorChannel(e);
-        } catch (Throwable e1) {
-            e.printStackTrace();
-        } finally {
-            //该通道有异常，结束任务
-            notifyClearWork(netTask);
-        }
-    }
-
-    private void notifyClearWork(T netTask) {
-        SelectionKey selectionKey = netTask.getSelectionKey();
-        if (selectionKey == null) {
-            return;
-        }
-        selectionKey.cancel();
-        FactoryContext context = mClearWork.getFactoryContext();
-        INetTaskContainer taskFactory = context.getNetTaskContainer();
-        taskFactory.addUnExecTask(netTask);
-        NioNetEngine netEngine = context.getNetEngine();
-        netEngine.resumeEngine();
-    }
 }

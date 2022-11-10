@@ -6,6 +6,11 @@ import com.jav.thread.executor.LoopTask;
 import com.jav.thread.executor.TaskContainer;
 import com.jav.thread.executor.joggle.ILoopTaskExecutor;
 
+/**
+ * base net engine
+ *
+ * @author yyz
+ */
 public abstract class AbsNetEngine extends LoopTask {
 
     protected ILoopTaskExecutor mExecutor = null;
@@ -23,10 +28,17 @@ public abstract class AbsNetEngine extends LoopTask {
         onEngineRun();
     }
 
+    /**
+     * engine run method of looping
+     */
     abstract protected void onEngineRun();
 
     protected boolean isEngineRunning() {
-        return mExecutor != null && mExecutor.isLoopState() && mExecutor.isStartState();
+        return mExecutor != null && mExecutor.isLoopState() && mExecutor.isAliveState();
+    }
+
+    protected boolean isEngineStoping() {
+        return mExecutor != null && mExecutor.isStopState();
     }
 
     protected void resumeEngine() {
@@ -42,7 +54,7 @@ public abstract class AbsNetEngine extends LoopTask {
     }
 
     protected void startEngine() {
-        if (mExecutor == null) {
+        if (mExecutor == null || !mExecutor.isAliveState()) {
             TaskContainer container = new TaskContainer(this);
             mExecutor = container.getTaskExecutor();
             mExecutor.startTask();
@@ -51,12 +63,13 @@ public abstract class AbsNetEngine extends LoopTask {
 
     protected void stopEngine() {
         if (mExecutor != null) {
-            mExecutor.destroyTask();
+            mExecutor.stopTask();
         }
     }
 
-    protected void destroyEngine() {
+    protected void release() {
         mExecutor = null;
+        mFactoryContext = null;
     }
 
 }

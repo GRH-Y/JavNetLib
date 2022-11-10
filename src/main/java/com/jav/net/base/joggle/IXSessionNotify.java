@@ -14,9 +14,17 @@ import com.jav.net.xhttp.entity.XResponse;
 public interface IXSessionNotify {
 
     /**
-     * 通知结果
+     * 通知成功结果
      *
      * @param request
      */
-    void notifyData(XRequest request, XResponse response, Throwable e);
+    void notifySuccess(XRequest request, XResponse response);
+
+
+    /**
+     * 通知错误结果
+     *
+     * @param request
+     */
+    void notifyError(XRequest request,  Throwable e);
 }

@@ -2,7 +2,7 @@ package com.jav.net.xhttp;
 
 import com.jav.common.util.MultiplexCache;
 import com.jav.net.aio.AioClientTask;
-import com.jav.net.base.joggle.INetTaskContainer;
+import com.jav.net.base.joggle.INetTaskComponent;
 import com.jav.net.nio.NioClientTask;
 import com.jav.net.xhttp.config.XHttpConfig;
 import com.jav.net.xhttp.entity.XRequest;
@@ -49,7 +49,7 @@ public class XMultiplexCacheManger {
     }
 
 
-    public XNioHttpTask obtainNioTask(INetTaskContainer<NioClientTask> taskFactory, XHttpConfig httpConfig, XRequest request) {
+    public XNioHttpTask obtainNioTask(INetTaskComponent<NioClientTask> taskFactory, XHttpConfig httpConfig, XRequest request) {
         if (mIsRelease) {
             return null;
         }
@@ -62,7 +62,7 @@ public class XMultiplexCacheManger {
         return requestTask;
     }
 
-    public XAioHttpTask obtainAioTask(INetTaskContainer<AioClientTask> taskFactory, XHttpConfig httpConfig, XRequest request) {
+    public XAioHttpTask obtainAioTask(INetTaskComponent<AioClientTask> taskFactory, XHttpConfig httpConfig, XRequest request) {
         if (mIsRelease) {
             return null;
         }

@@ -138,10 +138,6 @@ public class XHttpProtocol {
         boolean isFirst = true;
         for (Map.Entry<Object, String> entry : mHeadParameterMap.entrySet()) {
             Object key = entry.getKey();
-            if (key instanceof RepeatableKey) {
-                RepeatableKey repeatableKey = (RepeatableKey) key;
-                key = repeatableKey.getKey();
-            }
             if (isFirst && !mIsDisableSysProperty) {
                 builder.append(key).append(entry.getValue());
                 isFirst = false;

@@ -1,14 +1,14 @@
 package com.jav.net.aio;
 
 import com.jav.net.base.BaseNetChannelTask;
-import com.jav.net.base.joggle.ISSLFactory;
+import com.jav.net.base.joggle.ISSLComponent;
 
 import java.nio.channels.NetworkChannel;
 
 public class BaseAioChannelTask<T extends NetworkChannel> extends BaseNetChannelTask<T> {
 
     @Override
-    protected void onCreateSSLContext(ISSLFactory sslFactory) {
+    protected void onCreateSSLContext(ISSLComponent sslFactory) {
         super.onCreateSSLContext(sslFactory);
     }
 

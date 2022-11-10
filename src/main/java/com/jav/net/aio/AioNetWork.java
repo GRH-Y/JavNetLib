@@ -11,18 +11,18 @@ public class AioNetWork<T extends BaseNetTask> extends BaseNetWork<T> {
     }
 
     @Override
-    protected void onCheckConnectTask() {
-        super.onCheckConnectTask();
+    protected void onCreateTask() {
+        super.onCreateTask();
     }
 
 
     @Override
-    protected void onCheckRemoverTask() {
-        super.onCheckRemoverTask();
+    protected void onDestroyTask() {
+        super.onDestroyTask();
     }
 
     @Override
-    protected void onRecoveryTaskAll() {
-        super.onRecoveryTaskAll();
+    protected void onDestroyTaskAll() {
+        super.onDestroyTaskAll();
     }
 }

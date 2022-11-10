@@ -38,6 +38,6 @@ public class AioServerNetWork<T extends AioServerTask> extends BaseNetWork<T> im
     @Override
     public void failed(Throwable exc, T attachment) {
         exc.printStackTrace();
-        mFactoryContext.getNetTaskContainer().addUnExecTask(attachment);
+        mFactoryContext.getNetTaskComponent().addUnExecTask(attachment);
     }
 }
