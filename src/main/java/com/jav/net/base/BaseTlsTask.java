@@ -2,12 +2,14 @@ package com.jav.net.base;
 
 import com.jav.net.base.joggle.ISSLComponent;
 
+import java.nio.channels.NetworkChannel;
+
 /**
  * 基本tls的task，提供sslFactory回调
  *
  * @author yyz
  */
-public class BaseTlsTask extends BaseNetTask {
+public class BaseTlsTask<T extends NetworkChannel> extends BaseNetChannelTask<T> {
 
     protected boolean mIsTls = false;
 

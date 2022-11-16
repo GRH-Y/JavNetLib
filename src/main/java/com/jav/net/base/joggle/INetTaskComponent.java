@@ -22,9 +22,9 @@ public interface INetTaskComponent<T extends BaseNetTask> {
      * 移除nio任务
      *
      * @param task
-     * @return 0 立即成功, 1 等待销毁线程处理 , 2 添加移除任务失败
+     * @return true 添加成功
      */
-    int addUnExecTask(T task);
+    boolean addUnExecTask(T task);
 
     /**
      * 添加任务队列是否为空

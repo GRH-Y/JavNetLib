@@ -1,6 +1,7 @@
 package com.jav.net.base;
 
-import com.jav.net.state.joggle.IState;
+
+import com.jav.common.state.joggle.IState;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -19,30 +20,30 @@ public class NetTaskStatus implements IState<AtomicInteger> {
     /**
      * 任务正在结束
      */
-    public static final int FINISHING = 1;
+    public static final int FINISHING = 3;
 
     /**
      * 任务还没开始
      */
-    public static final int NONE = 2;
+    public static final int NONE = 4;
 
     /**
      * 任务已加载，等待执行
      */
-    public static final int LOAD = 4;
+    public static final int LOAD = 8;
 
     /**
      * 处理事件
      */
-    public static final int RUN = 8;
+    public static final int RUN = 16;
 
     /**
      * 无事件状态
      */
-    public static final int IDLING = 16;
+    public static final int IDLING = 32;
 
 
-    private volatile AtomicInteger mStatus = new AtomicInteger(2);
+    private volatile AtomicInteger mStatus = new AtomicInteger(NONE);
 
     @Override
     public AtomicInteger getStateEntity() {
@@ -52,7 +53,7 @@ public class NetTaskStatus implements IState<AtomicInteger> {
 
     @Override
     public String toString() {
-        String name = "INVALID";
+        String name;
         switch (mStatus.get()) {
             case 1:
                 name = "FINISH";
@@ -68,6 +69,9 @@ public class NetTaskStatus implements IState<AtomicInteger> {
                 break;
             case 16:
                 name = "IDLING";
+                break;
+            default:
+                name = "INVALID";
                 break;
         }
         return "NetTaskStatus { code = " + mStatus + " name = " + name + " }";

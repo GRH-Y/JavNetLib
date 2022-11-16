@@ -1,8 +1,8 @@
 package com.jav.net.base;
 
+import com.jav.common.state.joggle.IControlStateMachine;
 import com.jav.net.base.joggle.INetTaskComponent;
 import com.jav.net.entity.FactoryContext;
-import com.jav.net.state.joggle.IStateMachine;
 
 /**
  * 基本网络事务,提供事务的生命周期回调方法
@@ -46,7 +46,7 @@ public class BaseNetWork<T extends BaseNetTask> {
         INetTaskComponent<T> taskFactory = mFactoryContext.getNetTaskComponent();
         T netTask = taskFactory.pollConnectTask();
         if (netTask != null) {
-            IStateMachine stateMachine = netTask.getStatusMachine();
+            IControlStateMachine<Integer> stateMachine = netTask.getStatusMachine();
             if (stateMachine.updateState(NetTaskStatus.LOAD, NetTaskStatus.RUN)) {
                 createTaskImp(netTask);
             }
@@ -77,10 +77,10 @@ public class BaseNetWork<T extends BaseNetTask> {
     }
 
     protected void destroyTaskImp(T netTask) {
-        IStateMachine stateMachine = netTask.getStatusMachine();
-        stateMachine.setStatus(NetTaskStatus.FINISHING);
+        IControlStateMachine<Integer> stateMachine = netTask.getStatusMachine();
+        stateMachine.updateState(stateMachine.getState(), NetTaskStatus.FINISHING);
         onDisconnectTask(netTask);
-        stateMachine.setStatus(NetTaskStatus.INVALID);
+        stateMachine.updateState(NetTaskStatus.FINISHING, NetTaskStatus.INVALID);
         onRecoveryTask(netTask);
     }
 

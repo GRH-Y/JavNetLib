@@ -1,12 +1,12 @@
 package com.jav.net.nio;
 
 import com.jav.common.log.LogDog;
+import com.jav.common.state.joggle.IControlStateMachine;
 import com.jav.net.base.BaseNetWork;
 import com.jav.net.base.NetTaskStatus;
 import com.jav.net.base.joggle.INetTaskComponent;
 import com.jav.net.base.joggle.ISSLComponent;
 import com.jav.net.entity.FactoryContext;
-import com.jav.net.state.joggle.IStateMachine;
 
 import java.io.IOException;
 import java.nio.channels.NetworkChannel;
@@ -15,6 +15,13 @@ import java.nio.channels.Selector;
 import java.util.Iterator;
 import java.util.Set;
 
+/**
+ * base nio net work ,provide selector and nio work life cycle.
+ *
+ * @param <T>
+ * @param <C>
+ * @author yyz
+ */
 public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends NetworkChannel> extends BaseNetWork<T> {
 
     protected Selector mSelector;
@@ -89,11 +96,13 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
     }
 
     protected void callChannelError(T netTask, Throwable e) {
-        try {
-            netTask.onErrorChannel(e);
-        } catch (Throwable e1) {
-            e.printStackTrace();
-        } finally {
+        IControlStateMachine<Integer> stateMachine = (IControlStateMachine) netTask.getStatusMachine();
+        if (!stateMachine.isAttachState(NetTaskStatus.FINISHING)) {
+            try {
+                netTask.onErrorChannel(e);
+            } catch (Throwable e1) {
+                e.printStackTrace();
+            }
             // 有异常，结束任务
             INetTaskComponent taskFactory = mFactoryContext.getNetTaskComponent();
             taskFactory.addUnExecTask(netTask);
@@ -125,6 +134,9 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
             }
             onInitChannel(netTask, channel);
             onRegisterChannel(netTask, channel);
+            // 这里channel会有reg read 或者 reg connect 两种事件,都会等待触发,所以切换状态为IDLING,如果需要移除可以进行操作
+            IControlStateMachine<Integer> stateMachine = (IControlStateMachine<Integer>) netTask.getStatusMachine();
+            stateMachine.updateState(NetTaskStatus.RUN, NetTaskStatus.IDLING);
         } catch (Throwable e) {
             LogDog.e("## onConnectTask has error , url = " + netTask.getHost() + " port = " + netTask.getPort());
             callChannelError(netTask, e);
@@ -154,7 +166,11 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
         if (count > 0) {
             for (Iterator<SelectionKey> iterator = mSelector.selectedKeys().iterator(); iterator.hasNext(); iterator.remove()) {
                 SelectionKey selectionKey = iterator.next();
-                onSelectionKey(selectionKey);
+                try {
+                    onSelectionKey(selectionKey);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
@@ -199,6 +215,16 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
         }
     }
 
+    private void changeStateToClearCondition(IControlStateMachine<Integer> stateMachine) {
+        if (!stateMachine.isAttachState(NetTaskStatus.IDLING)) {
+            while (!stateMachine.attachState(NetTaskStatus.IDLING)) {
+            }
+        }
+        if (stateMachine.isAttachState(NetTaskStatus.RUN)) {
+            while (!stateMachine.detachState(NetTaskStatus.RUN)) {
+            }
+        }
+    }
 
     /**
      * 处理通道事件
@@ -210,32 +236,35 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
             return;
         }
         T netTask = (T) selectionKey.attachment();
-        IStateMachine<Integer> stateMachine = netTask.getStatusMachine();
-        if (stateMachine.getStatus() <= NetTaskStatus.LOAD) {
-            selectionKey.cancel();
-            LogDog.e("## AbsNioNetWork onSelectionKey status code = " + stateMachine.getStatus());
+        IControlStateMachine<Integer> stateMachine = (IControlStateMachine<Integer>) netTask.getStatusMachine();
+        if (stateMachine.isAttachState(NetTaskStatus.FINISHING)) {
+            if (stateMachine.isAttachState(NetTaskStatus.RUN)) {
+                changeStateToClearCondition(stateMachine);
+                LogDog.e("## AbsNioNetWork onSelectionKey status code = " + stateMachine.getState());
+            }
             return;
         }
-        stateMachine.updateState(NetTaskStatus.IDLING, NetTaskStatus.RUN);
 
-        boolean isAcceptable = selectionKey.isAcceptable();
-        boolean isCanConnect = selectionKey.isConnectable();
-        boolean isCanRead = selectionKey.isReadable();
-        boolean isCanWrite = selectionKey.isWritable();
+        boolean ret = stateMachine.updateState(NetTaskStatus.IDLING, NetTaskStatus.RUN);
+        if (!ret) {
+            LogDog.e("## AbsNioNetWork updateState IDLING fails, state = " + stateMachine.getState());
+            return;
+        }
 
-        if (isCanRead) {
+        if (selectionKey.isValid() && selectionKey.isReadable() && stateMachine.getState() == NetTaskStatus.RUN) {
             onReadEvent(selectionKey);
         }
-        if (isCanWrite) {
+        if (selectionKey.isValid() && selectionKey.isWritable() && stateMachine.getState() == NetTaskStatus.RUN) {
             onWriteEvent(selectionKey);
         }
-        if (isCanConnect) {
+        if (selectionKey.isValid() && selectionKey.isConnectable() && stateMachine.getState() == NetTaskStatus.RUN) {
             onConnectEvent(selectionKey);
         }
-        if (isAcceptable) {
+        if (selectionKey.isValid() && selectionKey.isAcceptable() && stateMachine.getState() == NetTaskStatus.RUN) {
             onAcceptEvent(selectionKey);
         }
-        stateMachine.updateState(NetTaskStatus.RUN, NetTaskStatus.IDLING);
+
+        changeStateToClearCondition(stateMachine);
     }
 
     @Override

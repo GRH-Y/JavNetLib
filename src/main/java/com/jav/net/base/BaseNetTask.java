@@ -1,8 +1,8 @@
 package com.jav.net.base;
 
+import com.jav.common.state.joggle.IStateChangeListener;
+import com.jav.common.state.joggle.IStateMachine;
 import com.jav.common.util.StringEnvoy;
-import com.jav.net.state.joggle.IStateChangeListener;
-import com.jav.net.state.joggle.IStateMachine;
 
 /**
  * 基本网络任务,创建网络链接通信
@@ -27,8 +27,8 @@ public class BaseNetTask {
         mStatusMachine.regStateChangeListener(mListener);
     }
 
-    protected IStateMachine<Integer> getStatusMachine() {
-        return mStatusMachine;
+    protected <M extends IStateMachine> M getStatusMachine() {
+        return (M) mStatusMachine;
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.jav.net.xhttp;
 
 import com.jav.common.log.LogDog;
+import com.jav.common.state.joggle.IControlStateMachine;
 import com.jav.common.util.StringEnvoy;
 import com.jav.net.base.NetTaskStatus;
 import com.jav.net.base.joggle.*;
@@ -9,7 +10,6 @@ import com.jav.net.nio.NioClientTask;
 import com.jav.net.nio.NioReceiver;
 import com.jav.net.nio.NioSender;
 import com.jav.net.ssl.TLSHandler;
-import com.jav.net.state.joggle.IStateMachine;
 import com.jav.net.xhttp.config.XHttpConfig;
 import com.jav.net.xhttp.entity.XHttpCode;
 import com.jav.net.xhttp.entity.XHttpDecoderStatus;
@@ -195,8 +195,8 @@ public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INet
             mIsRedirect = false;
         } else {
             // 复用task
-            IStateMachine stateMachine = getStatusMachine();
-            stateMachine.setStatus(NetTaskStatus.NONE);
+            IControlStateMachine stateMachine = getStatusMachine();
+            stateMachine.updateState(NetTaskStatus.INVALID, NetTaskStatus.NONE);
             XMultiplexCacheManger.getInstance().lose(this);
         }
     }

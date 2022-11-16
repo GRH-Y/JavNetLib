@@ -8,7 +8,7 @@ import java.nio.channels.NetworkChannel;
  * @param <T>
  * @author yyz
  */
-public class BaseNetChannelTask<T extends NetworkChannel> extends BaseTlsTask {
+public class BaseNetChannelTask<T extends NetworkChannel> extends BaseNetTask {
 
     protected NetworkChannel mChannel;
 

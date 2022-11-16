@@ -1,10 +1,9 @@
 package com.jav.net.base;
 
 import com.jav.common.log.LogDog;
+import com.jav.common.state.joggle.IControlStateMachine;
 import com.jav.net.base.joggle.INetTaskComponent;
-import com.jav.net.base.joggle.INetTaskComponentListener;
 import com.jav.net.entity.FactoryContext;
-import com.jav.net.state.joggle.IStateMachine;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -16,10 +15,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * @author yyz
  */
 public class NetTaskComponent<T extends BaseNetTask> implements INetTaskComponent<T> {
-
-    public static final int UN_EXEC_SUCCESS = 0;
-    public static final int UN_EXEC_DELAY_SUCCESS = 1;
-    public static final int UN_EXEC_FALSE = 2;
 
     /**
      * 等待创建连接队列
@@ -33,8 +28,6 @@ public class NetTaskComponent<T extends BaseNetTask> implements INetTaskComponen
 
     protected FactoryContext mCreate;
     protected FactoryContext mDestroy;
-
-    private INetTaskComponentListener mListener;
 
 
     public NetTaskComponent(FactoryContext context) {
@@ -56,9 +49,9 @@ public class NetTaskComponent<T extends BaseNetTask> implements INetTaskComponen
             LogDog.e("## NetTaskComponent addExecTask add task fails, task == null !!!");
             return false;
         }
-        IStateMachine<Integer> stateMachine = task.getStatusMachine();
-        if (stateMachine.getStatus() != NetTaskStatus.NONE) {
-            LogDog.e("## NetTaskComponent addExecTask add task fails, status code = " + stateMachine.getStatus());
+        IControlStateMachine<Integer> stateMachine = task.getStatusMachine();
+        if (stateMachine.getState() != NetTaskStatus.NONE) {
+            LogDog.e("## NetTaskComponent addExecTask add task fails, status code = " + stateMachine.getState());
             return false;
         }
         AbsNetEngine netEngine = mCreate.getNetEngine();
@@ -71,31 +64,39 @@ public class NetTaskComponent<T extends BaseNetTask> implements INetTaskComponen
             return false;
         }
         boolean ret = stateMachine.updateState(NetTaskStatus.NONE, NetTaskStatus.LOAD);
-        if (ret) {
-            ret = mConnectCache.offer(task);
-            if (ret) {
-                netEngine.resumeEngine();
-                if (mListener != null) {
-                    mListener.onAppendChange(true);
-                }
-            }
-        }
         if (!ret) {
-            stateMachine.setStatus(NetTaskStatus.INVALID);
+            return false;
+        }
+        ret = mConnectCache.offer(task);
+        if (ret) {
+            netEngine.resumeEngine();
+        } else {
+            stateMachine.updateState(NetTaskStatus.LOAD, NetTaskStatus.INVALID);
             LogDog.e("## NetTaskComponent addExecTask offer fails !");
         }
         return ret;
     }
 
     @Override
-    public int addUnExecTask(T task) {
-        int retCode = UN_EXEC_FALSE;
+    public boolean addUnExecTask(T task) {
         if (task == null) {
-            return retCode;
+            LogDog.e("## NetTaskComponent addUnExecTask add task fails, task == null !!!");
+            return false;
         }
-        IStateMachine<Integer> stateMachine = task.getStatusMachine();
-        if (stateMachine.getStatus() < NetTaskStatus.LOAD) {
-            return retCode;
+        IControlStateMachine<Integer> stateMachine = task.getStatusMachine();
+        if (stateMachine.getState() < NetTaskStatus.LOAD) {
+            LogDog.e("## NetTaskComponent addUnExecTask add task fails, status code = " + stateMachine.getState());
+            return false;
+        } else if (stateMachine.getState() == NetTaskStatus.LOAD) {
+            boolean ret = stateMachine.updateState(NetTaskStatus.LOAD, NetTaskStatus.INVALID);
+            // 当前任务还在load阶段
+            if (ret) {
+                ret = mConnectCache.remove(task);
+            }
+            if (ret) {
+                LogDog.w("## NetTaskComponent remove load status task !!!");
+                return true;
+            }
         }
         AbsNetEngine netEngine;
         if (mDestroy == null) {
@@ -104,32 +105,24 @@ public class NetTaskComponent<T extends BaseNetTask> implements INetTaskComponen
             netEngine = mDestroy.getNetEngine();
         }
         if (netEngine.isEngineStoping()) {
-            return retCode;
+            LogDog.e("## NetTaskComponent addUnExecTask netEngine not running !");
+            return false;
         }
-        if (stateMachine.updateState(NetTaskStatus.LOAD, NetTaskStatus.INVALID)) {
-            // 当前任务还在load阶段
-            boolean ret = mConnectCache.remove(task);
-            if (ret) {
-                LogDog.w("## NetTaskComponent remove load status task !!!");
-                return UN_EXEC_SUCCESS;
-            }
+        if (mDestroyCache.contains(task)) {
+            LogDog.e("## NetTaskComponent addUnExecTask connect cache repeat !");
+            return false;
         }
-        if (stateMachine.getStatus() <= NetTaskStatus.FINISHING) {
-            // 当前任务已经进入finish阶段
-            return UN_EXEC_DELAY_SUCCESS;
+        if (stateMachine.isAttachState(NetTaskStatus.FINISHING)) {
+            // 其他线程修改了状态
+            return false;
         }
-        // 当前任务处于run阶段
-        if (!mDestroyCache.contains(task)) {
-            boolean ret = mDestroyCache.offer(task);
-            if (ret) {
-                netEngine.resumeEngine();
-                retCode = UN_EXEC_DELAY_SUCCESS;
-                if (mListener != null) {
-                    mListener.onAppendChange(false);
-                }
-            }
+        while (!stateMachine.attachState(NetTaskStatus.FINISHING)) {
         }
-        return retCode;
+        boolean ret = mDestroyCache.offer(task);
+        if (ret) {
+            netEngine.resumeEngine();
+        }
+        return ret;
     }
 
     @Override
@@ -150,10 +143,6 @@ public class NetTaskComponent<T extends BaseNetTask> implements INetTaskComponen
     @Override
     public T pollDestroyTask() {
         return mDestroyCache.poll();
-    }
-
-    public void setListener(INetTaskComponentListener mListener) {
-        this.mListener = mListener;
     }
 
     @Override

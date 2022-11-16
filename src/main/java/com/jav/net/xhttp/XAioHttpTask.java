@@ -1,13 +1,13 @@
 package com.jav.net.xhttp;
 
 import com.jav.common.log.LogDog;
+import com.jav.common.state.joggle.IControlStateMachine;
 import com.jav.common.util.StringEnvoy;
 import com.jav.net.aio.AioClientTask;
 import com.jav.net.aio.AioReceiver;
 import com.jav.net.aio.AioSender;
 import com.jav.net.base.NetTaskStatus;
 import com.jav.net.base.joggle.*;
-import com.jav.net.state.joggle.IStateMachine;
 import com.jav.net.xhttp.config.XHttpConfig;
 import com.jav.net.xhttp.entity.XHttpDecoderStatus;
 import com.jav.net.xhttp.entity.XRequest;
@@ -112,7 +112,7 @@ public class XAioHttpTask extends AioClientTask implements ISenderFeedback, IAio
         sender.setSenderFeedback(this);
         sender.sendData(head);
         sender.sendData(mRequest.getSendData());
-//        LogDog.d("==> head = " + new String(head));
+        //        LogDog.d("==> head = " + new String(head));
     }
 
     @Override
@@ -129,14 +129,14 @@ public class XAioHttpTask extends AioClientTask implements ISenderFeedback, IAio
     protected void onRecovery() {
         super.onRecovery();
         if (mIsRedirect) {
-            //是不是重定向
+            // 是不是重定向
             initTask(mRequest);
             mNetTaskFactory.addExecTask(this);
             mIsRedirect = false;
         } else {
-            //复用task
-            IStateMachine stateMachine = getStatusMachine();
-            stateMachine.setStatus(NetTaskStatus.NONE);
+            // 复用task
+            IControlStateMachine stateMachine = getStatusMachine();
+            stateMachine.updateState(NetTaskStatus.INVALID, NetTaskStatus.NONE);
             XMultiplexCacheManger.getInstance().lose(this);
         }
     }
@@ -156,7 +156,7 @@ public class XAioHttpTask extends AioClientTask implements ISenderFeedback, IAio
                 XResponse response = mHttpDecoderProcessor.getResponse();
                 int code = XResponseHelper.getCode(response);
                 if (code >= 300 && code < 400) {
-                    //重定向
+                    // 重定向
                     String location = response.getHeadForKey(XHttpProtocol.XY_LOCATION);
                     LogDog.w("## aio task has redirect host = " + location);
                     mRequest.setUrl(location);
@@ -183,11 +183,11 @@ public class XAioHttpTask extends AioClientTask implements ISenderFeedback, IAio
     public void onFailed(Throwable exc, ByteBuffer byteBuffer) {
         mNetTaskFactory.addUnExecTask(this);
         exc.printStackTrace();
-//        byteBuffer.flip();
-//        byte[] data = new byte[byteBuffer.remaining()];
-//        byteBuffer.get(data);
-//        byteBuffer.clear();
-//        mHttpDecoderProcessor.onReceiveFullData(data, exc);
-//        LogDog.d("==> onFailed 接收数据 = " + new String(data));
+        //        byteBuffer.flip();
+        //        byte[] data = new byte[byteBuffer.remaining()];
+        //        byteBuffer.get(data);
+        //        byteBuffer.clear();
+        //        mHttpDecoderProcessor.onReceiveFullData(data, exc);
+        //        LogDog.d("==> onFailed 接收数据 = " + new String(data));
     }
 }

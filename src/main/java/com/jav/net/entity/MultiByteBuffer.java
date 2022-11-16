@@ -198,20 +198,20 @@ public class MultiByteBuffer {
             }
             for (ByteBuffer tmp : buffer) {
                 if (!mBufList.contains(tmp)) {
-                    //发现不存在的buf
+                    // 发现不存在的buf
                     throw new IllegalStateException("## Found non-existent buf !!!");
                 }
             }
             mLendCount = 0;
             for (int index = 0; index < buffer.length; index++) {
                 if (buffer[index].hasRemaining()) {
-                    //buf没有存满则认为最后的buf
+                    // buf没有存满则认为最后的buf
                     mOffset = buffer[index].position();
                     mBufIndex = index;
                     break;
                 } else {
                     if (index == buffer.length - 1) {
-                        //最后的buf存满，则扩容
+                        // 最后的buf存满，则扩容
                         appendBuffer();
                         mBufIndex++;
                         mOffset = 0;
@@ -242,9 +242,9 @@ public class MultiByteBuffer {
                 int length = buffer.position();
                 buffer.flip();
                 buffer.get(data, sumOffset, length);
-                //恢复 limit
+                // 恢复 limit
                 buffer.limit(mBufSize);
-                //恢复 position
+                // 恢复 position
                 buffer.position(length);
                 sumOffset += length;
             }
@@ -271,6 +271,12 @@ public class MultiByteBuffer {
     public final int capacity() {
         synchronized (mBufList) {
             return mCapacity;
+        }
+    }
+
+    public int size() {
+        synchronized (mBufList) {
+            return mBufSize;
         }
     }
 
