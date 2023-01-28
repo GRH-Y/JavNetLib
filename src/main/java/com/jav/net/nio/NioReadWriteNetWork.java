@@ -1,5 +1,8 @@
 package com.jav.net.nio;
 
+import com.jav.common.state.joggle.IStateMachine;
+import com.jav.net.base.NetTaskStatus;
+import com.jav.net.base.joggle.NetErrorType;
 import com.jav.net.entity.FactoryContext;
 
 import java.io.IOException;
@@ -33,10 +36,15 @@ public class NioReadWriteNetWork<T extends NioClientTask, C extends SocketChanne
     private void regWaitNetTask() {
         synchronized (mWaiteRegNetTaskList) {
             for (T netTask : mWaiteRegNetTaskList) {
+                IStateMachine<Integer> stateMachine = netTask.getStatusMachine();
+                if (stateMachine.isAttachState(NetTaskStatus.FINISHING)
+                        || stateMachine.getState() == NetTaskStatus.INVALID) {
+                    continue;
+                }
                 try {
                     registerEvent(netTask, (C) netTask.getChannel());
                 } catch (IOException e) {
-                    callChannelError(netTask, e);
+                    callChannelError(netTask, NetErrorType.CONNECT, e);
                 }
             }
             mWaiteRegNetTaskList.clear();

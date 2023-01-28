@@ -12,9 +12,14 @@ import com.jav.net.base.joggle.INetTaskComponent;
  */
 public class NioBalancedClientFactory extends NioClientFactory {
 
+    private int mWorkCount;
+
     public NioBalancedClientFactory() {
     }
 
+    public NioBalancedClientFactory(int workCount) {
+        mWorkCount = workCount;
+    }
 
     private static final class InnerClass {
         public static final NioBalancedClientFactory sFactory = new NioBalancedClientFactory();
@@ -30,7 +35,7 @@ public class NioBalancedClientFactory extends NioClientFactory {
 
     @Override
     protected BaseNetWork initNetWork() {
-        return new NioBalancedNetWork(getFactoryContext());
+        return new NioBalancedNetWork(getFactoryContext(), mWorkCount);
     }
 
     @Override

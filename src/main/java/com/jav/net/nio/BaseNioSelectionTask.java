@@ -4,6 +4,7 @@ package com.jav.net.nio;
 import com.jav.common.state.joggle.IStateMachine;
 import com.jav.net.base.BaseTlsTask;
 import com.jav.net.base.joggle.ISSLComponent;
+import com.jav.net.base.joggle.NetErrorType;
 
 import java.nio.channels.NetworkChannel;
 import java.nio.channels.SelectionKey;
@@ -69,8 +70,8 @@ public class BaseNioSelectionTask<T extends NetworkChannel> extends BaseTlsTask<
     }
 
     @Override
-    protected void onErrorChannel(Throwable throwable) {
-        super.onErrorChannel(throwable);
+    protected void onErrorChannel(NetErrorType errorType, Throwable throwable) {
+        super.onErrorChannel(errorType, throwable);
     }
 
     @Override

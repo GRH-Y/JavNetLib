@@ -6,6 +6,7 @@ import com.jav.net.base.BaseNetWork;
 import com.jav.net.base.NetTaskStatus;
 import com.jav.net.base.joggle.INetTaskComponent;
 import com.jav.net.base.joggle.ISSLComponent;
+import com.jav.net.base.joggle.NetErrorType;
 import com.jav.net.entity.FactoryContext;
 
 import java.io.IOException;
@@ -13,7 +14,6 @@ import java.nio.channels.NetworkChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.Iterator;
-import java.util.Set;
 
 /**
  * base nio net work ,provide selector and nio work life cycle.
@@ -95,11 +95,11 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
         }
     }
 
-    protected void callChannelError(T netTask, Throwable e) {
+    protected void callChannelError(T netTask, NetErrorType errorType, Throwable e) {
         IControlStateMachine<Integer> stateMachine = (IControlStateMachine) netTask.getStatusMachine();
         if (!stateMachine.isAttachState(NetTaskStatus.FINISHING)) {
             try {
-                netTask.onErrorChannel(e);
+                netTask.onErrorChannel(errorType, e);
             } catch (Throwable e1) {
                 e.printStackTrace();
             }
@@ -139,7 +139,7 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
             stateMachine.updateState(NetTaskStatus.RUN, NetTaskStatus.IDLING);
         } catch (Throwable e) {
             LogDog.e("## onConnectTask has error , url = " + netTask.getHost() + " port = " + netTask.getPort());
-            callChannelError(netTask, e);
+            callChannelError(netTask, NetErrorType.CONNECT, e);
         }
     }
 
@@ -183,13 +183,13 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
         super.onDestroyTask();
     }
 
-    @Override
-    protected void destroyTaskImp(T netTask) {
-        Set<SelectionKey> sets = mSelector.keys();
-        if (sets.contains(netTask.mSelectionKey)) {
-            super.destroyTaskImp(netTask);
-        }
-    }
+    // @Override
+    // protected void destroyTaskImp(T netTask) {
+    //     Set<SelectionKey> sets = mSelector.keys();
+    //     if (sets.contains(netTask.mSelectionKey)) {
+    //         super.destroyTaskImp(netTask);
+    //     }
+    // }
 
     @Override
     protected void onDisconnectTask(T netTask) {
@@ -216,10 +216,18 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
     }
 
     private void changeStateToClearCondition(IControlStateMachine<Integer> stateMachine) {
+        if (stateMachine.getState() == NetTaskStatus.INVALID) {
+            return;
+        }
+        // 添加 IDLING 状态
         if (!stateMachine.isAttachState(NetTaskStatus.IDLING)) {
             while (!stateMachine.attachState(NetTaskStatus.IDLING)) {
             }
         }
+        if (stateMachine.getState() == NetTaskStatus.INVALID) {
+            return;
+        }
+        // 移除 run 状态
         if (stateMachine.isAttachState(NetTaskStatus.RUN)) {
             while (!stateMachine.detachState(NetTaskStatus.RUN)) {
             }

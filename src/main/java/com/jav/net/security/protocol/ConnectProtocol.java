@@ -11,14 +11,23 @@ import java.nio.ByteBuffer;
  *
  * @author yyz
  */
-public class RequestProtocol extends ProxyProtocol {
+public class ConnectProtocol extends AbsProxyProtocol {
+
+    /**
+     * 成功状态码
+     */
+    public static final byte REP_SUCCESS_CODE = 0 ;
+    /**
+     * 异常状态码
+     */
+    public static final byte REP_EXCEPTION_CODE = 1 ;
 
     /**
      * 不包含length的4个字节的长度
      */
-    private static final int HEAD_LENGTH = 75;
+    private static final int HEAD_LENGTH = 73;
 
-    public RequestProtocol(String channelId) {
+    public ConnectProtocol(String channelId) {
         super(channelId);
     }
 
@@ -29,20 +38,27 @@ public class RequestProtocol extends ProxyProtocol {
 
     @Override
     public ByteBuffer toData(IEncryptComponent encryptComponent) {
-        if (sendData() == null) {
-            return null;
-        }
         byte[] requestAdrByte = requestAdr();
-        if (requestAdrByte == null) {
+        byte[] sendData = sendData();
+        if (requestAdrByte == null && sendData == null) {
             return null;
         }
-        int length = sendData().length + HEAD_LENGTH + requestAdrByte.length;
+        int length = HEAD_LENGTH;
+        if (requestAdrByte != null) {
+            length = length + requestAdrByte.length;
+        } else if (sendData != null) {
+            length = length + sendData.length;
+        }
         ByteBuffer srcData = ByteBuffer.allocate(length);
         srcData.putLong(time());
         srcData.put(cmdType());
         srcData.put(channelId());
         srcData.put(requestId());
-        srcData.put(requestAdrByte);
+        if (requestAdrByte != null) {
+            srcData.put(requestAdrByte);
+        } else {
+            srcData.put(sendData);
+        }
         return onEncrypt(encryptComponent, srcData);
     }
 }

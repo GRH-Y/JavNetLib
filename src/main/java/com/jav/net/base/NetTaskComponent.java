@@ -55,7 +55,7 @@ public class NetTaskComponent<T extends BaseNetTask> implements INetTaskComponen
             return false;
         }
         AbsNetEngine netEngine = mCreate.getNetEngine();
-        if (netEngine.isEngineStoping()) {
+        if (netEngine.isEngineStop()) {
             LogDog.e("## NetTaskComponent addExecTask netEngine not running !");
             return false;
         }
@@ -104,7 +104,7 @@ public class NetTaskComponent<T extends BaseNetTask> implements INetTaskComponen
         } else {
             netEngine = mDestroy.getNetEngine();
         }
-        if (netEngine.isEngineStoping()) {
+        if (netEngine.isEngineStop()) {
             LogDog.e("## NetTaskComponent addUnExecTask netEngine not running !");
             return false;
         }

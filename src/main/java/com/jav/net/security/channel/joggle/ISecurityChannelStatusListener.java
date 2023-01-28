@@ -1,27 +1,21 @@
 package com.jav.net.security.channel.joggle;
 
 
+import com.jav.net.security.channel.SecurityChannelImage;
+
 /**
  * 通道状态监听器
  *
  * @author yyz
  */
-public interface ISecurityChannelStatusListener {
+public interface ISecurityChannelStatusListener<T extends SecurityChannelImage> {
 
     /**
-     * 本地通道已建立链接
-     */
-    void onChannelReady();
-
-
-    /**
-     * 通道接收到的数据
+     * 通道已建立链接,可以正在通信（init 协议交互完成）
      *
-     * @param requestId 请求id
-     * @param pctCount  包的次序（用于udp协议传输）
-     * @param data      中转数据
+     * @param image 通道镜像
      */
-    void onChannelTransData(String requestId, byte pctCount, byte[] data);
+    void onChannelReady(T image);
 
 
     /**

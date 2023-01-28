@@ -1,5 +1,6 @@
 package com.jav.net.nio;
 
+import com.jav.net.base.joggle.NetErrorType;
 import com.jav.net.entity.FactoryContext;
 
 import java.io.IOException;
@@ -70,7 +71,7 @@ public class NioServerWork<T extends NioServerTask, C extends ServerSocketChanne
             SocketChannel channel = serverSocketChannel.accept();
             netTask.onAcceptServerChannel(channel);
         } catch (Throwable e) {
-            callChannelError(netTask, e);
+            callChannelError(netTask, NetErrorType.ACCEPT, e);
         }
     }
 }

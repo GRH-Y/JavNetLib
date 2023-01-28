@@ -24,24 +24,24 @@ public class XHttpsReceiver extends NioReceiver {
 
 
     @Override
-    protected void onReadImp(SocketChannel channel, MultiByteBuffer arrayBuf) throws Throwable {
+    protected void onReadImp(SocketChannel channel, MultiByteBuffer newBuffer) throws Throwable {
         ByteBuffer[] cacheData = null;
         int ret;
         try {
             do {
-                cacheData = arrayBuf.getAllBuf();
+                cacheData = newBuffer.getAllBuf();
                 ret = mTLSHandler.readAndUnwrap(channel, false, cacheData);
                 if (ret == TLSHandler.NOT_ENOUGH_CAPACITY) {
                     // 解码缓存容量不够，则需要多传byteBuffer
-                    arrayBuf.setBackBuf(cacheData);
-                    arrayBuf.appendBuffer();
+                    newBuffer.setBackBuf(cacheData);
+                    newBuffer.appendBuffer();
                 }
             } while (ret == TLSHandler.NOT_ENOUGH_CAPACITY);
         } catch (Throwable e) {
             throw e;
         } finally {
-            arrayBuf.setBackBuf(cacheData);
-            arrayBuf.flip();
+            newBuffer.setBackBuf(cacheData);
+            newBuffer.flip();
         }
     }
 }

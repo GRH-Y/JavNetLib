@@ -51,7 +51,7 @@ public class NioUdpSender extends AbsNioCacheNetSender<NioUdpSender.SenderPacket
     }
 
     @Override
-    protected int sendDataImp(ByteBuffer[] buffers) {
+    protected int sendDataImp(ByteBuffer[] buffers) throws IOException {
         if (mChannel == null || buffers == null || !mChannel.isOpen()) {
             return SEND_FAIL;
         }

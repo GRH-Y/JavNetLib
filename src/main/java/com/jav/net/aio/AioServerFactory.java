@@ -5,28 +5,21 @@ import com.jav.net.base.AbsNetFactory;
 import com.jav.net.base.BaseNetWork;
 import com.jav.net.base.joggle.INetFactory;
 import com.jav.net.base.joggle.ISSLComponent;
+import com.jav.net.nio.NioUdpFactory;
 import com.jav.net.ssl.SSLComponent;
 
 public class AioServerFactory extends AbsNetFactory<AioServerTask> {
 
-    private volatile static AioServerFactory mFactory = null;
+    private static final class InnerClass {
+        public static final AioServerFactory sFactory = new AioServerFactory();
+    }
 
     public static synchronized INetFactory getFactory() {
-        if (mFactory == null) {
-            synchronized (AioServerFactory.class) {
-                if (mFactory == null) {
-                    mFactory = new AioServerFactory();
-                }
-            }
-        }
-        return mFactory;
+        return InnerClass.sFactory;
     }
 
     public static void destroy() {
-        if (mFactory != null) {
-            mFactory.close();
-            mFactory = null;
-        }
+        InnerClass.sFactory.close();
     }
 
     @Override

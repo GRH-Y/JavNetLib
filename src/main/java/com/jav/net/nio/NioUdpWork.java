@@ -3,6 +3,7 @@ package com.jav.net.nio;
 
 import com.jav.net.base.SocketChannelCloseException;
 import com.jav.net.base.joggle.INetTaskComponent;
+import com.jav.net.base.joggle.NetErrorType;
 import com.jav.net.entity.FactoryContext;
 
 import java.io.IOException;
@@ -67,7 +68,7 @@ public class NioUdpWork<T extends NioUdpTask, C extends DatagramChannel> extends
             netTask.setSelectionKey(selectionKey);
             netTask.onBeReadyChannel(channel);
         } catch (Throwable e) {
-            callChannelError(netTask, e);
+            callChannelError(netTask, NetErrorType.CONNECT, e);
         }
     }
 

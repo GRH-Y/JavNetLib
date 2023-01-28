@@ -7,7 +7,7 @@ import java.nio.ByteBuffer;
  *
  * @author yyz
  */
-public interface ISecurityProtocolParserProcess {
+public interface ISecurityPolicyProcess {
 
     /**
      * 解密数据
@@ -47,16 +47,19 @@ public interface ISecurityProtocolParserProcess {
      * 根据cmd处理不同的数据包
      *
      * @param cmd
+     * @param machineId
+     * @param channelId
      * @param data
      */
-    void onExecCmd(byte cmd, ByteBuffer data);
+    void onExecCmd(byte cmd, String machineId, String channelId, ByteBuffer data);
 
     /**
      * 校验不通过回调
      *
+     * @param host
      * @param msg
      */
-    void onDeny(String msg);
+    void onDeny(String host, String msg);
 
     /**
      * 出现异常错误回调

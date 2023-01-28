@@ -1,311 +1,300 @@
 package com.jav.net.security.channel;
 
 
-import com.jav.common.cryption.DataSafeManager;
-import com.jav.common.cryption.RSADataEnvoy;
 import com.jav.common.cryption.joggle.EncryptionType;
-import com.jav.common.cryption.joggle.IDecryptComponent;
 import com.jav.common.log.LogDog;
-import com.jav.common.security.Md5Helper;
 import com.jav.common.util.StringEnvoy;
-import com.jav.net.security.channel.joggle.CmdType;
-import com.jav.net.security.channel.joggle.IReceiverTransDataProxy;
-import com.jav.net.security.channel.joggle.ISecurityProtocolParserProcess;
-import com.jav.net.security.protocol.ProxyProtocol;
+import com.jav.net.security.channel.base.ParserCallBackRegistrar;
+import com.jav.net.security.channel.joggle.*;
+import com.jav.net.security.protocol.AbsProxyProtocol;
 
 import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.UUID;
 
 /**
- * 安全协议解析器
+ * 安全协议解析器,主要解析协议数据
+ *
+ * @author yyz
  */
 public class SecurityProtocolParser {
 
+    private final static int NORMAL_ADDRESS_LENGTH = 2;
+
+    private final SecurityChannelContext mContext;
+
     /**
-     * init返回数据类型
+     * 安全策略
      */
-    private enum InitResult {
-
-        NORMAL((byte) 1), SERVER_IP((byte) 2);
-
-        private final byte mCode;
-
-        InitResult(byte code) {
-            mCode = code;
-        }
-
-        public byte getCode() {
-            return mCode;
-        }
-
-        public static InitResult getInstance(byte code) {
-            if (NORMAL.getCode() == code) {
-                return NORMAL;
-            } else if (SERVER_IP.getCode() == code) {
-                return SERVER_IP;
-            }
-            return null;
-        }
-    }
-
-    private final DataSafeManager mDataSafeManager;
-
-    private IReceiverTransDataProxy mTransDataListener;
-
-    private SecuritySender mResponseSender;
-
-    private final ISecurityProtocolParserProcess mParserProcess;
-
-    private String mChannelId;
-
-    private String mMachineId;
-
-    public SecurityProtocolParser() {
-        mDataSafeManager = new DataSafeManager();
-        mDataSafeManager.init(EncryptionType.RSA);
-        IDecryptComponent decryptComponent = mDataSafeManager.getDecrypt();
-        RSADataEnvoy rsaDataEnvoy = decryptComponent.getComponent();
-
-        String publicFile = SecurityChannelContext.getInstance().getPublicFile();
-        String privateFile = SecurityChannelContext.getInstance().getPrivateFile();
-        try {
-            rsaDataEnvoy.init(publicFile, privateFile);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        mParserProcess = new SecurityProtocolParserProcess();
-    }
+    private ISecurityPolicyProcessor mPolicyProcessor;
 
     /**
-     * 获取安全协议解析处理流程
+     * 解析结果的回调监听器
+     */
+    private ParserCallBackRegistrar mCallBackRegistrar;
+
+
+    public SecurityProtocolParser(SecurityChannelContext context) {
+        mContext = context;
+    }
+
+
+    /**
+     * 设置安全策略处理器
      *
-     * @return 返回解析处理者
+     * @param processor
      */
-    protected ISecurityProtocolParserProcess getParserProcess() {
-        return mParserProcess;
+    public void setSecurityPolicyProcessor(ISecurityPolicyProcessor processor) {
+        this.mPolicyProcessor = processor;
     }
 
     /**
      * 设置接受最终解析出来中转的数据监听器
      *
-     * @param listener 监听器
+     * @param registrar 监听器
      */
-    public void setTransDataListener(IReceiverTransDataProxy listener) {
-        this.mTransDataListener = listener;
+    public void setProtocolParserCallBack(ParserCallBackRegistrar registrar) {
+        this.mCallBackRegistrar = registrar;
     }
 
+
     /**
-     * 设置自动响应的数据发送者
+     * 服务端处理init协议数据
      *
-     * @param sender 数据发送者
+     * @param data 数据
      */
-    protected void setResponseSender(SecuritySender sender) {
-        this.mResponseSender = sender;
+    private void serverExecInitCmd(String machineId, ByteBuffer data) {
+        // 当前是处理客户端请求数据
+        byte enType = data.get();
+        // 根据客户端定义初始化加解密
+        EncryptionType encryption = EncryptionType.getInstance(enType);
+        byte[] aesKey = null;
+        if (encryption == EncryptionType.AES) {
+            // 获取AES对称密钥
+            aesKey = new byte[data.limit() - data.position()];
+            data.get(aesKey);
+        }
+
+        // 创建channel id 返回给客户端
+        String channelId = mPolicyProcessor.createChannelId(machineId);
+
+        LogDog.d("创建channel id 返回给客户端 " + channelId);
+
+        if (mCallBackRegistrar != null) {
+            IServerEventCallBack callBack = mCallBackRegistrar.getServerCallBack();
+            if (callBack != null) {
+                callBack.onInitForServerCallBack(encryption, aesKey, machineId, channelId);
+            }
+        }
     }
 
     /**
-     * 实现安全协议解析流程
+     * 客户端处理init协议数据
+     *
+     * @param data 数据
      */
-    private class SecurityProtocolParserProcess implements ISecurityProtocolParserProcess {
-
-        @Override
-        public ByteBuffer decodeData(ByteBuffer encodeData) {
-            boolean isServerMode = SecurityChannelContext.getInstance().isServerMode();
-            if (!isServerMode) {
-                //当前是客户端，接收到服务端返回数据则根据配置文件修改加解密方式
-                String encryption = SecurityChannelContext.getInstance().getEncryption();
-                EncryptionType encryptionType = EncryptionType.getInstance(encryption);
-                mDataSafeManager.init(encryptionType);
+    private void clientExecInitCmd(ByteBuffer data) {
+        // 当前处理服务端响应数据
+        byte resCode = data.get();
+        InitResult status = InitResult.getInstance(resCode);
+        byte[] context = new byte[data.limit() - data.position()];
+        data.get(context);
+        String contextStr = new String(context);
+        if (InitResult.SERVER_IP == status) {
+            // 断开当前服务链接，连接返回的服务器ip
+            String[] arrays = contextStr.split(":");
+            if (arrays.length != NORMAL_ADDRESS_LENGTH) {
+                // 返回的数据有异常,断开链接
+                throw new RuntimeException("The address data returned by channel is abnormal !!!");
             }
-            byte[] data = encodeData.array();
-            if (mDataSafeManager.isInit()) {
-                byte[] decodeData = mDataSafeManager.decode(data);
-                return ByteBuffer.wrap(decodeData);
-            }
-            return encodeData;
-        }
-
-        @Override
-        public boolean onCheckTime(long time) {
-            long nowTime = System.currentTimeMillis();
-            //172800000 48小时的毫秒值
-            return Math.abs(nowTime - time) < 172800000;
-        }
-
-        @Override
-        public boolean onCheckMachineId(String machineId) {
-            //检查mid是否合法
-            mMachineId = machineId;
-            List<String> machineList = SecurityChannelContext.getInstance().getMachineList();
-            if (machineList != null) {
-                for (String mid : machineList) {
-                    if (mid.equalsIgnoreCase(machineId)) {
-                        return true;
-                    }
+            SecurityChannelManager.getInstance().release();
+            SecurityChannelManager.getInstance().resetConnectLowLoadServer(arrays[0], Integer.parseInt(arrays[1]));
+        } else if (InitResult.CHANNEL_ID == status) {
+            // 配置服务端返回的 channel id
+            LogDog.d("接收到服务端返回的 channel id = " + contextStr);
+            if (mCallBackRegistrar != null) {
+                IClientEventCallBack callBack = mCallBackRegistrar.getClientCallBack();
+                if (callBack != null) {
+                    callBack.onInitForClientCallBack(contextStr);
                 }
-                return false;
             }
-            return true;
         }
+    }
 
-        @Override
-        public boolean onCheckChannelId(String channelId) {
-            return mChannelId.equals(channelId);
+    private String[] parseRequestAddress(byte[] requestHostByte) {
+        if (requestHostByte == null) {
+            return null;
         }
+        // 存在地址，说明是新的请求
+        String requestHost = new String(requestHostByte);
+        // 链接真实的目标
+        return requestHost.split(":");
+    }
 
-
-        /**
-         * 创建通道id
-         *
-         * @return 返回通道id
-         */
-        private String createChannelId() {
-            String uuidStr = UUID.randomUUID().toString();
-            return Md5Helper.md5_32(uuidStr);
+    private byte[] getContextData(ByteBuffer data) {
+        int size = data.limit() - data.position();
+        if (size <= 0) {
+            return null;
         }
+        byte[] context = new byte[size];
+        data.get(context);
+        return context;
+    }
 
-        /**
-         * 服务端处理init协议数据
-         *
-         * @param data 数据
-         */
-        private void serverExecInitCmd(ByteBuffer data) {
-            //当前是处理客户端请求数据
-            byte enType = data.get();
-            //根据客户端定义初始化加解密
-            EncryptionType encryption = EncryptionType.getInstance(enType);
-            byte[] aesKey = null;
-            if (encryption == EncryptionType.AES) {
-                //获取AES对称密钥
-                aesKey = new byte[data.limit() - data.position()];
-                data.get(aesKey);
+    public void parserData(String remoteHost, ByteBuffer decodeData) {
+        // 解析校验时间字段
+        parseTime(remoteHost, decodeData);
+        // 解析cmd字段
+        byte cmd = decodeData.get();
+        String machineId = null;
+        String channelId = null;
+        if (cmd == CmdType.INIT.getCmd() || cmd == CmdType.SYNC.getCmd()) {
+            // 解析校验machine id字段
+            machineId = parseMachineId(remoteHost, decodeData);
+        } else if (cmd == CmdType.REQUEST.getCmd() || cmd == CmdType.TRANS.getCmd()) {
+            channelId = parseChannelId(remoteHost, decodeData);
+        }
+        parserCmdForData(cmd, machineId, channelId, decodeData);
+    }
+
+
+    /**
+     * 解析校验时间字段
+     *
+     * @param remoteHost 远程的目标地址
+     * @param decodeData 要校验的数据
+     */
+    private void parseTime(String remoteHost, ByteBuffer decodeData) {
+        long time = decodeData.getLong();
+        boolean isDeny = mPolicyProcessor.onCheckTime(time);
+        if (!isDeny) {
+            callBackDeny(remoteHost, UnusualBehaviorType.TIME);
+        }
+    }
+
+    /**
+     * 解析校验machine id字段
+     *
+     * @param remoteHost 远程的目标地址
+     * @param decodeData 要校验的数据
+     */
+    private String parseMachineId(String remoteHost, ByteBuffer decodeData) {
+        byte[] mid = new byte[AbsProxyProtocol.MACHINE_LENGTH];
+        decodeData.get(mid);
+        String machineIdStr = new String(mid);
+        boolean isDeny = mPolicyProcessor.onCheckMachineId(machineIdStr);
+        if (!isDeny) {
+            callBackDeny(remoteHost, UnusualBehaviorType.MACHINE);
+        }
+        return machineIdStr;
+    }
+
+    /**
+     * 解析校验channel id
+     *
+     * @param remoteHost 远程的目标地址
+     * @param decodeData 要校验的数据
+     * @return 返回 channel id
+     */
+    private String parseChannelId(String remoteHost, ByteBuffer decodeData) {
+        byte[] channelIdByte = new byte[AbsProxyProtocol.CHANNEL_LENGTH];
+        decodeData.get(channelIdByte);
+        String channelId = new String(channelIdByte);
+        boolean isDeny = mPolicyProcessor.onCheckChannelId(channelId);
+        if (!isDeny) {
+            callBackDeny(remoteHost, UnusualBehaviorType.CHANNEL);
+        }
+        return channelId;
+    }
+
+    /**
+     * 回调数据异常拒绝访问
+     *
+     * @param remoteHost 远程的目标地址
+     * @param type       异常行为类型
+     */
+    public void callBackDeny(String remoteHost, UnusualBehaviorType type) {
+        if (mPolicyProcessor != null) {
+            mPolicyProcessor.onUnusualBehavior(remoteHost, type);
+        }
+        throw new IllegalStateException(type.getError());
+    }
+
+
+    private void parserCmdForData(byte cmd, String machineId, String channelId, ByteBuffer data) {
+        if (cmd == CmdType.INIT.getCmd()) {
+            if (mContext.isServerMode()) {
+                serverExecInitCmd(machineId, data);
+            } else {
+                clientExecInitCmd(data);
             }
-            mResponseSender.changeEncryption(encryption, aesKey);
-            //创建channel id 返回给客户端
-            mChannelId = createChannelId();
-            mResponseSender.setChannelId(mChannelId);
-            LogDog.d("创建channel id 返回给客户端 " + mChannelId);
-            //todo 暂时不实现-> 判断当前服务负载是否过高，如果过高返回低负载的服务地址
-            mResponseSender.respondInitData(mMachineId, InitResult.NORMAL.getCode(), mChannelId.getBytes());
-//        mSender.respondInitData(mMachineId, InitResult.SERVER_IP.getCode(), "127.0.0.1:5555".getBytes());
-        }
-
-        /**
-         * 客户端处理init协议数据
-         *
-         * @param data 数据
-         */
-        private void clientExecInitCmd(ByteBuffer data) {
-            //当前处理服务端响应数据
-            byte resCode = data.get();
-            InitResult status = InitResult.getInstance(resCode);
-            byte[] context = new byte[data.limit() - data.position()];
-            data.get(context);
-            String contextStr = new String(context);
-            if (InitResult.SERVER_IP == status) {
-                //断开当前服务链接，连接返回的服务器ip
-                String[] arrays = contextStr.split(":");
-                if (arrays.length != 2) {
-                    //返回的数据有异常,断开链接
-                    throw new RuntimeException("The address data returned by channel is abnormal !!!");
+        } else if (cmd == CmdType.TRANS.getCmd()) {
+            // 解析requestId
+            byte[] requestIdByte = new byte[AbsProxyProtocol.REQUEST_LENGTH];
+            data.get(requestIdByte);
+            String requestId = new String(requestIdByte);
+            if (StringEnvoy.isEmpty(requestId)) {
+                throw new RuntimeException("illegal requestId !!!");
+            }
+            // pctCount 作用于udp 传输数据 ，暂时不处理
+            byte pctCount = data.get();
+            byte[] context = getContextData(data);
+            if (context == null) {
+                throw new RuntimeException("illegal trans context !!!");
+            }
+            if (mCallBackRegistrar != null) {
+                ITransDataCallBack callBack = mCallBackRegistrar.getClientCallBack();
+                if (mContext.isServerMode()) {
+                    callBack = mCallBackRegistrar.getServerCallBack();
                 }
-                SecurityChannelManager.getInstance().release();
-                SecurityChannelManager.getInstance().init(arrays[0], Integer.parseInt(arrays[1]));
-            } else if (InitResult.NORMAL == status) {
-                //配置服务端返回的 channel id
-                LogDog.d("接收到服务端返回的 channel id = " + contextStr);
-                mResponseSender.setChannelId(contextStr);
+                callBack.onTransData(requestId, pctCount, context);
             }
-        }
-
-        private String[] parseRequestAddress(byte[] requestHostByte) {
-            if (requestHostByte == null) {
-                return null;
+        } else if (cmd == CmdType.REQUEST.getCmd()) {
+            // 解析requestId
+            byte[] requestIdByte = new byte[AbsProxyProtocol.REQUEST_LENGTH];
+            data.get(requestIdByte);
+            String requestId = new String(requestIdByte);
+            if (StringEnvoy.isEmpty(requestId)) {
+                throw new RuntimeException("illegal requestId !!!");
             }
-            //存在地址，说明是新的请求
-            String requestHost = new String(requestHostByte);
-            //链接真实的目标
-            return requestHost.split(":");
-        }
-
-        private byte[] getContextData(ByteBuffer data) {
-            int size = data.limit() - data.position();
-            if (size <= 0) {
-                return null;
-            }
-            byte[] context = new byte[size];
-            data.get(context);
-            return context;
-        }
-
-        @Override
-        public void onExecCmd(byte cmd, ByteBuffer data) {
-            boolean isServerMode = SecurityChannelContext.getInstance().isServerMode();
-            if (cmd == CmdType.INIT.getCmd()) {
-                if (isServerMode) {
-                    serverExecInitCmd(data);
-                } else {
-                    clientExecInitCmd(data);
-                }
-            } else if (cmd == CmdType.TRANS.getCmd()) {
-                //解析requestId
-                byte[] requestIdByte = new byte[ProxyProtocol.REQUEST_LENGTH];
-                data.get(requestIdByte);
-                String requestId = new String(requestIdByte);
-                if (StringEnvoy.isEmpty(requestId)) {
-                    throw new RuntimeException("illegal requestId !!!");
-                }
-                //pctCount 作用于udp 传输数据 ，暂时不处理
-                byte pctCount = data.get();
+            if (mContext.isServerMode()) {
                 byte[] context = getContextData(data);
                 if (context == null) {
-                    throw new RuntimeException("illegal trans context !!!");
+                    throw new RuntimeException("illegal request context !!!");
                 }
-                if (mTransDataListener != null) {
-                    mTransDataListener.onTransData(requestId, pctCount, context);
-                }
-            } else if (cmd == CmdType.REQUEST.getCmd()) {
-                //解析requestId
-                byte[] requestIdByte = new byte[ProxyProtocol.REQUEST_LENGTH];
-                data.get(requestIdByte);
-                String requestId = new String(requestIdByte);
-                if (StringEnvoy.isEmpty(requestId)) {
-                    throw new RuntimeException("illegal requestId !!!");
-                }
-                if (isServerMode) {
-                    byte[] context = getContextData(data);
-                    if (context == null) {
-                        throw new RuntimeException("illegal request context !!!");
-                    }
-                    String[] realHost = parseRequestAddress(context);
-                    if (realHost != null && realHost.length == 2) {
-                        if (mTransDataListener != null) {
-                            mTransDataListener.onCreateConnect(requestId, realHost[0], Integer.parseInt(realHost[1]));
+                String[] realHost = parseRequestAddress(context);
+                if (realHost.length == NORMAL_ADDRESS_LENGTH) {
+                    if (mCallBackRegistrar != null) {
+                        IServerEventCallBack callBack = mCallBackRegistrar.getServerCallBack();
+                        if (callBack != null) {
+                            callBack.onConnectTargetCallBack(requestId, realHost[0], Integer.parseInt(realHost[1]));
                         }
-                    } else {
-                        throw new RuntimeException("illegal realHost !!!");
                     }
                 } else {
-                    byte status = data.get();
-                    //表示服务端创建指定的目标链接成功
-                    if (mTransDataListener != null) {
-                        mTransDataListener.onCreateConnectStatus(requestId, status);
+                    throw new RuntimeException("illegal realHost !!!");
+                }
+            } else {
+                byte status = data.get();
+                // 表示服务端创建指定的目标链接成功
+                if (mCallBackRegistrar != null) {
+                    IClientEventCallBack callBack = mCallBackRegistrar.getClientCallBack();
+                    if (callBack != null) {
+                        callBack.onConnectTargetStatusCallBack(requestId, status);
+                    }
+                }
+            }
+        } else if (cmd == CmdType.SYNC.getCmd()) {
+            if (mContext.isServerMode()) {
+                byte status = data.get();
+                int proxyPort = data.getInt();
+                long loadData = data.getLong();
+                if (mCallBackRegistrar != null) {
+                    ISyncServerEventCallBack callBack = mCallBackRegistrar.getSyncCallBack();
+                    if (callBack != null) {
+                        callBack.onRespondSyncCallBack(status, proxyPort, machineId, loadData);
                     }
                 }
             }
         }
-
-
-        @Override
-        public void onDeny(String msg) {
-            LogDog.e(msg);
-        }
-
-        @Override
-        public void onError() {
-
-        }
-
     }
+
+
 }

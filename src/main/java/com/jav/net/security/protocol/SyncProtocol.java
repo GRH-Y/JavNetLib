@@ -11,11 +11,45 @@ import java.nio.ByteBuffer;
  *
  * @author yyz
  */
-public class SyncProtocol extends ProxyProtocol {
+public class SyncProtocol extends AbsProxyProtocol {
 
-    public SyncProtocol(String machine, byte[] data) {
-        super(machine, data);
+    public enum Status {
+        /**
+         * 请求状态
+         */
+        REQ((byte) 1),
+        /**
+         * 响应状态
+         */
+        REP((byte) 2);
+
+        private byte mStatus;
+
+        Status(byte status) {
+            mStatus = status;
+        }
+
+
+        public byte getStatus() {
+            return mStatus;
+        }
+    }
+
+    /**
+     * 不包含length的4个字节的长度
+     */
+    private static final int HEAD_LENGTH = 49;
+
+    private long mLoadCount;
+    private int mPort;
+    private byte mStatus;
+
+    public SyncProtocol(String machine, Status status, int port, long loadCount) {
+        super(machine);
         setEnType(EnType.NO_ENCODE.getType());
+        mLoadCount = loadCount;
+        mPort = port;
+        mStatus = status.getStatus();
     }
 
     @Override
@@ -25,16 +59,15 @@ public class SyncProtocol extends ProxyProtocol {
 
     @Override
     public ByteBuffer toData(IEncryptComponent encryptComponent) {
-        if (sendData() == null) {
-            return null;
-        }
-        int length = sendData().length + 45;
+        int length = sendData().length + HEAD_LENGTH;
         ByteBuffer buffer = ByteBuffer.allocate(length);
         buffer.putInt(length);
         buffer.putLong(time());
         buffer.put(cmdType());
         buffer.put(machineId());
-        buffer.put(sendData());
+        buffer.put(mStatus);
+        buffer.putInt(mPort);
+        buffer.putLong(mLoadCount);
         return buffer;
     }
 }

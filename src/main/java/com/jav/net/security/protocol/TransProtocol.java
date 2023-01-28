@@ -11,7 +11,7 @@ import java.nio.ByteBuffer;
  *
  * @author yyz
  */
-public class TransProtocol extends ProxyProtocol {
+public class TransProtocol extends AbsProxyProtocol {
 
     /**
      * 不包含length的4个字节的长度

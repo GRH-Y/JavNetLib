@@ -3,13 +3,16 @@ package com.jav.net.security.channel;
 
 import com.jav.common.log.LogDog;
 import com.jav.net.base.joggle.INetTaskComponent;
-import com.jav.net.nio.NioClientFactory;
+import com.jav.net.nio.NioBalancedClientFactory;
 import com.jav.net.nio.NioClientTask;
+import com.jav.net.nio.NioServerFactory;
+import com.jav.net.security.channel.base.AbsSecurityServer;
 import com.jav.net.security.channel.joggle.ChannelStatus;
 import com.jav.net.security.channel.joggle.IClientChannelStatusListener;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * ChannelManager 通道管理器,管理通道的创建和注册使用通道功能
@@ -18,23 +21,32 @@ import java.util.List;
  */
 public class SecurityChannelManager {
 
-    private final NioClientFactory mClientFactory;
+    private static final int WORK_COUNT = 2;
 
     /**
-     * 最大的通道数
+     * 配置信息
      */
-    private static final int MAX_CHANNEL = 1;
-
-    private String mHost;
-
-    private int mPort;
-
-    private boolean mIsInit = false;
+    private SecurityChannelContext mContext;
 
     /**
-     * 通道集合
+     * 是否已经初始化
      */
-    private final List<SecurityChannelClient> mSecurityChanel;
+    private volatile boolean mIsInit = false;
+
+    /**
+     * 客户端通道集合
+     */
+    private final List<SecurityChannelClient> mClientChanelList;
+
+    /**
+     * socket客户端通信
+     */
+    private NioBalancedClientFactory mClientFactory;
+
+    /**
+     * socket服务端通信
+     */
+    private NioServerFactory mServerFactory;
 
     /**
      * 指向正在使用的通道索引
@@ -42,8 +54,7 @@ public class SecurityChannelManager {
     private int mChannelIndex = 0;
 
     private SecurityChannelManager() {
-        mSecurityChanel = new ArrayList<>();
-        mClientFactory = new NioClientFactory();
+        mClientChanelList = new ArrayList<>();
     }
 
     private static final class InnerClass {
@@ -55,6 +66,11 @@ public class SecurityChannelManager {
     }
 
 
+    /**
+     * 是否初始化
+     *
+     * @return true为已经初始化
+     */
     public boolean isInit() {
         return mIsInit;
     }
@@ -64,16 +80,17 @@ public class SecurityChannelManager {
      *
      * @return 返回可用的通道
      */
-    private SecurityChanelMeter pollingChannel() {
-        if (mChannelIndex == MAX_CHANNEL) {
-            mChannelIndex = 0;
-        }
-        SecurityChannelClient channelClient = mSecurityChanel.get(mChannelIndex);
-        SecurityChanelMeter chanelMeter = channelClient.getChanelMeter();
-        if (chanelMeter.getCruStatus() == ChannelStatus.READY) {
-            mSecurityChanel.remove(channelClient);
+    private SecurityClientChanelMeter pollingChannel() {
+        SecurityChannelClient channelClient = mClientChanelList.get(mChannelIndex);
+        SecurityClientChanelMeter chanelMeter = channelClient.getChanelMeter();
+        if (chanelMeter.getCruStatus() == ChannelStatus.INVALID) {
+            mClientChanelList.remove(channelClient);
             channelClient = createChannel();
             chanelMeter = channelClient.getChanelMeter();
+        }
+        mChannelIndex++;
+        if (mChannelIndex == mContext.getChannelNumber()) {
+            mChannelIndex = 0;
         }
         return chanelMeter;
     }
@@ -84,72 +101,139 @@ public class SecurityChannelManager {
      * @return 返回创建的通道
      */
     private SecurityChannelClient createChannel() {
-        SecurityChannelClient channelClient = new SecurityChannelClient();
-        channelClient.setAddress(mHost, mPort);
+        SecurityChannelClient channelClient = new SecurityChannelClient(mContext);
+        channelClient.setAddress(mContext.getConnectHost(), mContext.getConnectPort());
         INetTaskComponent<NioClientTask> container = mClientFactory.getNetTaskComponent();
         container.addExecTask(channelClient);
-        mSecurityChanel.add(channelClient);
+        mClientChanelList.add(channelClient);
+        LogDog.d("connect host = " + mContext.getConnectHost() + ":" + mContext.getConnectPort());
         return channelClient;
     }
 
+    /**
+     * 初始化SyncMeter
+     */
+    private void initSyncMeter() {
+        Map<String, String> syncServer = mContext.getSyncServer();
+        SecuritySyncMeter syncMeter = new SecuritySyncMeter(mContext);
+        syncMeter.loadSyncList(syncServer);
+        mContext.setSyncMeter(syncMeter);
+    }
 
     /**
-     * 初始化通道组
-     *
-     * @param host 链接的目标地址
-     * @param port 链接目标的端口
+     * 连接代理服务端
      */
-    public void init(String host, int port) {
-        synchronized (mSecurityChanel) {
-            if (mSecurityChanel.isEmpty()) {
-                this.mHost = host;
-                this.mPort = port;
-                LogDog.d("connect host = " + host + ":" + port);
-                mClientFactory.open();
-                synchronized (mSecurityChanel) {
-                    for (int count = 0; count < MAX_CHANNEL; count++) {
-                        createChannel();
-                    }
-                }
-                mIsInit = true;
+    private void startConnectProxyServer() {
+        for (int count = 0; count < mContext.getChannelNumber(); count++) {
+            createChannel();
+        }
+    }
+
+
+    private void initClientFactory() {
+        mClientFactory = new NioBalancedClientFactory(WORK_COUNT);
+        mClientFactory.open();
+    }
+
+    /**
+     * 启动服务
+     */
+    private void startupServer() {
+        List<AbsSecurityServer> serverArray = mContext.getSecurityServer();
+        if (serverArray != null) {
+            // 开启主服务
+            mServerFactory = new NioServerFactory();
+            mServerFactory.open();
+            for (AbsSecurityServer server : serverArray) {
+                server.init(mContext);
+                mServerFactory.getNetTaskComponent().addExecTask(server);
             }
         }
     }
 
+
     /**
-     * 根据requestId注册通道，返回ChannelPorter 对象用于数据的发生和接收的中转
+     * 断开当前连接,重新链接低负载的服务,channel断开链接后会调用resetChannel()重新连接
      *
+     * @param host
+     * @param port
+     */
+    protected void resetConnectLowLoadServer(String host, int port) {
+        mContext.resetConnectSecurityServer(host, port);
+        for (SecurityChannelClient client : mClientChanelList) {
+            mClientFactory.getNetTaskComponent().addUnExecTask(client);
+        }
+    }
+
+    /**
+     * 重新链接
+     *
+     * @param client
+     */
+    protected void resetChannel(SecurityChannelClient client) {
+        mClientFactory.getNetTaskComponent().addExecTask(client);
+    }
+
+
+    /**
+     * 初始化
+     *
+     * @param context
+     */
+    public void init(SecurityChannelContext context) {
+        mContext = context;
+        if (mIsInit) {
+            release();
+        }
+        initClientFactory();
+        if (context.isServerMode()) {
+            initSyncMeter();
+        } else {
+            startConnectProxyServer();
+        }
+        startupServer();
+        mIsInit = true;
+    }
+
+
+    /**
+     * 注册客户端通道
+     *
+     * @param listener
      * @return 返回注册成功的通道镜像，失败返回null
      */
-    public SecurityChannelImage registerChannel(IClientChannelStatusListener listener) {
-        synchronized (mSecurityChanel) {
-            for (SecurityChannelClient client : mSecurityChanel) {
-                SecurityChanelMeter meter = client.getChanelMeter();
-                SecurityChannelImage image = meter.findListenerToImage(listener);
+    public void registerClientChannel(IClientChannelStatusListener listener) {
+        if (listener == null || !mIsInit || mContext.isServerMode()) {
+            return;
+        }
+        synchronized (mClientChanelList) {
+            for (SecurityChannelClient client : mClientChanelList) {
+                SecurityClientChanelMeter meter = client.getChanelMeter();
+                SecurityClientChannelImage image = meter.findListenerToImage(listener);
                 if (image != null) {
-                    return image;
+                    return;
                 }
             }
-            SecurityChanelMeter chanelMeter = pollingChannel();
-            SecurityChannelImage image = SecurityChannelImage.builderClientChannelImage(listener);
-            chanelMeter.regChannelImage(image);
-            return image;
         }
+        SecurityClientChanelMeter chanelMeter = pollingChannel();
+        SecurityClientChannelImage image = SecurityClientChannelImage.builderClientChannelImage(listener);
+        chanelMeter.regClientChannelImage(image);
     }
+
 
     /**
      * 反注册通道,不再使用该通道来通信
      *
      * @param image 通道镜像
      */
-    public void unRegisterChannel(SecurityChannelImage image) {
-        if (image == null) {
+    public void unRegisterClientChannel(SecurityClientChannelImage image) {
+        if (image == null || !mIsInit) {
             return;
         }
-        synchronized (mSecurityChanel) {
-            for (SecurityChannelClient client : mSecurityChanel) {
-                SecurityChanelMeter meter = client.getChanelMeter();
-                if (meter.unRegChannelImage(image)) {
+        synchronized (mClientChanelList) {
+            for (SecurityChannelClient client : mClientChanelList) {
+                SecurityClientChanelMeter meter = client.getChanelMeter();
+                if (meter.unRegClientChannelImage(image)) {
                     break;
                 }
             }
@@ -160,9 +244,17 @@ public class SecurityChannelManager {
      * 资源回收，释放通道组
      */
     public void release() {
-        synchronized (mSecurityChanel) {
-            mClientFactory.close();
-            mSecurityChanel.clear();
+        if (mIsInit) {
+            if (mClientFactory != null) {
+                mClientFactory.close();
+            }
+            if (mServerFactory != null) {
+                mServerFactory.close();
+            }
+            synchronized (mClientChanelList) {
+                mClientChanelList.clear();
+            }
+            mIsInit = false;
         }
     }
 }

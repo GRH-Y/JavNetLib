@@ -37,7 +37,7 @@ public abstract class AbsNetEngine extends LoopTask {
         return mExecutor != null && mExecutor.isLoopState() && mExecutor.isAliveState();
     }
 
-    protected boolean isEngineStoping() {
+    protected boolean isEngineStop() {
         return mExecutor != null && mExecutor.isStopState();
     }
 
@@ -54,8 +54,9 @@ public abstract class AbsNetEngine extends LoopTask {
     }
 
     protected void startEngine() {
-        if (mExecutor == null || !mExecutor.isAliveState()) {
-            TaskContainer container = new TaskContainer(this);
+        if (mExecutor == null || !mExecutor.isAliveState() || mExecutor.isStopState()) {
+            BaseNetWork baseNetWork = mFactoryContext.getNetWork();
+            TaskContainer container = new TaskContainer(this, baseNetWork.getClass().getName());
             mExecutor = container.getTaskExecutor();
             mExecutor.startTask();
         }

@@ -2,10 +2,16 @@ package com.jav.net.security.protocol;
 
 import com.jav.common.cryption.joggle.IEncryptComponent;
 import com.jav.common.util.StringEnvoy;
+import com.jav.net.security.channel.joggle.CmdType;
 
 import java.nio.ByteBuffer;
 
-public abstract class ProxyProtocol {
+/**
+ * 代理协议
+ *
+ * @author yyz
+ */
+public abstract class AbsProxyProtocol {
 
     public static final int MACHINE_LENGTH = 32;
 
@@ -18,8 +24,22 @@ public abstract class ProxyProtocol {
      * 编码类型
      */
     protected enum EnType {
-
-        NO_ENCODE((byte) 0), BASE64((byte) 1), DES((byte) 2), OTHER((byte) 3);
+        /**
+         * 不编码
+         */
+        NO_ENCODE((byte) 0),
+        /**
+         * Base64编码
+         */
+        BASE64((byte) 1),
+        /**
+         * AES编码
+         */
+        AES((byte) 2),
+        /**
+         * 其它
+         */
+        OTHER((byte) 3);
 
         private final byte mType;
 
@@ -42,11 +62,6 @@ public abstract class ProxyProtocol {
      * 发送的数据
      */
     private byte[] mSendData;
-
-//    /**
-//     * 配置数据用途的类型（1Byte）
-//     */
-//    private byte mCmdType;
 
     /**
      * 数据编码类型，配置数据加密类型（1Byte）
@@ -74,14 +89,14 @@ public abstract class ProxyProtocol {
     private byte[] mRequestAdr;
 
 
-    public ProxyProtocol(String channelId) {
+    public AbsProxyProtocol(String channelId) {
         if (StringEnvoy.isEmpty(channelId)) {
             throw new IllegalArgumentException("channel id can not be null !!!");
         }
         setChannelId(channelId.getBytes());
     }
 
-    public ProxyProtocol(String machineId, byte[] data) {
+    public AbsProxyProtocol(String machineId, byte[] data) {
         this.mMachineId = machineId.getBytes();
         updateSendData(data);
     }
@@ -90,6 +105,12 @@ public abstract class ProxyProtocol {
         return System.currentTimeMillis();
     }
 
+    /**
+     * 当前协议对应的命令类型
+     *
+     * @return
+     * @see CmdType
+     */
     abstract byte cmdType();
 
     protected byte encryptionType() {

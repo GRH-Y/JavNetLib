@@ -17,7 +17,12 @@ public abstract class AbsNetFactory<T extends BaseNetTask> implements INetFactor
 
     protected AbsNetFactory() {
         mFactoryContext = new FactoryContext();
+    }
 
+    /**
+     * 初始化
+     */
+    private void init() {
         ISSLComponent sslFactory = initSSLComponent();
         mFactoryContext.setSSLFactory(sslFactory);
 
@@ -82,6 +87,7 @@ public abstract class AbsNetFactory<T extends BaseNetTask> implements INetFactor
 
     @Override
     public INetFactory<T> open() {
+        init();
         mFactoryContext.getNetEngine().startEngine();
         return this;
     }

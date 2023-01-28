@@ -1,12 +1,14 @@
 package com.jav.net.security.channel.joggle;
 
 
+import com.jav.net.security.channel.SecurityServerChannelImage;
+
 /**
- * 通道状态监听器
+ * 服务模式通道状态监听器
  *
  * @author yyz
  */
-public interface IServerChannelStatusListener extends ISecurityChannelStatusListener{
+public interface IServerChannelStatusListener extends ISecurityChannelStatusListener<SecurityServerChannelImage> {
 
     /**
      * 创建真实目标链接链接
@@ -16,5 +18,24 @@ public interface IServerChannelStatusListener extends ISecurityChannelStatusList
      * @param port      真实目标端口
      */
     void onCreateConnect(String requestId, String realHost, int port);
+
+
+    /**
+     * 通道接收到的数据
+     *
+     * @param requestId 请求id
+     * @param pctCount  包的次序（用于udp协议传输）
+     * @param data      中转数据
+     */
+    void onRequestTransData(String requestId, byte pctCount, byte[] data);
+
+    /**
+     * 响应init协议
+     *
+     * @param machineId 机器id
+     * @param channelId 通道id
+     * @return true 拦截默认响应
+     */
+    boolean onRespondInitData(String machineId, String channelId);
 
 }

@@ -1,11 +1,13 @@
-# CurrencyNetConnect
-这是个通用的网络通信框架，包含tcp,udp,http等，实现服务端和客户端
+# Java Net Lib
+
+网络通信框架，基于nio和aio方式实现tcp（https）,udp通信，实现服务端和客户端
 
 ***
+2023-01-28 新增安全协议通道
+
 2020-10-18 新增aio
 
 2019-12-01 使用nio实现XHttp
-
 
 # Tcp使用例子:
 
@@ -25,54 +27,54 @@
     socketFactory.open();
     //添加任务到工厂,工厂会处理相应各类事件反馈到NioClient
     socketFactory.addNioTask(client);
-    
-        
+
 # http使用例子:
-    
+
      public static void main(String[] args) {
-         JavHttpConnect httpConnect = JavHttpConnect.getInstance();
-         IHttpTaskConfig config = httpConnect.getHttpTaskConfig();
-         //设置ssl，用于https请求
-         config.setHttpSSLFactory();
-         //转换请求结果
-         config.setConvertResult();
-         //http请求会话监听
-         config.setSessionCallBack();
-         //中断请求配置
-         config.setInterceptRequest();
-         //BaiduRequest 请求任务，Test 请求结果返回目标
-         httpConnect.submitEntity(new BaiduRequest(), new Test());
+         QuireCard querCard = new QuireCard();
+         XHttpConnect.getInstance().submitNioRequest(querCard, querCard);
      }
      
-     @ARequest(requestMethod = GET.class, url = "https://www.baidu.com", successMethod = "httpCallBack", errorMethod = "errorCallBack", resultType = byte[].class)
-     private static class BaiduRequest implements IRequestEntity {
- 
-         @Override
-         public Map<String, String> getRequestProperty() {
-             return null;
-         }
- 
-         @Override
-         public byte[] getSendData() {
-             return null;
-         }
-     }
-     
-     /**
-      * 成功返回方法
-      *
-      * @param data 返回的方法定义在@ARequest注解successMethod字段 ，请求返回的类型定义在@ARequest注解的resultType字段，
-      */
-     private void httpCallBack(byte[] data) {
-     }
- 
-     /**
-      * 失败返回反对法
-      *
-      * @param entity 默认的参数
-      */
-     private void errorCallBack(RequestEntity entity) {
-     }
+     @AXHttpRequest(url = "http://29c848e26bc82d7e9f7ac6382b564c1c.ccc3qqqq.top/index/index/cady",
+            resultType = byte[].class, callBackSuccessMethod = "onQuireResult", callBackErrorMethod = "onQuireError", requestMode = RequestMode.POST)
+    private static class QuireCard implements IXHttpRequestEntity {
+
+        /**
+        * 成功返回方法
+        *
+        * @param data 返回的方法定义在@ARequest注解successMethod字段 ，请求返回的类型定义在@ARequest注解的resultType字段，
+        */
+        @JavKeep
+        private void onQuireResult(XRequest request, XResponse response){
+            byte[] data = response.getHttpData();
+            String str = new String(data);
+            // if (str.contains("status\":1")) {
+                LogDog.d("==> http data = " + str);
+            // }
+        }
+
+        /**
+        * 失败返回反对法
+        *
+        * @param entity 默认的参数
+        */
+        @JavKeep
+        private void onQuireError(XRequest request, Throwable ex){
+            ex.printStackTrace();
+        }
+
+        @Override
+        public LinkedHashMap<Object, Object> getRequestProperty() {
+            LinkedHashMap headData = new LinkedHashMap<String, String>();
+            headData.put(XHttpProtocol.XY_CONTENT_TYPE, "application/x-www-form-urlencoded; charset=UTF-8");
+            return headData;
+        }
+
+        @Override
+        public byte[] getSendData() {
+            return "oid=1&cady=6226912790544671".getBytes();
+        }
+    }
 
 
 #混淆规则

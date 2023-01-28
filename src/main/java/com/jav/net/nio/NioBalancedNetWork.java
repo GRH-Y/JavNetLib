@@ -1,11 +1,13 @@
 package com.jav.net.nio;
 
 import com.jav.net.base.NetTaskComponent;
+import com.jav.net.base.joggle.INetTaskComponent;
 import com.jav.net.entity.FactoryContext;
 
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -55,6 +57,35 @@ public class NioBalancedNetWork<T extends NioClientTask, C extends SocketChannel
     protected void init() {
         super.init();
         initRWNetWork(mConfigWorkCount);
+    }
+
+    @Override
+    protected void onSelectEvent() {
+        int count = 0;
+        INetTaskComponent taskFactory = mFactoryContext.getNetTaskComponent();
+        if (taskFactory.isConnectQueueEmpty()) {
+            try {
+                count = mSelector.select();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            try {
+                count = mSelector.selectNow();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        if (count > 0) {
+            for (Iterator<SelectionKey> iterator = mSelector.selectedKeys().iterator(); iterator.hasNext(); iterator.remove()) {
+                SelectionKey selectionKey = iterator.next();
+                try {
+                    onSelectionKey(selectionKey);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
     private void initRWNetWork(int workCount) {

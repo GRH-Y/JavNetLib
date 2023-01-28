@@ -1,7 +1,7 @@
 package com.jav.net.nio;
 
 import com.jav.net.base.AbsNetSender;
-import com.jav.net.component.SenderCacheComponent;
+import com.jav.net.component.CacheComponent;
 import com.jav.net.component.joggle.ICacheComponent;
 import com.jav.net.entity.MultiByteBuffer;
 
@@ -11,17 +11,19 @@ import java.nio.channels.SelectionKey;
 
 /**
  * 带有缓存的Nio发送器
+ *
+ * @author yyz
  */
 public abstract class AbsNioCacheNetSender<T> extends AbsNetSender<T> {
 
     protected ICacheComponent<Object> mCacheComponent;
 
-    protected SelectionKey mSelectionKey;
+    protected SelectionKey mSelectionKey = null;
 
     public AbsNioCacheNetSender() {
         mCacheComponent = getCacheComponent();
         if (mCacheComponent == null) {
-            mCacheComponent = new SenderCacheComponent();
+            mCacheComponent = new CacheComponent();
         }
     }
 
@@ -47,7 +49,7 @@ public abstract class AbsNioCacheNetSender<T> extends AbsNetSender<T> {
         }
         boolean ret = mCacheComponent.addLastData(data);
         if (ret) {
-            //判断当前是否注册写事件监听，如果没有则添加
+            // 判断当前是否注册写事件监听，如果没有则添加
             if ((mSelectionKey.interestOps() & SelectionKey.OP_WRITE) != SelectionKey.OP_WRITE) {
                 mSelectionKey.interestOps(SelectionKey.OP_WRITE | SelectionKey.OP_READ);
             }
@@ -72,7 +74,7 @@ public abstract class AbsNioCacheNetSender<T> extends AbsNetSender<T> {
         if (data instanceof MultiByteBuffer) {
             MultiByteBuffer buffer = (MultiByteBuffer) data;
             if (buffer.isClear()) {
-                //当前buf没有数据
+                // 当前buf没有数据
                 return SEND_COMPLETE;
             }
             ByteBuffer[] sendDataBuf = buffer.getTmpBuf();
@@ -82,10 +84,10 @@ public abstract class AbsNioCacheNetSender<T> extends AbsNetSender<T> {
             }
             ret = sendDataImp(sendDataBuf);
             if (ret == SEND_CHANNEL_BUSY) {
-                //当前数据没有发送完，则临时记录起来
+                // 当前数据没有发送完，则临时记录起来
                 buffer.setTmpBuf(sendDataBuf);
-                //加入发送队列等待下次处理
-                mCacheComponent.addFirstData(data);
+                // 加入发送队列等待下次处理
+                mCacheComponent.addFirstData(buffer);
                 return SEND_CHANNEL_BUSY;
             }
             buffer.setTmpBuf(null);
@@ -101,10 +103,10 @@ public abstract class AbsNioCacheNetSender<T> extends AbsNetSender<T> {
      */
     @Override
     protected void onSendNetData() throws Throwable {
-        Object data = mCacheComponent.pollFirstData();
+        Object sendData = mCacheComponent.pollFirstData();
         Throwable exception = null;
         try {
-            int ret = onHandleSendData(data);
+            int ret = onHandleSendData(sendData);
             if (ret == SEND_CHANNEL_BUSY) {
                 return;
             }
@@ -115,14 +117,14 @@ public abstract class AbsNioCacheNetSender<T> extends AbsNetSender<T> {
             exception = e;
         }
         if (mFeedback != null) {
-            mFeedback.onSenderFeedBack(this, data, exception);
+            mFeedback.onSenderFeedBack(this, sendData, exception);
         }
         if (exception != null) {
             throw exception;
         }
         if (mCacheComponent.size() == 0) {
             try {
-                //当前没有数据可发送则取消写事件监听
+                // 当前没有数据可发送则取消写事件监听
                 mSelectionKey.interestOps(SelectionKey.OP_READ);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -144,6 +146,7 @@ public abstract class AbsNioCacheNetSender<T> extends AbsNetSender<T> {
      *
      * @param data
      * @return
+     * @throws IOException
      */
-    protected abstract int sendDataImp(ByteBuffer[] data);
+    protected abstract int sendDataImp(ByteBuffer[] data) throws IOException;
 }

@@ -3,6 +3,8 @@ package com.jav.net.base;
 import com.jav.common.state.joggle.IStateChangeListener;
 import com.jav.common.state.joggle.IStateMachine;
 import com.jav.common.util.StringEnvoy;
+import com.jav.net.base.NetStateMachine;
+import com.jav.net.base.NetTaskStatus;
 
 /**
  * 基本网络任务,创建网络链接通信

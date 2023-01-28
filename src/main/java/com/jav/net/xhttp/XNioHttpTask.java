@@ -75,7 +75,7 @@ public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INet
 
 
     @Override
-    public boolean onReceiveFullData(MultiByteBuffer buf, Throwable e) {
+    public void onReceiveFullData(MultiByteBuffer buf) {
         byte[] data = buf.array();
         XHttpDecoderStatus status = XHttpDecoderStatus.OVER;
         if (data != null) {
@@ -104,11 +104,14 @@ public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INet
             mHttpDecoderProcessor.reset();
             mNetTaskFactory.addUnExecTask(this);
         }
-        return true;
     }
 
     @Override
-    protected void onErrorChannel(Throwable throwable) {
+    public void onReceiveError(Throwable e) {
+    }
+
+    @Override
+    protected void onErrorChannel(NetErrorType errorType, Throwable throwable) {
         IXSessionNotify sessionNotify = mHttpConfig.getSessionNotify();
         if (sessionNotify != null) {
             sessionNotify.notifyError(mRequest, throwable);

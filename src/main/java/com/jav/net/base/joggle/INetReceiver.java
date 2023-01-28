@@ -11,8 +11,15 @@ public interface INetReceiver<T> {
      * 接收数据回调
      *
      * @param buf 缓存数据
-     * @return 返回true 则回收buf
      */
-    boolean onReceiveFullData(T buf, Throwable e);
+    void onReceiveFullData(T buf);
+
+
+    /**
+     * 异常回调
+     *
+     * @param e 异常
+     */
+    void onReceiveError(Throwable e);
 
 }

@@ -16,11 +16,11 @@ public enum CmdType {
     /**
      * 传输数据
      */
-    TRANS((byte) 3),
+    TRANS((byte) 4),
     /**
      * 同步服务
      */
-    SYNC((byte) 4);
+    SYNC((byte) 8);
 
     private byte mCmd;
 

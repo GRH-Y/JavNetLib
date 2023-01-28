@@ -5,11 +5,11 @@ import com.jav.net.component.joggle.ICacheComponent;
 import java.util.LinkedList;
 
 /**
- * 发送者缓存组件
+ * 缓存组件
  *
  * @author yyz
  */
-public class SenderCacheComponent implements ICacheComponent<Object> {
+public class CacheComponent implements ICacheComponent<Object> {
 
     protected final LinkedList<Object> mDataQueue = new LinkedList();
 
@@ -18,7 +18,9 @@ public class SenderCacheComponent implements ICacheComponent<Object> {
         if (data == null) {
             return false;
         }
-        mDataQueue.addLast(data);
+        synchronized (mDataQueue) {
+            mDataQueue.addLast(data);
+        }
         return true;
     }
 
@@ -27,19 +29,25 @@ public class SenderCacheComponent implements ICacheComponent<Object> {
         if (data == null) {
             return false;
         }
-        mDataQueue.addFirst(data);
+        synchronized (mDataQueue) {
+            mDataQueue.addFirst(data);
+        }
         return true;
     }
 
 
     @Override
     public Object pollFirstData() {
-        return mDataQueue.pollFirst();
+        synchronized (mDataQueue) {
+            return mDataQueue.pollFirst();
+        }
     }
 
     @Override
     public Object pollLastData() {
-        return mDataQueue.pollLast();
+        synchronized (mDataQueue) {
+            return mDataQueue.pollLast();
+        }
     }
 
     @Override
@@ -53,10 +61,14 @@ public class SenderCacheComponent implements ICacheComponent<Object> {
             return;
         }
         if (picker != null) {
-            for (Object data : mDataQueue) {
-                picker.clear(data);
+            synchronized (mDataQueue) {
+                for (Object data : mDataQueue) {
+                    picker.clear(data);
+                }
             }
         }
-        mDataQueue.clear();
+        synchronized (mDataQueue) {
+            mDataQueue.clear();
+        }
     }
 }

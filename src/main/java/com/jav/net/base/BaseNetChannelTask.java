@@ -1,5 +1,7 @@
 package com.jav.net.base;
 
+import com.jav.net.base.joggle.NetErrorType;
+
 import java.nio.channels.NetworkChannel;
 
 /**
@@ -23,7 +25,7 @@ public class BaseNetChannelTask<T extends NetworkChannel> extends BaseNetTask {
     /**
      * 连接失败回调
      */
-    protected void onErrorChannel(Throwable throwable) {
+    protected void onErrorChannel(NetErrorType errorType, Throwable throwable) {
     }
 
     /**

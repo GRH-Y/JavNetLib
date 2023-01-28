@@ -71,7 +71,7 @@ public class NioClearWork<T extends NioClientTask, C extends SocketChannel> exte
             }
             LogDog.w("## execRemoverTask need wait = " + stateMachine.getState() + " task = " + netTask);
             while (stateMachine.isAttachState(NetTaskStatus.RUN)) {
-                LogDog.w("## execRemoverTask enterWait state = " + stateMachine.getState() + " task = " + netTask);
+                // LogDog.w("## execRemoverTask enterWait state = " + stateMachine.getState() + " task = " + netTask);
                 stateMachine.enterWait();
             }
         } while (true);

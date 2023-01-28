@@ -1,11 +1,15 @@
 package com.jav.net.security.channel;
 
 
-import com.jav.common.security.Md5Helper;
-import com.jav.net.security.channel.joggle.*;
-
-import java.util.ArrayList;
-import java.util.List;
+import com.jav.common.cryption.AESDataEnvoy;
+import com.jav.common.cryption.DataSafeManager;
+import com.jav.common.cryption.RSADataEnvoy;
+import com.jav.common.cryption.joggle.EncryptionType;
+import com.jav.common.cryption.joggle.IDecryptComponent;
+import com.jav.common.cryption.joggle.IEncryptComponent;
+import com.jav.net.security.channel.base.ParserCallBackRegistrar;
+import com.jav.net.security.channel.base.SecurityPolicyProcessor;
+import com.jav.net.security.channel.joggle.ChannelStatus;
 
 /**
  * ChanelMeter 通道辅助，向外提供服务
@@ -15,250 +19,181 @@ import java.util.List;
 public class SecurityChanelMeter {
 
     /**
+     * 配置信息
+     */
+    protected final SecurityChannelContext mContext;
+
+    /**
      * 通道当前的状态
      */
-    private ChannelStatus mCruStatus = ChannelStatus.NONE;
+    private volatile ChannelStatus mCruStatus = ChannelStatus.NONE;
 
     /**
-     * 通道镜像集合
+     * 数据安全管理，提供加解密
      */
-    private final List<SecurityChannelImage> mChannelImageList;
+    protected final DataSafeManager mDataSafeManager;
 
     /**
-     * 处理分发中转数据
+     * 协议解析器
      */
-    private final ReceiveProxy mReceiveTransData;
+    private SecurityProtocolParser mProtocolParser;
 
     /**
-     * 发送中转数据
+     * 数据发送者
      */
-    private final SenderProxy mSendTransData;
+    private SecuritySender mRealSender;
 
     /**
-     * 安全协议发送者
+     * 数据接收者
      */
-    private SecuritySender mSender;
-//    private SecurityReceiver mReceiver;
+    private SecurityReceiver mRealReceiver;
 
+
+    public SecurityChanelMeter(SecurityChannelContext context) {
+        mContext = context;
+        // 创建数据加密器管理器
+        mDataSafeManager = new DataSafeManager();
+        // 创建协议解析器
+        mProtocolParser = new SecurityProtocolParser(mContext);
+        // 创建安全策略处理器
+        SecurityPolicyProcessor policyProcessor = new SecurityPolicyProcessor(mContext);
+        // 设置安全策略处理器
+        mProtocolParser.setSecurityPolicyProcessor(policyProcessor);
+    }
+
+    protected <T extends SecuritySender> T getSender() {
+        return (T) mRealSender;
+    }
+
+    protected <T extends SecurityReceiver> T getReceiver() {
+        return (T) mRealReceiver;
+    }
+
+    /**
+     * 设置协议解析回调对象
+     *
+     * @param registrar
+     */
+    protected void setProtocolParserCallBack(ParserCallBackRegistrar registrar) {
+        mProtocolParser.setProtocolParserCallBack(registrar);
+    }
 
     /**
      * 获取当前通道状态
      *
      * @return 返回当前通道状态
      */
-    public ChannelStatus getCruStatus() {
-        return mCruStatus;
-    }
-
-    public SecurityChanelMeter() {
-        mChannelImageList = new ArrayList<>();
-        mReceiveTransData = new ReceiveProxy();
-        mSendTransData = new SenderProxy();
-    }
-
-    /**
-     * 接收分发数据
-     */
-    private class ReceiveProxy implements IReceiverTransDataProxy {
-
-        @Override
-        public void onCreateConnect(String requestId, String realHost, int port) {
-            //分发请求创建目标链接数据
-            notifyCreateData(requestId, realHost, port);
-        }
-
-        @Override
-        public void onCreateConnectStatus(String requestId, byte status) {
-            //分发请求创建目标链接结果回调
-            notifyCreateConnectStatus(requestId, status);
-        }
-
-        @Override
-        public void onTransData(String requestId, byte pctCount, byte[] data) {
-            //分发中转数据
-            notifyTransData(requestId, pctCount, data);
-        }
-    }
-
-    /**
-     * 发送中转数据
-     */
-    private class SenderProxy implements ISecuritySender {
-
-
-        @Override
-        public void senderRequest(String requestId, byte[] address) {
-            mSender.senderRequest(requestId, address);
-        }
-
-        @Override
-        public void senderTrans(String requestId, byte[] data) {
-            //发送中转数据
-            mSender.senderTrans(requestId, data);
+    protected ChannelStatus getCruStatus() {
+        synchronized (mContext) {
+            return mCruStatus;
         }
     }
 
 
     /**
-     * 根据通道状态监听器查找通道镜像
+     * 更新当前通道状态
      *
-     * @param listener 监听器
-     * @return 通道镜像
+     * @param status 新的状态
      */
-    protected SecurityChannelImage findListenerToImage(IClientChannelStatusListener listener) {
-        synchronized (mChannelImageList) {
-            for (SecurityChannelImage image : mChannelImageList) {
-                if (image.getChannelStatusListener() == listener) {
-                    return image;
-                }
-            }
+    protected void updateCurStatus(ChannelStatus status) {
+        synchronized (mContext) {
+            mCruStatus = status;
         }
-        return null;
     }
 
+    protected void initEncryptionType() {
+        // 初始化默认的加密方式
+        mDataSafeManager.init(EncryptionType.RSA);
+        IDecryptComponent decryptComponent = mDataSafeManager.getDecrypt();
+        RSADataEnvoy decode = decryptComponent.getComponent();
+
+        IEncryptComponent encryptComponent = mDataSafeManager.getEncrypt();
+        RSADataEnvoy encode = encryptComponent.getComponent();
+
+        String publicFile = mContext.getInitRsaPublicFile();
+        String privateFile = mContext.getInitRsaPrivateFile();
+        try {
+            decode.init(publicFile, privateFile);
+            encode.init(publicFile, privateFile);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
     /**
-     * 注册通道镜像，获得通道的状态，发送数据，接收数据的能力
+     * 切换加密方式
      *
-     * @param image 通道镜像
+     * @param encryption 加密方式
      */
-    public void regChannelImage(SecurityChannelImage image) {
-        image.setProxySender(mSendTransData);
-        synchronized (mChannelImageList) {
-            if (mCruStatus == ChannelStatus.READY) {
-                mChannelImageList.add(image);
-            }
+    protected void changeEncryptionType(EncryptionType encryption) {
+        // 发送完init数据,开始切换加密方式
+        mDataSafeManager.init(encryption);
+        IDecryptComponent decryptComponent = mDataSafeManager.getDecrypt();
+        IEncryptComponent encryptComponent = mDataSafeManager.getEncrypt();
+        if (encryption == EncryptionType.AES) {
+            // 获取AES对称密钥
+            String desPassword = mContext.getDesPassword();
+            byte[] aesKey = desPassword.getBytes();
+            AESDataEnvoy encryptEnvoy = encryptComponent.getComponent();
+            encryptEnvoy.initKey(aesKey);
         }
-        image.onUpdateStatus(mCruStatus);
-        ISecurityChannelStatusListener listener = image.getChannelStatusListener();
-        if (listener != null) {
-            listener.onChannelReady();
-        }
-    }
 
-    /**
-     * 反注册通道
-     *
-     * @param image 通道镜像
-     * @return true 为反注册成功
-     */
-    public boolean unRegChannelImage(SecurityChannelImage image) {
-        synchronized (mChannelImageList) {
-            return mChannelImageList.remove(image);
-        }
-    }
-
-    /**
-     * 通知通道正在失效
-     */
-    protected void notifyChannelInvalid() {
-        synchronized (mChannelImageList) {
-            for (SecurityChannelImage image : mChannelImageList) {
-                ISecurityChannelStatusListener listener = image.getChannelStatusListener();
-                if (listener != null) {
-                    listener.onChannelInvalid();
-                }
-                image.onUpdateStatus(mCruStatus);
-            }
-            mChannelImageList.clear();
-        }
-    }
-
-    /**
-     * 根据requestId分发数据
-     *
-     * @param requestId 请求id
-     * @param realHost  真实目标地址
-     * @param port      真实目标端口
-     */
-    protected void notifyCreateData(String requestId, String realHost, int port) {
-        synchronized (mChannelImageList) {
-            for (SecurityChannelImage image : mChannelImageList) {
-                ISecurityChannelStatusListener listener = image.getChannelStatusListener();
-                if (listener instanceof IServerChannelStatusListener) {
-                    IServerChannelStatusListener serverListener = (IServerChannelStatusListener) listener;
-                    serverListener.onCreateConnect(requestId, realHost, port);
-                }
-            }
-        }
-    }
-
-    /**
-     * 根据requestId分发数据
-     *
-     * @param requestId 请求id
-     * @param status    状态
-     */
-    protected void notifyCreateConnectStatus(String requestId, byte status) {
-        synchronized (mChannelImageList) {
-            for (SecurityChannelImage image : mChannelImageList) {
-                ISecurityChannelStatusListener listener = image.getChannelStatusListener();
-                if (listener instanceof IClientChannelStatusListener) {
-                    IClientChannelStatusListener clientListener = (IClientChannelStatusListener) listener;
-                    clientListener.onRemoteCreateConnect(requestId, status);
-                }
-            }
-        }
+        // 更新加密方式
+        mRealSender.setEncryptComponent(encryptComponent);
+        mRealReceiver.setDecryptComponent(decryptComponent);
     }
 
 
     /**
-     * 根据requestId分发数据
-     *
-     * @param requestId 请求id
-     * @param pctCount  数据包计数（用于udp协议）
-     * @param data      数据
+     * 扩展通道就绪回调
      */
-    protected void notifyTransData(String requestId, byte pctCount, byte[] data) {
-        synchronized (mChannelImageList) {
-            for (SecurityChannelImage image : mChannelImageList) {
-                ISecurityChannelStatusListener listener = image.getChannelStatusListener();
-                if (listener instanceof IClientChannelStatusListener) {
-                    IClientChannelStatusListener clientListener = (IClientChannelStatusListener) listener;
-                    clientListener.onChannelTransData(requestId, pctCount, data);
-                }
-            }
-        }
+    protected void onExtChannelReady() {
     }
+
 
     /**
      * 通道建立链接后回调
      *
-     * @param channelClient 当前通道客户端
-     * @param sender        当前通道客户端的数据发送者
-     * @param receiver      当前通道客户端的数据接收者
+     * @param sender   当前通道客户端的数据发送者
+     * @param receiver 当前通道客户端的数据接收者
      */
-    protected void onChannelReady(SecurityChannelClient channelClient, SecuritySender sender, SecurityReceiver receiver) {
-        synchronized (mReceiveTransData) {
-            mCruStatus = ChannelStatus.READY;
-        }
-        SecurityProtocolParser process = new SecurityProtocolParser();
-        process.setResponseSender(sender);
-        process.setTransDataListener(mReceiveTransData);
-        receiver.setProtocolParser(process);
+    protected final void onChannelReady(SecurityChannelClient client, SecuritySender sender, SecurityReceiver receiver) {
+        mRealSender = sender;
+        mRealReceiver = receiver;
 
-        this.mSender = sender;
-//        this.mReceiver = receiver;
+        initEncryptionType();
 
-        boolean isServerMode = SecurityChannelContext.getInstance().isServerMode();
-        if (!isServerMode) {
-            String machineId = SecurityChannelContext.getInstance().getMachineId();
-            String md5MachineId = Md5Helper.md5_32(machineId);
-            //获取加密的方式
-            String encryption = SecurityChannelContext.getInstance().getEncryption();
-            //客户端模式下通道建立成功就发init协议数据进行链接操作
-            sender.requestInitData(md5MachineId, encryption);
-        }
-        channelClient.onRegistrarReady();
+        IDecryptComponent decryptComponent = mDataSafeManager.getDecrypt();
+        IEncryptComponent encryptComponent = mDataSafeManager.getEncrypt();
+
+        // 设置协议解析器
+        mRealReceiver.setProtocolParser(mProtocolParser);
+        mRealReceiver.setDecryptComponent(decryptComponent);
+        mRealSender.setEncryptComponent(encryptComponent);
+
+        onExtChannelReady();
+
+        client.onRegistrarReady();
     }
+
 
     /**
      * 通道失效回调
      */
     protected void onChannelInvalid() {
-        synchronized (mReceiveTransData) {
-            mCruStatus = ChannelStatus.INVALID;
-        }
-        notifyChannelInvalid();
+        updateCurStatus(ChannelStatus.INVALID);
+    }
+
+
+    /**
+     * 通道断开自动重连接
+     *
+     * @param client
+     */
+    protected void onChannelReConnect(SecurityChannelClient client) {
+        client.setAddress(mContext.getConnectHost(), mContext.getConnectPort());
+        SecurityChannelManager.getInstance().resetChannel(client);
     }
 
 }

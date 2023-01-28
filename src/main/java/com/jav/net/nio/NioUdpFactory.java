@@ -16,11 +16,11 @@ public class NioUdpFactory extends AbsNetFactory<NioUdpTask> {
     }
 
     public static INetFactory getFactory() {
-        return NioUdpFactory.InnerClass.sFactory;
+        return InnerClass.sFactory;
     }
 
     public static void destroy() {
-        NioUdpFactory.InnerClass.sFactory.close();
+        InnerClass.sFactory.close();
     }
 
     @Override

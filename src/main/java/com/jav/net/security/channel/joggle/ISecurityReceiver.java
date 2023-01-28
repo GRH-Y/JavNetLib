@@ -1,6 +1,7 @@
 package com.jav.net.security.channel.joggle;
 
 
+import com.jav.common.cryption.joggle.IDecryptComponent;
 import com.jav.net.security.channel.SecurityProtocolParser;
 
 /**
@@ -11,9 +12,17 @@ import com.jav.net.security.channel.SecurityProtocolParser;
 public interface ISecurityReceiver {
 
     /**
-     * 获取协议解析者
+     * 设置协议解析器
      *
-     * @return
+     * @param parser 协议解析器对象
      */
-    SecurityProtocolParser getProtocolParser();
+    void setProtocolParser(SecurityProtocolParser parser);
+
+
+    /**
+     * 设置解密组件
+     *
+     * @param decryptComponent 解密组件对象
+     */
+    void setDecryptComponent(IDecryptComponent decryptComponent);
 }

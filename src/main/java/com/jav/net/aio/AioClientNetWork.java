@@ -3,6 +3,7 @@ package com.jav.net.aio;
 
 import com.jav.net.base.joggle.INetTaskComponent;
 import com.jav.net.base.joggle.ISSLComponent;
+import com.jav.net.base.joggle.NetErrorType;
 import com.jav.net.entity.FactoryContext;
 import com.jav.net.ssl.TLSHandler;
 
@@ -29,11 +30,11 @@ public class AioClientNetWork<T extends AioClientTask> extends AioNetWork<T> imp
     protected void onConnectTask(T netTask) {
         try {
             AsynchronousSocketChannel channel = AsynchronousSocketChannel.open(netTask.onInitChannelGroup());
-            //Disable the Nagle algorithm
+            // Disable the Nagle algorithm
             channel.setOption(StandardSocketOptions.TCP_NODELAY, true);
-            //Keep connection alive
+            // Keep connection alive
             channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
-            //Re-use address
+            // Re-use address
             channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
             netTask.setChannel(channel);
             INetTaskComponent netTaskFactory = mFactoryContext.getNetTaskComponent();
@@ -104,7 +105,7 @@ public class AioClientNetWork<T extends AioClientTask> extends AioNetWork<T> imp
     @Override
     public void failed(Throwable exc, T task) {
         try {
-            task.onErrorChannel(exc);
+            task.onErrorChannel(NetErrorType.OTHER, exc);
         } catch (Exception e) {
             e.printStackTrace();
         } finally {

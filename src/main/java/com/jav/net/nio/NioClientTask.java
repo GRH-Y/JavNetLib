@@ -2,7 +2,6 @@ package com.jav.net.nio;
 
 
 import com.jav.net.component.DefaultCacheComponentPicker;
-import com.jav.net.component.joggle.IBufferComponent;
 import com.jav.net.ssl.TLSHandler;
 
 import java.nio.channels.SocketChannel;
@@ -70,10 +69,6 @@ public class NioClientTask extends BaseNioSelectionTask<SocketChannel> {
         mTLSHandler = null;
         if (mSender != null) {
             mSender.getCacheComponent().clearCache(new DefaultCacheComponentPicker());
-        }
-        if (mReceiver != null) {
-            IBufferComponent component = mReceiver.getBufferComponent();
-            component.release();
         }
     }
 }

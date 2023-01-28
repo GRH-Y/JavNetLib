@@ -24,8 +24,8 @@ public class NioUdpReceiver extends AbsNetReceiver<DatagramChannel, NioUdpReceiv
     protected void onReadNetData(DatagramChannel channel) throws Throwable {
         ByteBuffer buffer = ByteBuffer.allocate(PACKET_MAX_SIZE);
         SocketAddress address = channel.receive(buffer);
-        if (mReceiverCallBack != null) {
-            mReceiverCallBack.onReceiveFullData(new ReceiverPacket(address, buffer), null);
+        if (mReceiver != null) {
+            mReceiver.onReceiveFullData(new ReceiverPacket(address, buffer));
         }
     }
 }
