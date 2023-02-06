@@ -21,6 +21,9 @@ import java.util.Map;
  */
 public class SecurityChannelManager {
 
+    /**
+     * 工作线程数
+     */
     private static final int WORK_COUNT = 2;
 
     /**
@@ -81,12 +84,18 @@ public class SecurityChannelManager {
      * @return 返回可用的通道
      */
     private SecurityClientChanelMeter pollingChannel() {
+        if (mClientChanelList.isEmpty()) {
+            return null;
+        }
         SecurityChannelClient channelClient = mClientChanelList.get(mChannelIndex);
         SecurityClientChanelMeter chanelMeter = channelClient.getChanelMeter();
         if (chanelMeter.getCruStatus() == ChannelStatus.INVALID) {
             mClientChanelList.remove(channelClient);
-            channelClient = createChannel();
-            chanelMeter = channelClient.getChanelMeter();
+            SecurityChannelClient newChannelClient = createChannel();
+            if (newChannelClient == null) {
+                return null;
+            }
+            chanelMeter = newChannelClient.getChanelMeter();
         }
         mChannelIndex++;
         if (mChannelIndex == mContext.getChannelNumber()) {
@@ -101,6 +110,9 @@ public class SecurityChannelManager {
      * @return 返回创建的通道
      */
     private SecurityChannelClient createChannel() {
+        if (mContext.getConnectHost() == null || mContext.getConnectPort() <= 0) {
+            return null;
+        }
         SecurityChannelClient channelClient = new SecurityChannelClient(mContext);
         channelClient.setAddress(mContext.getConnectHost(), mContext.getConnectPort());
         INetTaskComponent<NioClientTask> container = mClientFactory.getNetTaskComponent();
@@ -216,8 +228,10 @@ public class SecurityChannelManager {
             }
         }
         SecurityClientChanelMeter chanelMeter = pollingChannel();
-        SecurityClientChannelImage image = SecurityClientChannelImage.builderClientChannelImage(listener);
-        chanelMeter.regClientChannelImage(image);
+        if (chanelMeter != null) {
+            SecurityClientChannelImage image = SecurityClientChannelImage.builderClientChannelImage(listener);
+            chanelMeter.regClientChannelImage(image);
+        }
     }
 
 

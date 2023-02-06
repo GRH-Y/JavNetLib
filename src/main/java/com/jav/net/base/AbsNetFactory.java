@@ -99,7 +99,10 @@ public abstract class AbsNetFactory<T extends BaseNetTask> implements INetFactor
 
     @Override
     public void close() {
-        mFactoryContext.getNetEngine().stopEngine();
+        AbsNetEngine engine = mFactoryContext.getNetEngine();
+        if (engine != null) {
+            engine.stopEngine();
+        }
     }
 
     @Override

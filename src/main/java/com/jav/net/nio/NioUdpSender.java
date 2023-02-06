@@ -37,7 +37,7 @@ public class NioUdpSender extends AbsNioCacheNetSender<NioUdpSender.SenderPacket
         if (data instanceof SenderPacket) {
             SenderPacket packet = (SenderPacket) data;
             if (packet.mAddress == null) {
-                return super.onHandleSendData(data);
+                return super.onHandleSendData(packet.mData);
             }
             int ret = sendUdpDataImp(packet);
             if (ret == SEND_CHANNEL_BUSY) {
@@ -51,7 +51,7 @@ public class NioUdpSender extends AbsNioCacheNetSender<NioUdpSender.SenderPacket
     }
 
     @Override
-    protected int sendDataImp(ByteBuffer[] buffers) throws IOException {
+    protected int sendDataImp(ByteBuffer[] buffers) {
         if (mChannel == null || buffers == null || !mChannel.isOpen()) {
             return SEND_FAIL;
         }

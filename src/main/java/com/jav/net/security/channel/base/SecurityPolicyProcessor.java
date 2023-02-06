@@ -19,6 +19,8 @@ public class SecurityPolicyProcessor implements ISecurityPolicyProcessor {
 
     private final Map<String, RecordChannel> mCacheChannelId;
 
+    private static final int ONE_DAY = 1000 * 60 * 60 * 24;
+
 
     /**
      * 记录通道请求channelId和请求时间
@@ -58,8 +60,8 @@ public class SecurityPolicyProcessor implements ISecurityPolicyProcessor {
             mTime = System.currentTimeMillis();
         }
 
-        public boolean isOvertime(long time) {
-            return time - mTime > 1000 * 60;
+        public boolean isOvertime() {
+            return System.currentTimeMillis() - mTime > ONE_DAY;
         }
     }
 
@@ -83,7 +85,7 @@ public class SecurityPolicyProcessor implements ISecurityPolicyProcessor {
             recordConnect = new RecordChannel();
             mCacheChannelId.put(machineId, recordConnect);
         } else {
-            if (recordConnect.isOvertime(System.currentTimeMillis())) {
+            if (recordConnect.isOvertime()) {
                 recordConnect.reset();
             }
         }
@@ -126,6 +128,7 @@ public class SecurityPolicyProcessor implements ISecurityPolicyProcessor {
                     return true;
                 }
             }
+            return false;
         }
         return true;
     }

@@ -2,7 +2,6 @@ package com.jav.net.security.channel;
 
 import com.jav.common.log.LogDog;
 import com.jav.net.nio.NioClientFactory;
-import com.jav.net.nio.NioClientTask;
 import com.jav.net.security.channel.base.AbsSecurityServer;
 
 import java.nio.channels.ServerSocketChannel;

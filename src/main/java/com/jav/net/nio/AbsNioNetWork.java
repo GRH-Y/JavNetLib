@@ -244,6 +244,10 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
             return;
         }
         T netTask = (T) selectionKey.attachment();
+        if (netTask == null) {
+            selectionKey.cancel();
+            return;
+        }
         IControlStateMachine<Integer> stateMachine = (IControlStateMachine<Integer>) netTask.getStatusMachine();
         if (stateMachine.isAttachState(NetTaskStatus.FINISHING)) {
             if (stateMachine.isAttachState(NetTaskStatus.RUN)) {

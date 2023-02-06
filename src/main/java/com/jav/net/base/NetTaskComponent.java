@@ -46,21 +46,21 @@ public class NetTaskComponent<T extends BaseNetTask> implements INetTaskComponen
     @Override
     public boolean addExecTask(T task) {
         if (task == null) {
-            LogDog.e("## NetTaskComponent addExecTask add task fails, task == null !!!");
+            LogDog.e("## addExecTask add task fails, task == null !!!");
             return false;
         }
         IControlStateMachine<Integer> stateMachine = task.getStatusMachine();
         if (stateMachine.getState() != NetTaskStatus.NONE) {
-            LogDog.e("## NetTaskComponent addExecTask add task fails, status code = " + stateMachine.getState());
+            LogDog.e("## addExecTask add task fails, status code = " + stateMachine.getState());
             return false;
         }
         AbsNetEngine netEngine = mCreate.getNetEngine();
         if (netEngine.isEngineStop()) {
-            LogDog.e("## NetTaskComponent addExecTask netEngine not running !");
+            LogDog.e("## addExecTask netEngine not running !");
             return false;
         }
         if (mConnectCache.contains(task)) {
-            LogDog.e("## NetTaskComponent addExecTask connect cache repeat !");
+            LogDog.e("## addExecTask connect cache repeat !");
             return false;
         }
         boolean ret = stateMachine.updateState(NetTaskStatus.NONE, NetTaskStatus.LOAD);
@@ -72,7 +72,7 @@ public class NetTaskComponent<T extends BaseNetTask> implements INetTaskComponen
             netEngine.resumeEngine();
         } else {
             stateMachine.updateState(NetTaskStatus.LOAD, NetTaskStatus.INVALID);
-            LogDog.e("## NetTaskComponent addExecTask offer fails !");
+            LogDog.e("## addExecTask offer fails !");
         }
         return ret;
     }
@@ -80,12 +80,12 @@ public class NetTaskComponent<T extends BaseNetTask> implements INetTaskComponen
     @Override
     public boolean addUnExecTask(T task) {
         if (task == null) {
-            LogDog.e("## NetTaskComponent addUnExecTask add task fails, task == null !!!");
+            LogDog.e("## addUnExecTask add task fails, task == null !!!");
             return false;
         }
         IControlStateMachine<Integer> stateMachine = task.getStatusMachine();
         if (stateMachine.getState() < NetTaskStatus.LOAD) {
-            LogDog.e("## NetTaskComponent addUnExecTask add task fails, status code = " + stateMachine.getState());
+            LogDog.e("## addUnExecTask add task fails, status code = " + stateMachine.getState());
             return false;
         } else if (stateMachine.getState() == NetTaskStatus.LOAD) {
             boolean ret = stateMachine.updateState(NetTaskStatus.LOAD, NetTaskStatus.INVALID);
@@ -94,7 +94,7 @@ public class NetTaskComponent<T extends BaseNetTask> implements INetTaskComponen
                 ret = mConnectCache.remove(task);
             }
             if (ret) {
-                LogDog.w("## NetTaskComponent remove load status task !!!");
+                LogDog.w("## remove load status task !!!");
                 return true;
             }
         }
@@ -105,11 +105,11 @@ public class NetTaskComponent<T extends BaseNetTask> implements INetTaskComponen
             netEngine = mDestroy.getNetEngine();
         }
         if (netEngine.isEngineStop()) {
-            LogDog.e("## NetTaskComponent addUnExecTask netEngine not running !");
+            LogDog.e("## addUnExecTask netEngine not running !");
             return false;
         }
         if (mDestroyCache.contains(task)) {
-            LogDog.e("## NetTaskComponent addUnExecTask connect cache repeat !");
+            LogDog.e("## addUnExecTask connect cache repeat !");
             return false;
         }
         if (stateMachine.isAttachState(NetTaskStatus.FINISHING)) {
