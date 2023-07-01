@@ -22,7 +22,7 @@ public interface ISecurityProxySender {
      * @param requestId
      * @param result
      */
-    void respondToConnectRequest(String requestId, byte result);
+    void respondToRequest(String requestId, byte result);
 
 
     /**
@@ -40,4 +40,14 @@ public interface ISecurityProxySender {
      * @param data      转发的数据
      */
     void sendTransData(String requestId, byte[] data);
+
+
+    /**
+     * 相应 trans 请求
+     *
+     * @param requestId
+     * @param repCode
+     * @param data
+     */
+    void respondToTrans(String requestId, byte repCode, byte[] data);
 }

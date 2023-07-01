@@ -63,15 +63,21 @@ public class SecurityChannelClient extends NioClientTask {
 
     @Override
     protected void onBeReadyChannel(SocketChannel channel) {
-        SecurityReceiver securityReceiver = initReceiver();
-        NioReceiver coreReceiver = securityReceiver.getCoreReceiver();
 
-        SecuritySender securitySender = initSender();
-        NioSender coreSender = securitySender.getCoreSender();
-        coreSender.setChannel(getSelectionKey(), channel);
+        SecurityReceiver securityReceiver = mChanelMeter.getReceiver();
+        if (securityReceiver == null) {
+            securityReceiver = initReceiver();
+            NioReceiver coreReceiver = securityReceiver.getCoreReceiver();
+            setReceiver(coreReceiver);
+        }
 
-        setReceiver(coreReceiver);
-        setSender(coreSender);
+        SecuritySender securitySender = mChanelMeter.getSender();
+        if (securitySender == null) {
+            securitySender = initSender();
+            NioSender coreSender = securitySender.getCoreSender();
+            coreSender.setChannel(getSelectionKey(), channel);
+            setSender(coreSender);
+        }
 
         mChanelMeter.onChannelReady(this, securitySender, securityReceiver);
     }

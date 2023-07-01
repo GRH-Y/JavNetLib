@@ -100,6 +100,11 @@ public class SecurityReceiver implements ISecurityReceiver {
         return mCoreReceiver;
     }
 
+    public void reset() {
+        mState = SRState.LENGTH;
+        mFullData = null;
+    }
+
     /**
      * 检查返回code
      *

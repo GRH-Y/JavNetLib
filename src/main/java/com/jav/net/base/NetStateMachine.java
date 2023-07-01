@@ -27,21 +27,28 @@ public class NetStateMachine extends StateMachine<AtomicInteger, Integer> {
      */
     @Override
     public Integer getState() {
-        AtomicInteger state = mStateImp.getStateEntity();
-        return state.get();
+        synchronized (mStateImp) {
+            AtomicInteger state = mStateImp.getStateEntity();
+            return state.get();
+        }
     }
 
     @Override
     public boolean isAttachState(Integer state) {
-        int currentState = getState();
-        return (currentState & state) == state;
+        synchronized (mStateImp) {
+            int currentState = getState();
+            return (currentState & state) == state;
+        }
     }
 
 
     @Override
     public boolean updateState(Integer expectState, Integer setState) {
-        AtomicInteger state = mStateImp.getStateEntity();
-        boolean ret = state.compareAndSet(expectState, setState);
+        boolean ret;
+        synchronized (mStateImp) {
+            AtomicInteger state = mStateImp.getStateEntity();
+            ret = state.compareAndSet(expectState, setState);
+        }
         if (ret) {
             notifyStateChange();
             notifyWait();
@@ -51,9 +58,12 @@ public class NetStateMachine extends StateMachine<AtomicInteger, Integer> {
 
     @Override
     public boolean attachState(Integer attachStatus) {
-        AtomicInteger state = mStateImp.getStateEntity();
-        int newState = state.addAndGet(attachStatus);
-        boolean ret = (newState & attachStatus) == attachStatus;
+        boolean ret;
+        synchronized (mStateImp) {
+            AtomicInteger state = mStateImp.getStateEntity();
+            int newState = state.addAndGet(attachStatus);
+            ret = (newState & attachStatus) == attachStatus;
+        }
         if (ret) {
             notifyStateChange();
             notifyWait();
@@ -63,9 +73,12 @@ public class NetStateMachine extends StateMachine<AtomicInteger, Integer> {
 
     @Override
     public boolean detachState(Integer detachState) {
-        AtomicInteger state = mStateImp.getStateEntity();
-        int newState = state.addAndGet(-detachState);
-        boolean ret = (newState & detachState) == 0;
+        boolean ret;
+        synchronized (mStateImp) {
+            AtomicInteger state = mStateImp.getStateEntity();
+            int newState = state.addAndGet(-detachState);
+            ret = (newState & detachState) == 0;
+        }
         if (ret) {
             notifyStateChange();
             notifyWait();

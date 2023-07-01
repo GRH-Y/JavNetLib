@@ -1,5 +1,6 @@
 package com.jav.net.base;
 
+import com.jav.common.log.LogDog;
 import com.jav.common.state.joggle.IControlStateMachine;
 import com.jav.net.base.joggle.INetTaskComponent;
 import com.jav.net.entity.FactoryContext;
@@ -47,9 +48,19 @@ public class BaseNetWork<T extends BaseNetTask> {
         T netTask = taskFactory.pollConnectTask();
         if (netTask != null) {
             IControlStateMachine<Integer> stateMachine = netTask.getStatusMachine();
-            if (stateMachine.updateState(NetTaskStatus.LOAD, NetTaskStatus.RUN)) {
-                createTaskImp(netTask);
+            for (; ; ) {
+                if (stateMachine.getState() == NetTaskStatus.INVALID) {
+                    return;
+                } else if (stateMachine.isAttachState(NetTaskStatus.FINISHING)) {
+                    stateMachine.detachState(NetTaskStatus.LOAD);
+                    stateMachine.attachState(NetTaskStatus.IDLING);
+                    return;
+                } else if (stateMachine.updateState(NetTaskStatus.LOAD, NetTaskStatus.RUN)) {
+                    break;
+                }
             }
+            LogDog.w("## onCreateTask task state = " + stateMachine.getState() + " task = " + netTask);
+            createTaskImp(netTask);
         }
     }
 

@@ -77,6 +77,7 @@ public class NetTaskComponent<T extends BaseNetTask> implements INetTaskComponen
         return ret;
     }
 
+
     @Override
     public boolean addUnExecTask(T task) {
         if (task == null) {
@@ -87,16 +88,6 @@ public class NetTaskComponent<T extends BaseNetTask> implements INetTaskComponen
         if (stateMachine.getState() < NetTaskStatus.LOAD) {
             LogDog.e("## addUnExecTask add task fails, status code = " + stateMachine.getState());
             return false;
-        } else if (stateMachine.getState() == NetTaskStatus.LOAD) {
-            boolean ret = stateMachine.updateState(NetTaskStatus.LOAD, NetTaskStatus.INVALID);
-            // 当前任务还在load阶段
-            if (ret) {
-                ret = mConnectCache.remove(task);
-            }
-            if (ret) {
-                LogDog.w("## remove load status task !!!");
-                return true;
-            }
         }
         AbsNetEngine netEngine;
         if (mDestroy == null) {
@@ -108,19 +99,33 @@ public class NetTaskComponent<T extends BaseNetTask> implements INetTaskComponen
             LogDog.e("## addUnExecTask netEngine not running !");
             return false;
         }
-        if (mDestroyCache.contains(task)) {
-            LogDog.e("## addUnExecTask connect cache repeat !");
-            return false;
-        }
-        if (stateMachine.isAttachState(NetTaskStatus.FINISHING)) {
-            // 其他线程修改了状态
-            return false;
-        }
-        while (!stateMachine.attachState(NetTaskStatus.FINISHING)) {
-        }
-        boolean ret = mDestroyCache.offer(task);
-        if (ret) {
-            netEngine.resumeEngine();
+        boolean ret;
+        synchronized (mDestroyCache) {
+            if (mDestroyCache.contains(task)) {
+                LogDog.e("## addUnExecTask destroy cache repeat , status = " + stateMachine.getState() + " task = " + task);
+                return false;
+            }
+            // attach FINISHING
+            for (; !stateMachine.isAttachState(NetTaskStatus.FINISHING); ) {
+                int state = stateMachine.getState();
+                if (state == NetTaskStatus.INVALID) {
+                    // 其他线程修改了状态
+                    return false;
+                } else if (state == NetTaskStatus.LOAD) {
+                    //任务状态还没开始执行，直接切换为INVALID状态
+                    if (stateMachine.updateState(NetTaskStatus.LOAD, NetTaskStatus.INVALID)) {
+                        return true;
+                    }
+                } else {
+                    if (stateMachine.attachState(NetTaskStatus.FINISHING)) {
+                        break;
+                    }
+                }
+            }
+            ret = mDestroyCache.offer(task);
+            if (ret) {
+                netEngine.resumeEngine();
+            }
         }
         return ret;
     }

@@ -36,7 +36,7 @@ public interface ISecurityPolicyProcessor {
      * 校验channel id
      *
      * @param channelId 通道id
-     * @return
+     * @return true 为校验通过
      */
     boolean onCheckChannelId(String channelId);
 

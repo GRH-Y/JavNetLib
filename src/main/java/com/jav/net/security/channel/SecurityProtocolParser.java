@@ -7,6 +7,7 @@ import com.jav.common.util.StringEnvoy;
 import com.jav.net.security.channel.base.ParserCallBackRegistrar;
 import com.jav.net.security.channel.joggle.*;
 import com.jav.net.security.protocol.AbsProxyProtocol;
+import com.jav.net.security.protocol.TransProtocol;
 
 import java.nio.ByteBuffer;
 
@@ -141,18 +142,24 @@ public class SecurityProtocolParser {
 
     public void parserData(String remoteHost, ByteBuffer decodeData) {
         // 解析校验时间字段
-        parseTime(remoteHost, decodeData);
+        parseCheckTime(remoteHost, decodeData);
         // 解析cmd字段
         byte cmd = decodeData.get();
         String machineId = null;
-        String channelId = null;
         if (cmd == CmdType.INIT.getCmd() || cmd == CmdType.SYNC.getCmd()) {
             // 解析校验machine id字段
-            machineId = parseMachineId(remoteHost, decodeData);
+            machineId = parseCheckMachineId(remoteHost, decodeData);
         } else if (cmd == CmdType.REQUEST.getCmd() || cmd == CmdType.TRANS.getCmd()) {
-            channelId = parseChannelId(remoteHost, decodeData);
+            boolean isOk = parseCheckChannelId(decodeData);
+            if (!isOk) {
+                //channel id 异常,通知客户端,让客户端重新连接
+                IServerEventCallBack callBack = mCallBackRegistrar.getServerCallBack();
+                if (callBack != null) {
+                    callBack.onErrorChannelId();
+                }
+            }
         }
-        parserCmdForData(cmd, machineId, channelId, decodeData);
+        parserCheckCmdForData(cmd, machineId, decodeData);
     }
 
 
@@ -162,7 +169,7 @@ public class SecurityProtocolParser {
      * @param remoteHost 远程的目标地址
      * @param decodeData 要校验的数据
      */
-    private void parseTime(String remoteHost, ByteBuffer decodeData) {
+    private void parseCheckTime(String remoteHost, ByteBuffer decodeData) {
         long time = decodeData.getLong();
         boolean isDeny = mPolicyProcessor.onCheckTime(time);
         if (!isDeny) {
@@ -176,7 +183,7 @@ public class SecurityProtocolParser {
      * @param remoteHost 远程的目标地址
      * @param decodeData 要校验的数据
      */
-    private String parseMachineId(String remoteHost, ByteBuffer decodeData) {
+    private String parseCheckMachineId(String remoteHost, ByteBuffer decodeData) {
         byte[] mid = new byte[AbsProxyProtocol.MACHINE_LENGTH];
         decodeData.get(mid);
         String machineIdStr = new String(mid);
@@ -190,19 +197,14 @@ public class SecurityProtocolParser {
     /**
      * 解析校验channel id
      *
-     * @param remoteHost 远程的目标地址
      * @param decodeData 要校验的数据
      * @return 返回 channel id
      */
-    private String parseChannelId(String remoteHost, ByteBuffer decodeData) {
+    private boolean parseCheckChannelId(ByteBuffer decodeData) {
         byte[] channelIdByte = new byte[AbsProxyProtocol.CHANNEL_LENGTH];
         decodeData.get(channelIdByte);
         String channelId = new String(channelIdByte);
-        boolean isDeny = mPolicyProcessor.onCheckChannelId(channelId);
-        if (!isDeny) {
-            callBackDeny(remoteHost, UnusualBehaviorType.CHANNEL);
-        }
-        return channelId;
+        return mPolicyProcessor.onCheckChannelId(channelId);
     }
 
     /**
@@ -219,7 +221,7 @@ public class SecurityProtocolParser {
     }
 
 
-    private void parserCmdForData(byte cmd, String machineId, String channelId, ByteBuffer data) {
+    private void parserCheckCmdForData(byte cmd, String machineId, ByteBuffer data) {
         if (cmd == CmdType.INIT.getCmd()) {
             if (mContext.isServerMode()) {
                 serverExecInitCmd(machineId, data);
@@ -236,16 +238,23 @@ public class SecurityProtocolParser {
             }
             // pctCount 作用于udp 传输数据 ，暂时不处理
             byte pctCount = data.get();
+            if (!mContext.isServerMode()) {
+                byte repCode = data.get();
+                if (repCode == TransProtocol.REP_EXCEPTION_CODE) {
+                    throw new RuntimeException("exception rep code !!!");
+                }
+            }
             byte[] context = getContextData(data);
             if (context == null) {
                 throw new RuntimeException("illegal trans context !!!");
             }
             if (mCallBackRegistrar != null) {
-                ITransDataCallBack callBack = mCallBackRegistrar.getClientCallBack();
+                IChannelEventCallBack callBack = mCallBackRegistrar.getClientCallBack();
                 if (mContext.isServerMode()) {
                     callBack = mCallBackRegistrar.getServerCallBack();
                 }
                 callBack.onTransData(requestId, pctCount, context);
+
             }
         } else if (cmd == CmdType.REQUEST.getCmd()) {
             // 解析requestId

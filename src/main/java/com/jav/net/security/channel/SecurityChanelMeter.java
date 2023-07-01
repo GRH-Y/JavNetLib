@@ -61,6 +61,15 @@ public class SecurityChanelMeter {
         mProtocolParser.setSecurityPolicyProcessor(policyProcessor);
     }
 
+    /**
+     * 默认是RSA加密方式
+     *
+     * @return
+     */
+    protected EncryptionType initEncryptionType() {
+        return EncryptionType.RSA;
+    }
+
     protected <T extends SecuritySender> T getSender() {
         return (T) mRealSender;
     }
@@ -101,25 +110,6 @@ public class SecurityChanelMeter {
         }
     }
 
-    protected void initEncryptionType() {
-        // 初始化默认的加密方式
-        mDataSafeManager.init(EncryptionType.RSA);
-        IDecryptComponent decryptComponent = mDataSafeManager.getDecrypt();
-        RSADataEnvoy decode = decryptComponent.getComponent();
-
-        IEncryptComponent encryptComponent = mDataSafeManager.getEncrypt();
-        RSADataEnvoy encode = encryptComponent.getComponent();
-
-        String publicFile = mContext.getInitRsaPublicFile();
-        String privateFile = mContext.getInitRsaPrivateFile();
-        try {
-            decode.init(publicFile, privateFile);
-            encode.init(publicFile, privateFile);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
 
     /**
      * 切换加密方式
@@ -137,9 +127,20 @@ public class SecurityChanelMeter {
             byte[] aesKey = desPassword.getBytes();
             AESDataEnvoy encryptEnvoy = encryptComponent.getComponent();
             encryptEnvoy.initKey(aesKey);
+        } else if (encryption == EncryptionType.RSA) {
+            String publicFile = mContext.getInitRsaPublicFile();
+            String privateFile = mContext.getInitRsaPrivateFile();
+            try {
+                RSADataEnvoy decode = decryptComponent.getComponent();
+                RSADataEnvoy encode = encryptComponent.getComponent();
+                decode.init(publicFile, privateFile);
+                encode.init(publicFile, privateFile);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
 
-        // 更新加密方式
+        // 设置加密方式
         mRealSender.setEncryptComponent(encryptComponent);
         mRealReceiver.setDecryptComponent(decryptComponent);
     }
@@ -162,15 +163,13 @@ public class SecurityChanelMeter {
         mRealSender = sender;
         mRealReceiver = receiver;
 
-        initEncryptionType();
-
-        IDecryptComponent decryptComponent = mDataSafeManager.getDecrypt();
-        IEncryptComponent encryptComponent = mDataSafeManager.getEncrypt();
-
+        //设置加密方式
+        EncryptionType encryptionType = initEncryptionType();
+        changeEncryptionType(encryptionType);
         // 设置协议解析器
         mRealReceiver.setProtocolParser(mProtocolParser);
-        mRealReceiver.setDecryptComponent(decryptComponent);
-        mRealSender.setEncryptComponent(encryptComponent);
+        //重置接收,断线重连接需要恢复状态
+        mRealReceiver.reset();
 
         onExtChannelReady();
 

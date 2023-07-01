@@ -7,7 +7,7 @@ import com.jav.common.cryption.joggle.EncryptionType;
  *
  * @author yyz
  */
-public interface IServerEventCallBack extends ITransDataCallBack {
+public interface IServerEventCallBack extends IChannelEventCallBack {
 
     /**
      * 服务模式回调Init协议
@@ -27,4 +27,9 @@ public interface IServerEventCallBack extends ITransDataCallBack {
      * @param port      真实目端口
      */
     void onConnectTargetCallBack(String requestId, String realHost, int port);
+
+    /**
+     * 异常的channel id反馈
+     */
+    void onErrorChannelId();
 }

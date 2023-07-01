@@ -15,12 +15,12 @@ public class NetTaskStatus implements IState<AtomicInteger> {
     /**
      * 任务完成已失效
      */
-    public static final int INVALID = 0;
+    public static final int INVALID = 1;
 
     /**
      * 任务正在结束
      */
-    public static final int FINISHING = 3;
+    public static final int FINISHING = 2;
 
     /**
      * 任务还没开始

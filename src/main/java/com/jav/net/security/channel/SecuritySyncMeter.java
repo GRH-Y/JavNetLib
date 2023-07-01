@@ -64,8 +64,8 @@ public class SecuritySyncMeter extends SecurityChanelMeter {
     }
 
     @Override
-    protected void initEncryptionType() {
-        mDataSafeManager.init(EncryptionType.BASE64);
+    protected EncryptionType initEncryptionType() {
+        return EncryptionType.BASE64;
     }
 
 

@@ -18,8 +18,18 @@ public class TransProtocol extends AbsProxyProtocol {
      */
     private static final int HEAD_LENGTH = 74;
 
+    /**
+     * 响应码,只用于服务端响应客户端,0 正常,1 异常
+     */
+    private Byte repCode;
+
     public TransProtocol(String channelId) {
         super(channelId);
+    }
+
+
+    public void setRepCode(byte repCode) {
+        this.repCode = repCode;
     }
 
     @Override
@@ -29,19 +39,25 @@ public class TransProtocol extends AbsProxyProtocol {
 
     @Override
     public ByteBuffer toData(IEncryptComponent encryptComponent) {
-        if (sendData() == null) {
-            return null;
+        int length = HEAD_LENGTH;
+        if (sendData() != null) {
+            length += sendData().length;
         }
-
-        int length = sendData().length + HEAD_LENGTH;
+        if (repCode != null) {
+            length++;
+        }
         ByteBuffer srcData = ByteBuffer.allocate(length);
         srcData.putLong(time());
         srcData.put(cmdType());
         srcData.put(channelId());
         srcData.put(requestId());
         srcData.put(packetOrder());
-        srcData.put(sendData());
-
+        if (repCode != null) {
+            srcData.put(repCode);
+        }
+        if (sendData() != null) {
+            srcData.put(sendData());
+        }
         return onEncrypt(encryptComponent, srcData);
     }
 }

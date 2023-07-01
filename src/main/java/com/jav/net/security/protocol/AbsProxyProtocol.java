@@ -21,6 +21,16 @@ public abstract class AbsProxyProtocol {
 
 
     /**
+     * 成功状态码
+     */
+    public static final byte REP_SUCCESS_CODE = 0 ;
+    /**
+     * 异常状态码
+     */
+    public static final byte REP_EXCEPTION_CODE = 1 ;
+
+
+    /**
      * 编码类型
      */
     protected enum EnType {
@@ -83,11 +93,6 @@ public abstract class AbsProxyProtocol {
      */
     private byte mPacketOrder = 0;
 
-    /**
-     * 真实的目标地址
-     */
-    private byte[] mRequestAdr;
-
 
     public AbsProxyProtocol(String channelId) {
         if (StringEnvoy.isEmpty(channelId)) {
@@ -137,9 +142,6 @@ public abstract class AbsProxyProtocol {
         return mSendData;
     }
 
-    protected byte[] requestAdr() {
-        return mRequestAdr;
-    }
 
     public void setEnType(byte mEnType) {
         this.mEncryptionType = mEnType;
@@ -155,10 +157,6 @@ public abstract class AbsProxyProtocol {
 
     public void setPacketOrder(byte mPacketOrder) {
         this.mPacketOrder = mPacketOrder;
-    }
-
-    public void setRequestAdr(byte[] requestAdr) {
-        this.mRequestAdr = requestAdr;
     }
 
     public void updateSendData(byte[] sendData) {

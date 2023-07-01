@@ -4,8 +4,8 @@ import com.jav.common.cryption.joggle.EncryptionType;
 import com.jav.net.entity.MultiByteBuffer;
 import com.jav.net.security.channel.joggle.IChangeEncryptCallBack;
 import com.jav.net.security.channel.joggle.ISecurityProxySender;
-import com.jav.net.security.protocol.ConnectProtocol;
 import com.jav.net.security.protocol.InitProtocol;
+import com.jav.net.security.protocol.RequestProtocol;
 import com.jav.net.security.protocol.TransProtocol;
 
 import java.nio.ByteBuffer;
@@ -72,11 +72,11 @@ public class SecurityProxySender extends SecuritySender implements ISecurityProx
      * @param result
      */
     @Override
-    public void respondToConnectRequest(String requestId, byte result) {
+    public void respondToRequest(String requestId, byte result) {
         if (requestId == null) {
             return;
         }
-        ConnectProtocol connectProtocol = new ConnectProtocol(mChannelId);
+        RequestProtocol connectProtocol = new RequestProtocol(mChannelId);
         connectProtocol.setRequestId(requestId.getBytes());
         connectProtocol.updateSendData(new byte[]{result});
         ByteBuffer encodeData = connectProtocol.toData(mEncryptComponent);
@@ -95,7 +95,7 @@ public class SecurityProxySender extends SecuritySender implements ISecurityProx
         if (requestId == null || address == null) {
             return;
         }
-        ConnectProtocol connectProtocol = new ConnectProtocol(mChannelId);
+        RequestProtocol connectProtocol = new RequestProtocol(mChannelId);
         connectProtocol.setRequestId(requestId.getBytes());
         connectProtocol.setRequestAdr(address);
         ByteBuffer encodeData = connectProtocol.toData(mEncryptComponent);
@@ -114,8 +114,25 @@ public class SecurityProxySender extends SecuritySender implements ISecurityProx
             return;
         }
         TransProtocol transProtocol = new TransProtocol(mChannelId);
-        transProtocol.setRequestId(requestId.getBytes());
         transProtocol.updateSendData(data);
+        transProtocol.setRequestId(requestId.getBytes());
+        ByteBuffer encodeData = transProtocol.toData(mEncryptComponent);
+        mCoreSender.sendData(new MultiByteBuffer(encodeData));
+    }
+
+    /**
+     * 相应 trans 请求
+     *
+     * @param requestId 异常的情况可以返回任意32 bit长度的内容
+     * @param repCode   异常返回1，正常返回0
+     * @param data      异常情况可以返回null
+     */
+    @Override
+    public void respondToTrans(String requestId, byte repCode, byte[] data) {
+        TransProtocol transProtocol = new TransProtocol(mChannelId);
+        transProtocol.setRepCode(repCode);
+        transProtocol.updateSendData(data);
+        transProtocol.setRequestId(requestId.getBytes());
         ByteBuffer encodeData = transProtocol.toData(mEncryptComponent);
         mCoreSender.sendData(new MultiByteBuffer(encodeData));
     }

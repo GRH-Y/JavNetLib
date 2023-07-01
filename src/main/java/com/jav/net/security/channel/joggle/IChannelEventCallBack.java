@@ -1,11 +1,11 @@
 package com.jav.net.security.channel.joggle;
 
 /**
- * 转发数据监听器
+ * 通道事件回调
  *
  * @author yyz
  */
-public interface ITransDataCallBack {
+public interface IChannelEventCallBack {
 
     /**
      * 转发数据解析回调
@@ -15,6 +15,5 @@ public interface ITransDataCallBack {
      * @param data      转发的数据
      */
     void onTransData(String requestId, byte pctCount, byte[] data);
-
 
 }

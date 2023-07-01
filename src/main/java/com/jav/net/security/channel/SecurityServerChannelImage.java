@@ -1,6 +1,7 @@
 package com.jav.net.security.channel;
 
 import com.jav.net.security.channel.joggle.IServerChannelStatusListener;
+import com.jav.net.security.protocol.RequestProtocol;
 
 /**
  * 服务模式的通道的镜像
@@ -37,7 +38,7 @@ public class SecurityServerChannelImage extends SecurityChannelImage {
      * @param result
      */
     public void respondRequestData(String requestId, byte result) {
-        mSender.respondToConnectRequest(requestId, result);
+        mSender.respondToRequest(requestId, result);
     }
 
 
@@ -47,7 +48,7 @@ public class SecurityServerChannelImage extends SecurityChannelImage {
      * @param data 数据
      */
     public void sendTransDataFromServer(String requestId, byte[] data) {
-        mSender.sendTransData(requestId, data);
+        mSender.respondToTrans(requestId, RequestProtocol.REP_SUCCESS_CODE, data);
     }
 
 

@@ -117,7 +117,7 @@ public class XHttpDecoderProcessor {
                     callStatusChange();
                 }
             } else {
-                //没有请求体
+                //没有明确的body大小
                 int index = XResponseHelper.findHeadEndTag(data, len);
                 if (index != -1) {
                     mStatus = XHttpDecoderStatus.OVER;
@@ -159,6 +159,8 @@ public class XHttpDecoderProcessor {
 
     public void reset() {
         mHeadEndIndex = -1;
+        mBodySize = -1;
+        mIsSubsection = false;
         mStatus = XHttpDecoderStatus.HEAD;
         mResponse.reset();
     }

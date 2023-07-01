@@ -2,7 +2,6 @@ package com.jav.net.nio;
 
 import com.jav.net.entity.MultiByteBuffer;
 
-import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
@@ -11,6 +10,8 @@ import java.nio.channels.SelectionKey;
 public class NioUdpSender extends AbsNioCacheNetSender<NioUdpSender.SenderPacket> {
 
     protected DatagramChannel mChannel;
+
+    public static final int MAX_LENGTH = 65506;
 
 
     public static class SenderPacket {
@@ -55,18 +56,35 @@ public class NioUdpSender extends AbsNioCacheNetSender<NioUdpSender.SenderPacket
         if (mChannel == null || buffers == null || !mChannel.isOpen()) {
             return SEND_FAIL;
         }
-        do {
+        for (ByteBuffer buffer : buffers) {
             try {
-                long ret = mChannel.write(buffers);
-                if (ret < 0) {
-                    return SEND_FAIL;
-                } else if (ret == 0 && mChannel.isOpen()) {
-                    return hasRemaining(buffers) ? SEND_CHANNEL_BUSY : SEND_FAIL;
+                int realLength = 0;
+                if (buffer.limit() > MAX_LENGTH) {
+                    realLength = buffer.limit();
+                    buffer.limit(MAX_LENGTH);
+                }
+                while (mChannel.isOpen()) {
+                    int ret = mChannel.write(buffer);
+                    if (ret < 0) {
+                        return SEND_FAIL;
+                    } else if (ret == 0 && mChannel.isOpen()) {
+                        return buffer.hasRemaining() ? SEND_CHANNEL_BUSY : SEND_FAIL;
+                    }
+                    realLength -= ret;
+                    if (realLength > 0) {
+                        if (realLength > MAX_LENGTH) {
+                            buffer.limit(buffer.position() + MAX_LENGTH);
+                        } else {
+                            buffer.limit(buffer.position() + realLength);
+                        }
+                    } else {
+                        break;
+                    }
                 }
             } catch (Throwable e) {
                 return SEND_FAIL;
             }
-        } while (hasRemaining(buffers) && mChannel.isOpen());
+        }
         return SEND_COMPLETE;
     }
 
@@ -78,17 +96,30 @@ public class NioUdpSender extends AbsNioCacheNetSender<NioUdpSender.SenderPacket
         if (sendDataBuf == null) {
             sendDataBuf = packet.mData.getUseBuf(true);
         }
-        do {
-            for (ByteBuffer buffer : sendDataBuf) {
+        for (ByteBuffer buffer : sendDataBuf) {
+            int realLength = 0;
+            if (buffer.limit() > MAX_LENGTH) {
+                realLength = buffer.limit();
+                buffer.limit(MAX_LENGTH);
+            }
+            while (buffer.hasRemaining() && mChannel.isOpen()) {
                 long ret = mChannel.send(buffer, packet.mAddress);
                 if (ret < 0) {
-                    throw new IOException("## failed to send data. The socket channel may be closed !!! ");
-                } else if (ret == 0 && packet.mData.hasRemaining() && mChannel.isOpen()) {
+                    return SEND_FAIL;
+                } else if (ret == 0 && mChannel.isOpen() && buffer.hasRemaining()) {
                     packet.mData.setBackBuf(sendDataBuf);
-                    return SEND_CHANNEL_BUSY;
+                    return buffer.hasRemaining() ? SEND_CHANNEL_BUSY : SEND_FAIL;
+                }
+                if (realLength > 0) {
+                    realLength -= ret;
+                    if (realLength > MAX_LENGTH) {
+                        buffer.limit(buffer.position() + MAX_LENGTH);
+                    } else {
+                        buffer.limit(buffer.position() + realLength);
+                    }
                 }
             }
-        } while (hasRemaining(sendDataBuf) && mChannel.isOpen());
+        }
         return SEND_COMPLETE;
     }
 

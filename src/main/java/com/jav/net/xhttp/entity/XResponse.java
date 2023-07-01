@@ -97,5 +97,7 @@ public class XResponse {
     public void reset() {
         mHttpHead.clear();
         mRaw.reset();
+        mDataIndex = 0;
+        mDataLength = 0;
     }
 }

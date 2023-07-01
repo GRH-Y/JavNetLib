@@ -7,6 +7,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -28,6 +29,12 @@ public class IpBlackListManager {
      * 确认目标的缓存
      */
     private LinkedList<String> mConfirmCache = new LinkedList<>();
+
+    /**
+     * 加载固定黑名单列表
+     */
+    private LinkedList<String> mFixedTarget = new LinkedList<>();
+
     /**
      * 怀疑目标,有3次机会
      */
@@ -60,6 +67,11 @@ public class IpBlackListManager {
     private IpBlackListManager() {
     }
 
+    /**
+     * 获取当前识别到异常目标的列表
+     *
+     * @return
+     */
     protected byte[] getBlackList() {
         Object[] objects;
         synchronized (mConfirmCache) {
@@ -81,6 +93,23 @@ public class IpBlackListManager {
         return stream.toByteArray();
     }
 
+    /**
+     * 配置固定的黑名单列表
+     *
+     * @param ipList
+     */
+    public void loadFixedTarget(List<String> ipList) {
+        if (ipList == null || ipList.isEmpty()) {
+            return;
+        }
+        mFixedTarget.addAll(ipList);
+    }
+
+    /**
+     * 添加目标到拦截列表
+     *
+     * @param ip
+     */
     public void addBlackList(String ip) {
         if (StringEnvoy.isEmpty(ip)) {
             return;
@@ -114,12 +143,23 @@ public class IpBlackListManager {
         LogDog.w("add " + ip + " to the blacklist");
     }
 
+    /**
+     * 把目标移除拦截列表
+     *
+     * @param ip
+     */
     public void removeBlackList(String ip) {
         synchronized (mConfirmCache) {
             mConfirmCache.remove(ip);
         }
     }
 
+    /**
+     * 判断是否在拦截列表
+     *
+     * @param ip
+     * @return
+     */
     public boolean isBlackList(String ip) {
         synchronized (mConfirmCache) {
             for (String text : mConfirmCache) {
@@ -127,10 +167,18 @@ public class IpBlackListManager {
                     return true;
                 }
             }
-            return false;
         }
+        for (String text : mFixedTarget) {
+            if (text.equals(ip)) {
+                return true;
+            }
+        }
+        return false;
     }
 
+    /**
+     * 清除拦截列表,但不清除loadFixedTarget() 加载的列表
+     */
     public void clearBlackList() {
         synchronized (mConfirmCache) {
             mConfirmCache.clear();

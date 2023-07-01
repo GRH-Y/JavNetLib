@@ -4,6 +4,7 @@ package com.jav.net.security.channel;
 import com.jav.common.cryption.joggle.EncryptionType;
 import com.jav.net.security.channel.base.ParserCallBackRegistrar;
 import com.jav.net.security.channel.joggle.*;
+import com.jav.net.security.protocol.RequestProtocol;
 
 /**
  * ChanelMeter 通道辅助，向外提供服务
@@ -11,6 +12,11 @@ import com.jav.net.security.channel.joggle.*;
  * @author yyz
  */
 public class SecurityServerChanelMeter extends SecurityChanelMeter {
+
+    /**
+     * 异常的request id
+     */
+    private static final String ERROR_REQUEST_ID = "000-0000-0000-null-0000-0000-000";
 
     /**
      * server通道镜像
@@ -61,6 +67,12 @@ public class SecurityServerChanelMeter extends SecurityChanelMeter {
                 IServerChannelStatusListener serverListener = mServerImage.getChannelStatusListener();
                 serverListener.onRequestTransData(requestId, pctCount, data);
             }
+        }
+
+        @Override
+        public void onErrorChannelId() {
+            SecurityProxySender proxySender = getSender();
+            proxySender.respondToTrans(ERROR_REQUEST_ID, RequestProtocol.REP_EXCEPTION_CODE, null);
         }
 
     }

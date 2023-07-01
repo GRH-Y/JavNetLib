@@ -1,6 +1,8 @@
 package com.jav.net.nio;
 
 
+import com.jav.common.state.joggle.IControlStateMachine;
+import com.jav.net.base.NetTaskStatus;
 import com.jav.net.base.SocketChannelCloseException;
 import com.jav.net.base.joggle.INetTaskComponent;
 import com.jav.net.base.joggle.NetErrorType;
@@ -40,6 +42,7 @@ public class NioUdpWork<T extends NioUdpTask, C extends DatagramChannel> extends
          * IP_MULTICAST_LOOP	Loopback for Internet Protocol (IP) multicast datagrams
          */
         channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
+        channel.setOption(StandardSocketOptions.SO_BROADCAST, true);
         channel.setOption(StandardSocketOptions.IP_MULTICAST_LOOP, false);
         channel.setOption(StandardSocketOptions.IP_MULTICAST_TTL, netTask.getLiveTime().getTtl());
         netTask.onConfigChannel(channel);
@@ -68,6 +71,9 @@ public class NioUdpWork<T extends NioUdpTask, C extends DatagramChannel> extends
             netTask.setSelectionKey(selectionKey);
             netTask.onBeReadyChannel(channel);
         } catch (Throwable e) {
+            IControlStateMachine<Integer> stateMachine = netTask.getStatusMachine();
+            stateMachine.detachState(NetTaskStatus.RUN);
+            stateMachine.attachState(NetTaskStatus.IDLING);
             callChannelError(netTask, NetErrorType.CONNECT, e);
         }
     }

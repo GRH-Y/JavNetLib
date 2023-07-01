@@ -5,7 +5,7 @@ package com.jav.net.security.channel.joggle;
  *
  * @author yyz
  */
-public interface IClientEventCallBack extends ITransDataCallBack {
+public interface IClientEventCallBack extends IChannelEventCallBack {
 
     /**
      * 客户端模式回调Init协议

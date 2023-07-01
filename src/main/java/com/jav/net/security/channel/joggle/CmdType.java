@@ -20,7 +20,11 @@ public enum CmdType {
     /**
      * 同步服务
      */
-    SYNC((byte) 8);
+    SYNC((byte) 8),
+    /**
+     * KeepAlive
+     */
+    KEEP((byte) 16);
 
     private byte mCmd;
 
