@@ -145,6 +145,7 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
                     stateMachine.attachState(NetTaskStatus.IDLING);
                     break;
                 } else if (stateMachine.getState() == NetTaskStatus.INVALID
+                        || stateMachine.getState() == NetTaskStatus.IDLING
                         || stateMachine.updateState(NetTaskStatus.RUN, NetTaskStatus.IDLING)) {
                     break;
                 }

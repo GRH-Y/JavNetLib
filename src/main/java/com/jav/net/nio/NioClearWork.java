@@ -72,13 +72,12 @@ public class NioClearWork<T extends NioClientTask, C extends SocketChannel> exte
         } else {
             while (checkIdle() && stateMachine.isAttachState(NetTaskStatus.RUN)) {
                 //如果当前队列没有任务则进入等待模式
-                LogDog.w("##  The current task status is running, need wait = " + " task = " + netTask);
+                LogDog.w("##  The current task status = " + stateMachine.getState() + " need wait " + " task = " + netTask);
                 stateMachine.enterWait();
                 break;
             }
             if (stateMachine.getState() != NetTaskStatus.INVALID) {
-                LogDog.w("## The current task status is running, " +
-                        "put the task back in the queue and process it next time !  task = " + netTask);
+                LogDog.w("## put the task back in the queue and process it next time ,task = " + netTask);
                 INetTaskComponent container = mFactoryContext.getNetTaskComponent();
                 container.addUnExecTask(netTask);
             }
