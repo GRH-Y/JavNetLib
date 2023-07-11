@@ -3,8 +3,9 @@ package com.jav.net.security.channel;
 
 import com.jav.common.cryption.joggle.EncryptionType;
 import com.jav.common.security.Md5Helper;
+import com.jav.net.security.channel.base.ChannelStatus;
 import com.jav.net.security.channel.base.ParserCallBackRegistrar;
-import com.jav.net.security.channel.joggle.ChannelStatus;
+import com.jav.net.security.channel.base.UnusualBehaviorType;
 import com.jav.net.security.channel.joggle.IClientChannelStatusListener;
 import com.jav.net.security.channel.joggle.IClientEventCallBack;
 import com.jav.net.security.channel.joggle.ISecurityChannelStatusListener;
@@ -85,9 +86,14 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
         }
 
         @Override
-        public void onTransData(String requestId, byte pctCount, byte[] data) {
+        public void onTransData(String requestId, byte[] data) {
             // 分发中转数据
-            notifyTransData(requestId, pctCount, data);
+            notifyTransData(requestId, data);
+        }
+
+        @Override
+        public void onChannelError(UnusualBehaviorType error, Map<String, String> extData) {
+            notifyChannelError(error, extData);
         }
 
     }
@@ -214,24 +220,43 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
      * 根据requestId分发数据
      *
      * @param requestId 请求id
-     * @param pctCount  数据包计数（用于udp协议）
      * @param data      数据
      */
-    protected void notifyTransData(String requestId, byte pctCount, byte[] data) {
+    protected void notifyTransData(String requestId, byte[] data) {
         SecurityClientChannelImage image;
         synchronized (mChannelImageMap) {
             image = mChannelImageMap.get(requestId);
         }
         if (image != null) {
             IClientChannelStatusListener clientListener = image.getChannelStatusListener();
-            clientListener.onRemoteTransData(pctCount, data);
+            clientListener.onRemoteTransData(data);
+        }
+    }
+
+    /**
+     * 根据requestId分发数据
+     *
+     * @param error   错误信息
+     * @param extData 错误扩展信息
+     */
+    protected void notifyChannelError(UnusualBehaviorType error, Map<String, String> extData) {
+        Object[] images;
+        synchronized (mChannelImageMap) {
+            Collection<SecurityClientChannelImage> collection = mChannelImageMap.values();
+            images = collection.toArray();
+        }
+        for (Object obj : images) {
+            SecurityClientChannelImage image = (SecurityClientChannelImage) obj;
+            ISecurityChannelStatusListener listener = image.getChannelStatusListener();
+            if (listener != null) {
+                listener.onChannelError(error, extData);
+            }
         }
     }
 
     @Override
     protected void onExtChannelReady() {
         String machineId = mContext.getMachineId();
-        String md5MachineId = Md5Helper.md5_32(machineId);
         // 获取加密的方式
         String encryption = mContext.getEncryption();
         EncryptionType configEncryptionType = EncryptionType.getInstance(encryption);
@@ -243,7 +268,7 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
         }
         // 客户端模式下请求init交互验证,完成init交互验证即可正常转发数据
         SecurityProxySender proxySender = getSender();
-        proxySender.requestInitData(md5MachineId, initData, configEncryptionType, encryptionType -> {
+        proxySender.requestInitData(machineId, initData, configEncryptionType, encryptionType -> {
             // init交互数据发送完成开始切换加密方式
             changeEncryptionType(encryptionType);
         });

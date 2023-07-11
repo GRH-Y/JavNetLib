@@ -15,9 +15,8 @@ public interface IServerEventCallBack extends IChannelEventCallBack {
      * @param encryption
      * @param aesKey
      * @param machineId
-     * @param channelId
      */
-    void onInitForServerCallBack(EncryptionType encryption, byte[] aesKey, String machineId, String channelId);
+    void onInitForServerCallBack(EncryptionType encryption, byte[] aesKey, String machineId);
 
     /**
      * 创建真实目标链接链接
@@ -27,9 +26,4 @@ public interface IServerEventCallBack extends IChannelEventCallBack {
      * @param port      真实目端口
      */
     void onConnectTargetCallBack(String requestId, String realHost, int port);
-
-    /**
-     * 异常的channel id反馈
-     */
-    void onErrorChannelId();
 }

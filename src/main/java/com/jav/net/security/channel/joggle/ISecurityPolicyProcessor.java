@@ -1,5 +1,7 @@
 package com.jav.net.security.channel.joggle;
 
+import com.jav.net.security.channel.base.UnusualBehaviorType;
+
 /**
  * 安全策略接口
  *
@@ -7,13 +9,6 @@ package com.jav.net.security.channel.joggle;
  */
 public interface ISecurityPolicyProcessor {
 
-    /**
-     * 创建channel id
-     *
-     * @param machineId
-     * @return
-     */
-    String createChannelId(String machineId);
 
     /**
      * 校验时间,48小时时间差都有效

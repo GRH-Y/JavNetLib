@@ -1,5 +1,7 @@
 package com.jav.net.security.channel;
 
+import com.jav.net.base.SocketChannelCloseException;
+import com.jav.net.base.joggle.NetErrorType;
 import com.jav.net.nio.NioClientTask;
 import com.jav.net.nio.NioReceiver;
 import com.jav.net.nio.NioSender;
@@ -86,6 +88,13 @@ public class SecurityChannelClient extends NioClientTask {
     protected void onCloseChannel() {
         super.onCloseChannel();
         mChanelMeter.onChannelInvalid();
+    }
+
+    @Override
+    protected void onErrorChannel(NetErrorType errorType, Throwable throwable) {
+        if (!(throwable instanceof SocketChannelCloseException)) {
+            throwable.printStackTrace();
+        }
     }
 
     /**

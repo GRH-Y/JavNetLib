@@ -16,4 +16,13 @@ public interface ISyncServerEventCallBack {
      * @param loadCount 负载值
      */
     void onRespondSyncCallBack(byte status, int proxyPort, String machineId, long loadCount);
+
+
+    /**
+     * 同步machine Id 结果回调
+     *
+     * @param status    0 为成功，64 为失败
+     * @param machineId 机器id
+     */
+    void onRespondSyncMidCallBack(byte status, String machineId);
 }

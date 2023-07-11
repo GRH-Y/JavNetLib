@@ -1,6 +1,6 @@
 package com.jav.net.security.channel;
 
-import com.jav.net.security.channel.joggle.ChannelStatus;
+import com.jav.net.security.channel.base.ChannelStatus;
 import com.jav.net.security.channel.joggle.ISecurityProxySender;
 
 /**

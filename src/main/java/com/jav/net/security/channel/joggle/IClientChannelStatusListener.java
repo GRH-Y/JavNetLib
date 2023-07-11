@@ -21,9 +21,8 @@ public interface IClientChannelStatusListener extends ISecurityChannelStatusList
     /**
      * 通道接收到的数据
      *
-     * @param pctCount 包的次序（用于udp协议传输）
-     * @param data     中转数据
+     * @param data 中转数据
      */
-    void onRemoteTransData(byte pctCount, byte[] data);
+    void onRemoteTransData(byte[] data);
 
 }

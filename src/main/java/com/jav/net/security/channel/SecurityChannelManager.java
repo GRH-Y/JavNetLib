@@ -7,7 +7,7 @@ import com.jav.net.nio.NioBalancedClientFactory;
 import com.jav.net.nio.NioClientTask;
 import com.jav.net.nio.NioServerFactory;
 import com.jav.net.security.channel.base.AbsSecurityServer;
-import com.jav.net.security.channel.joggle.ChannelStatus;
+import com.jav.net.security.channel.base.ChannelStatus;
 import com.jav.net.security.channel.joggle.IClientChannelStatusListener;
 
 import java.util.ArrayList;
@@ -91,6 +91,7 @@ public class SecurityChannelManager {
         SecurityClientChanelMeter chanelMeter = channelClient.getChanelMeter();
         if (chanelMeter.getCruStatus() == ChannelStatus.INVALID) {
             mClientChanelList.remove(channelClient);
+            mChannelIndex = 0;
             SecurityChannelClient newChannelClient = createChannel();
             if (newChannelClient == null) {
                 return null;
@@ -266,6 +267,7 @@ public class SecurityChannelManager {
                 mServerFactory.close();
             }
             synchronized (mClientChanelList) {
+                mChannelIndex = 0;
                 mClientChanelList.clear();
             }
             mIsInit = false;

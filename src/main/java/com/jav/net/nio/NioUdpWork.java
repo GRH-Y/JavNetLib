@@ -135,10 +135,10 @@ public class NioUdpWork<T extends NioUdpTask, C extends DatagramChannel> extends
     }
 
     protected void hasErrorToUnExecTask(T netTask, Throwable e) {
-        INetTaskComponent taskFactory = mFactoryContext.getNetTaskComponent();
-        taskFactory.addUnExecTask(netTask);
-        if (!(e instanceof SocketChannelCloseException)) {
+//        INetTaskComponent taskFactory = mFactoryContext.getNetTaskComponent();
+//        taskFactory.addUnExecTask(netTask);
+//        if (!(e instanceof SocketChannelCloseException)) {
             e.printStackTrace();
-        }
+//        }
     }
 }

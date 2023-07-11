@@ -2,11 +2,13 @@ package com.jav.net.security.channel;
 
 import com.jav.common.cryption.joggle.EncryptionType;
 import com.jav.net.entity.MultiByteBuffer;
+import com.jav.net.security.channel.base.ConstantCode;
 import com.jav.net.security.channel.joggle.IChangeEncryptCallBack;
 import com.jav.net.security.channel.joggle.ISecurityProxySender;
 import com.jav.net.security.protocol.InitProtocol;
-import com.jav.net.security.protocol.RequestProtocol;
 import com.jav.net.security.protocol.TransProtocol;
+import com.jav.net.security.protocol.base.EncodeCode;
+import com.jav.net.security.protocol.base.TransOperateCode;
 
 import java.nio.ByteBuffer;
 
@@ -44,7 +46,9 @@ public class SecurityProxySender extends SecuritySender implements ISecurityProx
     public void requestInitData(String machineId, byte[] initData, EncryptionType changeEncryption,
                                 IChangeEncryptCallBack changeEncryptCallBack) {
         // 发送init协议数据
-        InitProtocol initProtocol = new InitProtocol(machineId, initData);
+        InitProtocol initProtocol = new InitProtocol(machineId);
+        initProtocol.setSendData(initData);
+        initProtocol.setOperateCode(EncodeCode.BASE64.getType());
         ByteBuffer encode = initProtocol.toData(mEncryptComponent);
         changeEncryptCallBack.onChange(changeEncryption);
         mCoreSender.sendData(new MultiByteBuffer(encode));
@@ -59,7 +63,9 @@ public class SecurityProxySender extends SecuritySender implements ISecurityProx
      */
     @Override
     public void respondToInitRequest(String machineId, byte repCode, byte[] initData) {
-        InitProtocol initProtocol = new InitProtocol(machineId, repCode, initData);
+        InitProtocol initProtocol = new InitProtocol(machineId);
+        initProtocol.setOperateCode(repCode);
+        initProtocol.setSendData(initData);
         ByteBuffer encode = initProtocol.toData(mEncryptComponent);
         mCoreSender.sendData(new MultiByteBuffer(encode));
     }
@@ -69,16 +75,16 @@ public class SecurityProxySender extends SecuritySender implements ISecurityProx
      * 响应 connect 请求
      *
      * @param requestId
-     * @param result
+     * @param status
      */
     @Override
-    public void respondToRequest(String requestId, byte result) {
+    public void respondToRequest(String requestId, byte status) {
         if (requestId == null) {
             return;
         }
-        RequestProtocol connectProtocol = new RequestProtocol(mChannelId);
-        connectProtocol.setRequestId(requestId.getBytes());
-        connectProtocol.updateSendData(new byte[]{result});
+        TransProtocol connectProtocol = new TransProtocol(mChannelId, requestId);
+        byte operateCode = (byte) (status | TransOperateCode.ADDRESS.getCode());
+        connectProtocol.setOperateCode(operateCode);
         ByteBuffer encodeData = connectProtocol.toData(mEncryptComponent);
         mCoreSender.sendData(new MultiByteBuffer(encodeData));
     }
@@ -95,9 +101,9 @@ public class SecurityProxySender extends SecuritySender implements ISecurityProx
         if (requestId == null || address == null) {
             return;
         }
-        RequestProtocol connectProtocol = new RequestProtocol(mChannelId);
-        connectProtocol.setRequestId(requestId.getBytes());
-        connectProtocol.setRequestAdr(address);
+        TransProtocol connectProtocol = new TransProtocol(mChannelId, requestId);
+        connectProtocol.setOperateCode(TransOperateCode.ADDRESS.getCode());
+        connectProtocol.setSendData(address);
         ByteBuffer encodeData = connectProtocol.toData(mEncryptComponent);
         mCoreSender.sendData(new MultiByteBuffer(encodeData));
     }
@@ -113,9 +119,9 @@ public class SecurityProxySender extends SecuritySender implements ISecurityProx
         if (requestId == null || data == null) {
             return;
         }
-        TransProtocol transProtocol = new TransProtocol(mChannelId);
-        transProtocol.updateSendData(data);
-        transProtocol.setRequestId(requestId.getBytes());
+        TransProtocol transProtocol = new TransProtocol(mChannelId, requestId);
+        transProtocol.setOperateCode(TransOperateCode.DATA.getCode());
+        transProtocol.setSendData(data);
         ByteBuffer encodeData = transProtocol.toData(mEncryptComponent);
         mCoreSender.sendData(new MultiByteBuffer(encodeData));
     }
@@ -124,15 +130,16 @@ public class SecurityProxySender extends SecuritySender implements ISecurityProx
      * 相应 trans 请求
      *
      * @param requestId 异常的情况可以返回任意32 bit长度的内容
-     * @param repCode   异常返回1，正常返回0
+     * @param status    异常返回64，正常返回0
      * @param data      异常情况可以返回null
+     * @see ConstantCode status
      */
     @Override
-    public void respondToTrans(String requestId, byte repCode, byte[] data) {
-        TransProtocol transProtocol = new TransProtocol(mChannelId);
-        transProtocol.setRepCode(repCode);
-        transProtocol.updateSendData(data);
-        transProtocol.setRequestId(requestId.getBytes());
+    public void respondToTrans(String requestId, byte status, byte[] data) {
+        TransProtocol transProtocol = new TransProtocol(mChannelId, requestId);
+        byte operateCode = (byte) (status | TransOperateCode.DATA.getCode());
+        transProtocol.setOperateCode(operateCode);
+        transProtocol.setSendData(data);
         ByteBuffer encodeData = transProtocol.toData(mEncryptComponent);
         mCoreSender.sendData(new MultiByteBuffer(encodeData));
     }

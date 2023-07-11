@@ -2,7 +2,8 @@ package com.jav.net.security.protocol;
 
 
 import com.jav.common.cryption.joggle.IEncryptComponent;
-import com.jav.net.security.channel.joggle.CmdType;
+import com.jav.common.util.StringEnvoy;
+import com.jav.net.security.protocol.base.ActivityCode;
 
 import java.nio.ByteBuffer;
 
@@ -18,15 +19,23 @@ public class KeepAliveProtocol extends AbsProxyProtocol {
      */
     private static final int HEAD_LENGTH = 41;
 
+    /**
+     * 通道id，区分不同的客户端，由服务端init数据生成返回
+     */
+    private byte[] mChannelId;
+
 
     public KeepAliveProtocol(String channelId) {
-        super(channelId);
+        if (StringEnvoy.isEmpty(channelId)) {
+            throw new IllegalArgumentException("channelId can not be null !!!");
+        }
+        this.mChannelId = channelId.getBytes();
     }
 
 
     @Override
-    byte cmdType() {
-        return CmdType.KEEP.getCmd();
+    byte activityCode() {
+        return ActivityCode.KEEP.getCode();
     }
 
     @Override
@@ -34,8 +43,8 @@ public class KeepAliveProtocol extends AbsProxyProtocol {
         int length = HEAD_LENGTH;
         ByteBuffer srcData = ByteBuffer.allocate(length);
         srcData.putLong(time());
-        srcData.put(cmdType());
-        srcData.put(channelId());
+        srcData.put(activityCode());
+        srcData.put(mChannelId);
         return onEncrypt(encryptComponent, srcData);
     }
 }

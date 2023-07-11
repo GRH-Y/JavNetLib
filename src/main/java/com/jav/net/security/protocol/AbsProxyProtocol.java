@@ -1,8 +1,7 @@
 package com.jav.net.security.protocol;
 
 import com.jav.common.cryption.joggle.IEncryptComponent;
-import com.jav.common.util.StringEnvoy;
-import com.jav.net.security.channel.joggle.CmdType;
+import com.jav.net.security.protocol.base.ActivityCode;
 
 import java.nio.ByteBuffer;
 
@@ -13,98 +12,32 @@ import java.nio.ByteBuffer;
  */
 public abstract class AbsProxyProtocol {
 
-    public static final int MACHINE_LENGTH = 32;
-
-    public static final int CHANNEL_LENGTH = 32;
-
-    public static final int REQUEST_LENGTH = 32;
-
-
-    /**
-     * 成功状态码
-     */
-    public static final byte REP_SUCCESS_CODE = 0 ;
-    /**
-     * 异常状态码
-     */
-    public static final byte REP_EXCEPTION_CODE = 1 ;
-
-
-    /**
-     * 编码类型
-     */
-    protected enum EnType {
-        /**
-         * 不编码
-         */
-        NO_ENCODE((byte) 0),
-        /**
-         * Base64编码
-         */
-        BASE64((byte) 1),
-        /**
-         * AES编码
-         */
-        AES((byte) 2),
-        /**
-         * 其它
-         */
-        OTHER((byte) 3);
-
-        private final byte mType;
-
-        EnType(byte type) {
-            mType = type;
-        }
-
-        public byte getType() {
-            return mType;
-        }
-    }
-
-
-    /**
-     * 机器码（32Byte）
-     */
-    private byte[] mMachineId;
 
     /**
      * 发送的数据
      */
     private byte[] mSendData;
 
-    /**
-     * 数据编码类型，配置数据加密类型（1Byte）
-     */
-    private byte mEncryptionType;
 
     /**
-     * 通道id，区分不同的客户端，由服务端init数据生成返回
+     * 操作码, 在请求状态作用于对数据的处理方式
+     * 在 init 接口以下作用
+     * 0x0 不加密
+     * 0x1 base64
+     * 0x2 aes
+     * 0x3 自定义
+     * 在 request 接口以下作用
+     * 0 请求访问地址
+     * 1 中转数据
+     * <p>
+     * 在响应状态作用于响应码
+     * 0 正常 REP_SUCCESS_CODE
+     * 1 异常 REP_EXCEPTION_CODE
      */
-    private byte[] mChannelId;
-
-    /**
-     * 请求id，区分http请求的链路
-     */
-    private byte[] mRequestId;
-
-    /**
-     * 用于udp记录包的顺序,最大255个包，超出服务器会重置
-     */
-    private byte mPacketOrder = 0;
+    private Byte mOperateCode;
 
 
-    public AbsProxyProtocol(String channelId) {
-        if (StringEnvoy.isEmpty(channelId)) {
-            throw new IllegalArgumentException("channel id can not be null !!!");
-        }
-        setChannelId(channelId.getBytes());
-    }
 
-    public AbsProxyProtocol(String machineId, byte[] data) {
-        this.mMachineId = machineId.getBytes();
-        updateSendData(data);
-    }
 
     protected long time() {
         return System.currentTimeMillis();
@@ -114,52 +47,23 @@ public abstract class AbsProxyProtocol {
      * 当前协议对应的命令类型
      *
      * @return
-     * @see CmdType
+     * @see ActivityCode
      */
-    abstract byte cmdType();
+    abstract byte activityCode();
 
-    protected byte encryptionType() {
-        return mEncryptionType;
-    }
-
-    protected byte[] machineId() {
-        return mMachineId;
-    }
-
-    protected byte[] requestId() {
-        return mRequestId;
-    }
-
-    protected byte[] channelId() {
-        return mChannelId;
-    }
-
-    protected byte packetOrder() {
-        return mPacketOrder;
+    protected Byte operateCode() {
+        return mOperateCode;
     }
 
     protected byte[] sendData() {
         return mSendData;
     }
 
-
-    public void setEnType(byte mEnType) {
-        this.mEncryptionType = mEnType;
+    public void setOperateCode(byte code) {
+        this.mOperateCode = code;
     }
 
-    public void setChannelId(byte[] mChannelId) {
-        this.mChannelId = mChannelId;
-    }
-
-    public void setRequestId(byte[] mRequestId) {
-        this.mRequestId = mRequestId;
-    }
-
-    public void setPacketOrder(byte mPacketOrder) {
-        this.mPacketOrder = mPacketOrder;
-    }
-
-    public void updateSendData(byte[] sendData) {
+    public void setSendData(byte[] sendData) {
         this.mSendData = sendData;
     }
 

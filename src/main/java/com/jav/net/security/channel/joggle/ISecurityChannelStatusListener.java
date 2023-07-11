@@ -2,6 +2,9 @@ package com.jav.net.security.channel.joggle;
 
 
 import com.jav.net.security.channel.SecurityChannelImage;
+import com.jav.net.security.channel.base.UnusualBehaviorType;
+
+import java.util.Map;
 
 /**
  * 通道状态监听器
@@ -22,4 +25,13 @@ public interface ISecurityChannelStatusListener<T extends SecurityChannelImage> 
      * 通道已关闭
      */
     void onChannelInvalid();
+
+
+    /**
+     * 回调错误信息
+     *
+     * @param error
+     * @param extData
+     */
+    void onChannelError(UnusualBehaviorType error, Map<String, String> extData);
 }

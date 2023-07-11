@@ -1,4 +1,4 @@
-package com.jav.net.security.channel.joggle;
+package com.jav.net.security.protocol.base;
 
 /**
  * init协议结果类型

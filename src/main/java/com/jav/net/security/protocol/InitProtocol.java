@@ -2,7 +2,8 @@ package com.jav.net.security.protocol;
 
 
 import com.jav.common.cryption.joggle.IEncryptComponent;
-import com.jav.net.security.channel.joggle.CmdType;
+import com.jav.common.util.StringEnvoy;
+import com.jav.net.security.protocol.base.ActivityCode;
 
 import java.nio.ByteBuffer;
 
@@ -19,24 +20,21 @@ public class InitProtocol extends AbsProxyProtocol {
     private static final int HEAD_LENGTH = 42;
 
     /**
-     * 响应code
+     * 机器码（32Byte）
      */
-    private Byte mRepCode;
+    private byte[] mMachineId;
 
-    public InitProtocol(String machineId, byte repCode, byte[] initData) {
-        super(machineId, initData);
-        setEnType(EnType.BASE64.getType());
-        this.mRepCode = repCode;
-    }
 
-    public InitProtocol(String machineId, byte[] initData) {
-        super(machineId, initData);
-        setEnType(EnType.BASE64.getType());
+    public InitProtocol(String machineId) {
+        if (StringEnvoy.isEmpty(machineId)) {
+            throw new IllegalArgumentException("machineId id can not be null !!!");
+        }
+        this.mMachineId = machineId.getBytes();
     }
 
     @Override
-    byte cmdType() {
-        return CmdType.INIT.getCmd();
+    byte activityCode() {
+        return ActivityCode.INIT.getCode();
     }
 
     @Override
@@ -47,13 +45,10 @@ public class InitProtocol extends AbsProxyProtocol {
         }
         ByteBuffer srcData = ByteBuffer.allocate(length);
         srcData.putLong(time());
-        srcData.put(cmdType());
-        srcData.put(machineId());
-        if (mRepCode != null) {
-            srcData.put(mRepCode);
-        } else {
-            srcData.put(encryptionType());
-        }
+        srcData.put(activityCode());
+        srcData.put(mMachineId);
+        srcData.put(operateCode());
+
         if (sendData() != null) {
             srcData.put(sendData());
         }

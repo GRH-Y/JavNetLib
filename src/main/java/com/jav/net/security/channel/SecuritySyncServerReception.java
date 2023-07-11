@@ -1,5 +1,9 @@
 package com.jav.net.security.channel;
 
+import com.jav.net.security.util.SystemStatusTool;
+import com.jav.thread.executor.LoopTask;
+import com.jav.thread.executor.TaskExecutorPoolManager;
+
 import java.nio.channels.SocketChannel;
 
 /**
@@ -8,6 +12,8 @@ import java.nio.channels.SocketChannel;
  * @author yyz
  */
 public class SecuritySyncServerReception extends SecurityChannelClient {
+
+    private TimerSync mTimerSync;
 
     protected SecuritySyncServerReception(SecurityChannelContext context) {
         super(context);
@@ -33,8 +39,46 @@ public class SecuritySyncServerReception extends SecurityChannelClient {
         if (getHost() != null) {
             SecuritySyncMeter syncMeter = mContext.getSyncMeter();
             SecuritySyncSender syncSender = syncMeter.getSender();
+            SecurityServerSyncImage.getInstance().init(syncSender);
+
+            mTimerSync = new TimerSync();
+            mTimerSync.startTimer();
+        }
+    }
+
+    @Override
+    protected void onCloseChannel() {
+        super.onCloseChannel();
+        if (mTimerSync != null) {
+            mTimerSync.stopTimer();
+        }
+    }
+
+    private class TimerSync extends LoopTask {
+
+        private static final int DELAY_TIME = 5 * 60 * 1000;
+
+        @Override
+        protected void onRunLoopTask() {
+            SecuritySyncMeter syncMeter = mContext.getSyncMeter();
+            SecuritySyncSender syncSender = syncMeter.getSender();
             long loadCount = syncMeter.getLocalServerLoadCount();
-            syncSender.requestSyncData(mContext.getMachineId(), mContext.getSyncPort(), loadCount);
+            byte loadAvg = SystemStatusTool.getSystemAvgLoad(loadCount);
+            syncSender.requestSyncAvg(mContext.getMachineId(), mContext.getSyncPort(), loadAvg);
+
+            try {
+                Thread.sleep(DELAY_TIME);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        public void startTimer() {
+            TaskExecutorPoolManager.getInstance().runTask(this);
+        }
+
+        public void stopTimer() {
+            TaskExecutorPoolManager.getInstance().closeTask(this);
         }
     }
 }

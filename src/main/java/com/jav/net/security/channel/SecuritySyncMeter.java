@@ -2,10 +2,12 @@ package com.jav.net.security.channel;
 
 import com.jav.common.cryption.joggle.EncryptionType;
 import com.jav.net.nio.NioClientFactory;
+import com.jav.net.security.channel.base.ConstantCode;
 import com.jav.net.security.channel.base.ParserCallBackRegistrar;
 import com.jav.net.security.channel.bean.SecuritySyncEntity;
+import com.jav.net.security.channel.joggle.IServerSyncStatusListener;
 import com.jav.net.security.channel.joggle.ISyncServerEventCallBack;
-import com.jav.net.security.protocol.SyncProtocol;
+import com.jav.net.security.util.SystemStatusTool;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -46,19 +48,30 @@ public class SecuritySyncMeter extends SecurityChanelMeter {
 
         @Override
         public void onRespondSyncCallBack(byte status, int proxyPort, String machineId, long loadCount) {
+            if (status != ConstantCode.REP_SUCCESS_CODE) {
+                return;
+            }
             // 保存远程服务的负载信息
             updateSyncData(machineId, loadCount);
-            if (status == SyncProtocol.Status.REQ.getStatus()) {
-                int localProxyPort = 0;
-                long localServerLoadCount = 0;
-                String localMachineId = mContext.getMachineId();
-                if (mLocalSyncInfo != null) {
-                    localProxyPort = mLocalSyncInfo.getProxyPort();
-                    localServerLoadCount = mLocalSyncInfo.getLoadCount();
-                }
-                // 响应本地服务的负载信息
-                SecuritySyncSender syncSender = getSender();
-                syncSender.respondSyncData(localMachineId, localProxyPort, localServerLoadCount);
+            //获取当前服务链接数量和服务端口号
+            int serverProxyPort = 0;
+            long serverLoadCount = 0;
+            String serverMachineId = mLocalSyncInfo.getMid();
+            if (mLocalSyncInfo != null) {
+                serverProxyPort = mLocalSyncInfo.getProxyPort();
+                serverLoadCount = mLocalSyncInfo.getLoadCount();
+            }
+            // 响应本地服务的负载信息
+            SecuritySyncSender syncSender = getSender();
+            byte loadAvg = SystemStatusTool.getSystemAvgLoad(serverLoadCount);
+            syncSender.respondSyncAvg(serverMachineId, serverProxyPort, loadAvg);
+        }
+
+        @Override
+        public void onRespondSyncMidCallBack(byte status, String machineId) {
+            IServerSyncStatusListener syncListener = SecurityServerSyncImage.getInstance().getListener(machineId);
+            if (syncListener != null) {
+                syncListener.onSyncMinState(status);
             }
         }
     }
@@ -121,13 +134,19 @@ public class SecuritySyncMeter extends SecurityChanelMeter {
         }
     }
 
-    public void updateSyncData(String mid, long loadData) {
+    /**
+     * 更新指定机器码的链接数量
+     *
+     * @param mid       机器码
+     * @param loadCount 链接数量
+     */
+    public void updateSyncData(String mid, long loadCount) {
         if (mSyncInfo == null) {
             return;
         }
         SecuritySyncEntity entity = mSyncInfo.get(mid);
         if (entity != null) {
-            entity.updateLoadCount(loadData);
+            entity.updateLoadCount(loadCount);
         }
     }
 

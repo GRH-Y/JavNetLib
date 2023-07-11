@@ -2,9 +2,20 @@ package com.jav.net.security.channel;
 
 
 import com.jav.common.cryption.joggle.EncryptionType;
+import com.jav.common.log.LogDog;
+import com.jav.common.security.Md5Helper;
+import com.jav.net.security.cache.CacheChannelIdMater;
 import com.jav.net.security.channel.base.ParserCallBackRegistrar;
-import com.jav.net.security.channel.joggle.*;
-import com.jav.net.security.protocol.RequestProtocol;
+import com.jav.net.security.channel.base.ChannelStatus;
+import com.jav.net.security.channel.joggle.ISecurityChannelStatusListener;
+import com.jav.net.security.channel.joggle.IServerChannelStatusListener;
+import com.jav.net.security.channel.joggle.IServerEventCallBack;
+import com.jav.net.security.channel.base.ConstantCode;
+import com.jav.net.security.protocol.base.InitResult;
+import com.jav.net.security.channel.base.UnusualBehaviorType;
+
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * ChanelMeter 通道辅助，向外提供服务
@@ -12,11 +23,6 @@ import com.jav.net.security.protocol.RequestProtocol;
  * @author yyz
  */
 public class SecurityServerChanelMeter extends SecurityChanelMeter {
-
-    /**
-     * 异常的request id
-     */
-    private static final String ERROR_REQUEST_ID = "000-0000-0000-null-0000-0000-000";
 
     /**
      * server通道镜像
@@ -36,17 +42,22 @@ public class SecurityServerChanelMeter extends SecurityChanelMeter {
     private class ReceiveProxy implements IServerEventCallBack {
 
         @Override
-        public void onInitForServerCallBack(EncryptionType encryption, byte[] aesKey, String machineId, String channelId) {
+        public void onInitForServerCallBack(EncryptionType encryption, byte[] aesKey, String machineId) {
             // 根据客户端,切换加密方式
             changeEncryptionType(encryption);
-            // 配置channel id
-            SecurityProxySender proxySender = getSender();
-            proxySender.setChannelId(channelId);
+
             IServerChannelStatusListener supperListener = mServerImage.getChannelStatusListener();
-            boolean intercept = supperListener.onRespondInitData(machineId, channelId);
+            boolean intercept = supperListener.onRespondInitData(machineId);
             if (intercept) {
                 return;
             }
+            // 创建channel id 返回给客户端
+            String channelId = createChannelId(machineId);
+            // 配置channel id
+            SecurityProxySender proxySender = getSender();
+            proxySender.setChannelId(channelId);
+            LogDog.d("创建channel id 返回给客户端 " + channelId);
+
             proxySender.respondToInitRequest(machineId, InitResult.CHANNEL_ID.getCode(), channelId.getBytes());
         }
 
@@ -61,20 +72,34 @@ public class SecurityServerChanelMeter extends SecurityChanelMeter {
 
 
         @Override
-        public void onTransData(String requestId, byte pctCount, byte[] data) {
+        public void onTransData(String requestId, byte[] data) {
             // 分发中转数据
             if (mServerImage != null) {
                 IServerChannelStatusListener serverListener = mServerImage.getChannelStatusListener();
-                serverListener.onRequestTransData(requestId, pctCount, data);
+                serverListener.onRequestTransData(requestId, data);
             }
         }
 
         @Override
-        public void onErrorChannelId() {
-            SecurityProxySender proxySender = getSender();
-            proxySender.respondToTrans(ERROR_REQUEST_ID, RequestProtocol.REP_EXCEPTION_CODE, null);
+        public void onChannelError(UnusualBehaviorType error, Map<String, String> extData) {
+            if (mServerImage != null) {
+                IServerChannelStatusListener serverListener = mServerImage.getChannelStatusListener();
+                serverListener.onChannelError(error, extData);
+            }
         }
 
+    }
+
+    /**
+     * 创建通道id
+     *
+     * @return 返回通道id
+     */
+    private String createChannelId(String machineId) {
+        String uuidStr = UUID.randomUUID().toString() + System.nanoTime();
+        String channelId = Md5Helper.md5_32(uuidStr);
+        CacheChannelIdMater.getInstance().binderChannelIdToMid(machineId, channelId);
+        return channelId;
     }
 
 

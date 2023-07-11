@@ -1,4 +1,4 @@
-package com.jav.net.security.channel.joggle;
+package com.jav.net.security.channel.base;
 
 /**
  * 通道状态

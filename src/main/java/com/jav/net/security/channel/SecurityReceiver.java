@@ -4,8 +4,8 @@ package com.jav.net.security.channel;
 import com.jav.common.cryption.joggle.IDecryptComponent;
 import com.jav.common.util.IoEnvoy;
 import com.jav.net.nio.NioReceiver;
+import com.jav.net.security.channel.base.UnusualBehaviorType;
 import com.jav.net.security.channel.joggle.ISecurityReceiver;
-import com.jav.net.security.channel.joggle.UnusualBehaviorType;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -143,7 +143,7 @@ public class SecurityReceiver implements ISecurityReceiver {
                 int length = mLength.getInt();
                 if (length <= 0 || length > MAX_LENGTH) {
                     String remoteHost = getRemoteHost(channel);
-                    mProtocolParser.callBackDeny(remoteHost, UnusualBehaviorType.LENGTH);
+                    mProtocolParser.callBackDeny(remoteHost, UnusualBehaviorType.EXP_LENGTH);
                 }
                 mFullData = ByteBuffer.allocate(length);
                 mLength.clear();
@@ -168,7 +168,7 @@ public class SecurityReceiver implements ISecurityReceiver {
                     mFullData.flip();
                     ByteBuffer decodeData = decodeData(mFullData);
                     String remoteHost = getRemoteHost(channel);
-                    mProtocolParser.parserData(remoteHost, decodeData);
+                    mProtocolParser.parserReceiverData(remoteHost, decodeData);
                 }
                 mFullData = null;
                 mState = SRState.LENGTH;

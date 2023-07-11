@@ -1,6 +1,5 @@
 package com.jav.net.base;
 
-import com.jav.common.log.LogDog;
 import com.jav.common.state.joggle.IControlStateMachine;
 import com.jav.net.base.joggle.INetTaskComponent;
 import com.jav.net.entity.FactoryContext;
@@ -59,7 +58,7 @@ public class BaseNetWork<T extends BaseNetTask> {
                     break;
                 }
             }
-            LogDog.w("## onCreateTask task state = " + stateMachine.getState() + " task = " + netTask);
+            // LogDog.w("## onCreateTask task state = " + stateMachine.getState() + " task = " + netTask);
             createTaskImp(netTask);
         }
     }

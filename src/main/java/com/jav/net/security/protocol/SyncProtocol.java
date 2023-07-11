@@ -2,7 +2,9 @@ package com.jav.net.security.protocol;
 
 
 import com.jav.common.cryption.joggle.IEncryptComponent;
-import com.jav.net.security.channel.joggle.CmdType;
+import com.jav.common.util.StringEnvoy;
+import com.jav.net.security.protocol.base.ActivityCode;
+import com.jav.net.security.protocol.base.SyncOperateCode;
 
 import java.nio.ByteBuffer;
 
@@ -13,61 +15,76 @@ import java.nio.ByteBuffer;
  */
 public class SyncProtocol extends AbsProxyProtocol {
 
-    public enum Status {
-        /**
-         * 请求状态
-         */
-        REQ((byte) 1),
-        /**
-         * 响应状态
-         */
-        REP((byte) 2);
-
-        private byte mStatus;
-
-        Status(byte status) {
-            mStatus = status;
-        }
-
-
-        public byte getStatus() {
-            return mStatus;
-        }
-    }
 
     /**
      * 不包含length的4个字节的长度
      */
-    private static final int HEAD_LENGTH = 49;
+    private static final int HEAD_LENGTH = 42;
 
-    private long mLoadCount;
+    /**
+     * 机器码（32Byte）
+     */
+    private byte[] mMachineId;
+
+    /**
+     * loadAvg 系统负载值，根据cpu占用率 < 内存占用率 < 宽带占用率 < 网络延迟耗时计算出
+     * 数值范围：0-127 数值越小表示系统压力小
+     */
+    private byte mLoadAvg;
+
+    /**
+     * 中转服务的端口号
+     */
     private int mPort;
-    private byte mStatus;
 
-    public SyncProtocol(String machine, Status status, int port, long loadCount) {
-        super(machine);
-        setEnType(EnType.NO_ENCODE.getType());
-        mLoadCount = loadCount;
+
+    public SyncProtocol(String machineId, int port, byte loadAvg) {
+        if (StringEnvoy.isEmpty(machineId)) {
+            throw new IllegalArgumentException("machineId id can not be null !!!");
+        }
+        this.mMachineId = machineId.getBytes();
+        mLoadAvg = loadAvg;
         mPort = port;
-        mStatus = status.getStatus();
+    }
+
+    public SyncProtocol(String machineId) {
+        if (StringEnvoy.isEmpty(machineId)) {
+            throw new IllegalArgumentException("machineId id can not be null !!!");
+        }
+        this.mMachineId = machineId.getBytes();
     }
 
     @Override
-    byte cmdType() {
-        return CmdType.SYNC.getCmd();
+    byte activityCode() {
+        return ActivityCode.SYNC.getCode();
     }
 
     @Override
     public ByteBuffer toData(IEncryptComponent encryptComponent) {
-        int length = sendData().length + HEAD_LENGTH;
+        int length = HEAD_LENGTH;
+
+        Byte oCode = operateCode();
+
+        if (oCode == SyncOperateCode.SYNC_AVG.getCode()) {
+            length += 5;
+        } else {
+            length += sendData().length;
+        }
+
         ByteBuffer buffer = ByteBuffer.allocate(length);
         buffer.putInt(length);
         buffer.putLong(time());
-        buffer.put(cmdType());
-        buffer.put(machineId());
-        buffer.put(mStatus);
-        buffer.putInt(mPort);
-        buffer.putLong(mLoadCount);
+        buffer.put(activityCode());
+        buffer.put(mMachineId);
+
+
+        buffer.put(operateCode());
+
+        if (oCode == SyncOperateCode.SYNC_AVG.getCode()) {
+            buffer.putInt(mPort);
+            buffer.put(mLoadAvg);
+        }
+
         return buffer;
     }
 }

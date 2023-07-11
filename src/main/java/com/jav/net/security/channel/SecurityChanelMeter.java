@@ -9,7 +9,7 @@ import com.jav.common.cryption.joggle.IDecryptComponent;
 import com.jav.common.cryption.joggle.IEncryptComponent;
 import com.jav.net.security.channel.base.ParserCallBackRegistrar;
 import com.jav.net.security.channel.base.SecurityPolicyProcessor;
-import com.jav.net.security.channel.joggle.ChannelStatus;
+import com.jav.net.security.channel.base.ChannelStatus;
 
 /**
  * ChanelMeter 通道辅助，向外提供服务

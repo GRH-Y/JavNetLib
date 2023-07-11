@@ -24,18 +24,16 @@ public interface IServerChannelStatusListener extends ISecurityChannelStatusList
      * 通道接收到的数据
      *
      * @param requestId 请求id
-     * @param pctCount  包的次序（用于udp协议传输）
      * @param data      中转数据
      */
-    void onRequestTransData(String requestId, byte pctCount, byte[] data);
+    void onRequestTransData(String requestId, byte[] data);
 
     /**
      * 响应init协议
      *
      * @param machineId 机器id
-     * @param channelId 通道id
      * @return true 拦截默认响应
      */
-    boolean onRespondInitData(String machineId, String channelId);
+    boolean onRespondInitData(String machineId);
 
 }
