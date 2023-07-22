@@ -37,9 +37,7 @@ public abstract class AbsProxyProtocol {
     private Byte mOperateCode;
 
 
-
-
-    protected long time() {
+    public long time() {
         return System.currentTimeMillis();
     }
 
@@ -49,13 +47,13 @@ public abstract class AbsProxyProtocol {
      * @return
      * @see ActivityCode
      */
-    abstract byte activityCode();
+    public abstract byte activityCode();
 
-    protected Byte operateCode() {
+    public Byte operateCode() {
         return mOperateCode;
     }
 
-    protected byte[] sendData() {
+    public byte[] sendData() {
         return mSendData;
     }
 

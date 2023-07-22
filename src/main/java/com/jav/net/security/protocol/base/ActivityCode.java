@@ -13,10 +13,7 @@ public enum ActivityCode {
      * 传输数据
      */
     TRANS((byte) 2),
-    /**
-     * 同步服务
-     */
-    SYNC((byte) 4),
+
     /**
      * KeepAlive
      */
@@ -38,8 +35,6 @@ public enum ActivityCode {
             return INIT;
         } else if (code == TRANS.mCode) {
             return TRANS;
-        } else if (code == SYNC.mCode) {
-            return KEEP;
         } else if (code == KEEP.mCode) {
             return KEEP;
         }

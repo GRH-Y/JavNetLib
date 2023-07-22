@@ -42,7 +42,7 @@ public class TransProtocol extends AbsProxyProtocol {
 
 
     @Override
-    byte activityCode() {
+    public byte activityCode() {
         return ActivityCode.TRANS.getCode();
     }
 

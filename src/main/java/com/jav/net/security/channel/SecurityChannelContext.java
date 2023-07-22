@@ -4,7 +4,6 @@ import com.jav.net.security.channel.base.AbsSecurityServer;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 安全通道的上下文同时也是构建器
@@ -19,8 +18,6 @@ public class SecurityChannelContext {
     private static final int MAX_CHANNEL = 2;
 
     private Builder mBuilder;
-
-    private SecuritySyncMeter mSyncMeter;
 
 
     private SecurityChannelContext(Builder builder) {
@@ -80,25 +77,7 @@ public class SecurityChannelContext {
         mBuilder.mPort = port;
     }
 
-    protected void setSyncMeter(SecuritySyncMeter meter) {
-        mSyncMeter = meter;
-    }
 
-    public SecuritySyncMeter getSyncMeter() {
-        return mSyncMeter;
-    }
-
-    protected Map<String, String> getSyncServer() {
-        return mBuilder.mSyncServer;
-    }
-
-    protected String getSyncHost() {
-        return mBuilder.mLocalSyncHost;
-    }
-
-    protected int getSyncPort() {
-        return mBuilder.mLocalSyncPort;
-    }
 
     public static class Builder {
         /**
@@ -151,14 +130,6 @@ public class SecurityChannelContext {
          */
         private String mPrivateFile;
 
-        /**
-         * 同步服务列表
-         */
-        private Map<String, String> mSyncServer;
-
-        private String mLocalSyncHost;
-
-        private int mLocalSyncPort;
 
         /**
          * des密码
@@ -221,17 +192,6 @@ public class SecurityChannelContext {
 
         public Builder setMachineList(List<String> machineList) {
             this.mMachineList = machineList;
-            return this;
-        }
-
-        public Builder setSyncServer(Map<String, String> syncServer) {
-            this.mSyncServer = syncServer;
-            return this;
-        }
-
-        public Builder setLocalSyncInfo(String syncHost, int syncPort) {
-            this.mLocalSyncHost = syncHost;
-            this.mLocalSyncPort = syncPort;
             return this;
         }
 

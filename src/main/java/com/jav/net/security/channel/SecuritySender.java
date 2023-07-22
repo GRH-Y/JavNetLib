@@ -42,7 +42,7 @@ public class SecuritySender implements ISecuritySender {
      *
      * @return
      */
-    protected NioSender getCoreSender() {
+    public NioSender getCoreSender() {
         return mCoreSender;
     }
 

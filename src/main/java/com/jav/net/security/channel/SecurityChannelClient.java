@@ -25,6 +25,7 @@ public class SecurityChannelClient extends NioClientTask {
      */
     protected SecurityChannelContext mContext;
 
+
     public SecurityChannelClient(SecurityChannelContext context) {
         this.mContext = context;
         mChanelMeter = initSecurityChanelMeter(context);
@@ -63,9 +64,10 @@ public class SecurityChannelClient extends NioClientTask {
         return (T) mChanelMeter;
     }
 
+
+
     @Override
     protected void onBeReadyChannel(SocketChannel channel) {
-
         SecurityReceiver securityReceiver = mChanelMeter.getReceiver();
         if (securityReceiver == null) {
             securityReceiver = initReceiver();
@@ -81,7 +83,7 @@ public class SecurityChannelClient extends NioClientTask {
             setSender(coreSender);
         }
 
-        mChanelMeter.onChannelReady(this, securitySender, securityReceiver);
+        mChanelMeter.onChannelReady(securitySender, securityReceiver);
     }
 
     @Override
@@ -95,24 +97,5 @@ public class SecurityChannelClient extends NioClientTask {
         if (!(throwable instanceof SocketChannelCloseException)) {
             throwable.printStackTrace();
         }
-    }
-
-    /**
-     * 注册器初始化完成就绪回调，提供外部注册当前通道
-     */
-    protected void onRegistrarReady() {
-    }
-
-    @Override
-    protected void onRecovery() {
-        super.onRecovery();
-        reConnect();
-    }
-
-    protected void reConnect() {
-        if (mContext.isServerMode()) {
-            return;
-        }
-        mChanelMeter.onChannelReConnect(this);
     }
 }

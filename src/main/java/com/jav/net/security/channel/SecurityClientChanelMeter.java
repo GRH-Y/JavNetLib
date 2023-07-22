@@ -2,12 +2,12 @@ package com.jav.net.security.channel;
 
 
 import com.jav.common.cryption.joggle.EncryptionType;
-import com.jav.common.security.Md5Helper;
 import com.jav.net.security.channel.base.ChannelStatus;
 import com.jav.net.security.channel.base.ParserCallBackRegistrar;
 import com.jav.net.security.channel.base.UnusualBehaviorType;
 import com.jav.net.security.channel.joggle.IClientChannelStatusListener;
 import com.jav.net.security.channel.joggle.IClientEventCallBack;
+import com.jav.net.security.channel.joggle.ISecurityChannelChangeListener;
 import com.jav.net.security.channel.joggle.ISecurityChannelStatusListener;
 
 import java.util.*;
@@ -31,6 +31,11 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
      */
     private final List<RegEntity> mDelayListener;
 
+    /**
+     * 切换服务监听
+     */
+    private ISecurityChannelChangeListener mChannelChangeListener;
+
 
     public SecurityClientChanelMeter(SecurityChannelContext context) {
         super(context);
@@ -41,6 +46,22 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
         mDelayListener = new ArrayList<>();
     }
 
+    /**
+     * 设置切换服务监听
+     *
+     * @param listener
+     */
+    public void setChannelChangeListener(ISecurityChannelChangeListener listener) {
+        this.mChannelChangeListener = listener;
+    }
+
+    /**
+     * 获取监听器
+     * @return
+     */
+    protected ISecurityChannelChangeListener getmChannelChangeListener() {
+        return mChannelChangeListener;
+    }
 
     /**
      * 注册实体
@@ -71,7 +92,12 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
     private class ReceiveProxy implements IClientEventCallBack {
 
         @Override
-        public void onInitForClientCallBack(String channelId) {
+        public void onRespondServerHighLoadCallBack(String lowLoadHost, int lowLoadPort) {
+            notifyChannelReset(lowLoadHost, lowLoadPort);
+        }
+
+        @Override
+        public void onRespondChannelIdCallBack(String channelId) {
             SecurityProxySender proxySender = getSender();
             proxySender.setChannelId(channelId);
             updateCurStatus(ChannelStatus.READY);
@@ -80,7 +106,7 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
         }
 
         @Override
-        public void onConnectTargetStatusCallBack(String requestId, byte status) {
+        public void onRespondRequestStatusCallBack(String requestId, byte status) {
             // 分发请求创建目标链接结果回调
             notifyCreateConnectStatus(requestId, status);
         }
@@ -158,6 +184,15 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
     }
 
     /**
+     * 清楚所有通道镜像
+     */
+    protected void clearAllChannelImage() {
+        synchronized (mChannelImageMap) {
+            mChannelImageMap.clear();
+        }
+    }
+
+    /**
      * 通知通道可用
      */
     protected void notifyChannelReady() {
@@ -191,6 +226,16 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
             if (listener != null) {
                 listener.onChannelInvalid();
             }
+        }
+    }
+
+
+    /**
+     * 通知通道正在失效
+     */
+    protected void notifyChannelReset(String lowLoadHost, int lowLoadPort) {
+        if (mChannelChangeListener != null) {
+            mChannelChangeListener.onRemoteLowLoadServerConnect(lowLoadHost, lowLoadPort);
         }
     }
 

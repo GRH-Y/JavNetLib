@@ -10,7 +10,7 @@ public enum UnusualBehaviorType {
 
     EXP_TRANS_DATA(0x112, "illegal trans data"),
 
-    EXP_SYNC_DATA(0x113, "illegal sync data"),
+    EXP_ADDRESS_LENGTH(0x113, "Illegal address length"),
 
     EXP_REQUEST_ID(0x114, "illegal requestId"),
 
@@ -22,9 +22,8 @@ public enum UnusualBehaviorType {
 
     EXP_ACTIVITY(0x118, "illegal activity"),
 
-    EXP_INIT_DATA(0x119, "illegal init data"),
+    EXP_INIT_DATA(0x119, "illegal init data");
 
-    EXP_SYNC_MACHINE_ID(0x120, "illegal sync machineId");
 
     private String mErrorMsg;
     private int mErrorCode;

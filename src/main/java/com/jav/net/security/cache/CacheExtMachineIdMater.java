@@ -35,6 +35,9 @@ public class CacheExtMachineIdMater {
         if (mid == null) {
             return false;
         }
+        if (mCacheMachine.contains(mid)) {
+            return true;
+        }
         return mCacheMachine.add(mid);
     }
 

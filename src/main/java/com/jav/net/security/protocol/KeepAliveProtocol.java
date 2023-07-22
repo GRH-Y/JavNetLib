@@ -34,7 +34,7 @@ public class KeepAliveProtocol extends AbsProxyProtocol {
 
 
     @Override
-    byte activityCode() {
+    public byte activityCode() {
         return ActivityCode.KEEP.getCode();
     }
 

@@ -1,7 +1,6 @@
 package com.jav.net.security.channel.base;
 
 import com.jav.net.nio.NioServerTask;
-import com.jav.net.security.channel.SecurityChannelContext;
 import com.jav.net.security.guard.IpBlackListManager;
 
 import java.net.InetSocketAddress;
@@ -19,15 +18,9 @@ public abstract class AbsSecurityServer extends NioServerTask {
      */
     protected boolean mIsEnableIPBlack;
 
-    /**
-     * 配置信息
-     */
-    protected SecurityChannelContext mContext;
 
-
-    public void init(SecurityChannelContext context) {
-        this.mContext = context;
-        mIsEnableIPBlack = context.isEnableIpBlack();
+    public void init(boolean isEnableIpBlack) {
+        mIsEnableIPBlack = isEnableIpBlack;
     }
 
 
@@ -51,17 +44,16 @@ public abstract class AbsSecurityServer extends NioServerTask {
                 }
             }
         }
-        onPassChannel(mContext, channel);
+        onPassChannel(channel);
     }
 
 
     /**
      * 经过黑名单校验后放行回调
      *
-     * @param context
      * @param channel
      * @return 返回响应通道的客户端
      */
-    protected abstract void onPassChannel(SecurityChannelContext context, SocketChannel channel);
+    protected abstract void onPassChannel(SocketChannel channel);
 
 }

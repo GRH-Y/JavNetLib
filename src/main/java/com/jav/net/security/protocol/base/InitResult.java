@@ -8,6 +8,10 @@ package com.jav.net.security.protocol.base;
 public enum InitResult {
 
     /**
+     * 出错
+     */
+    ERROR((byte) 0),
+    /**
      * 返回channel id
      */
     CHANNEL_ID((byte) 1),
@@ -15,6 +19,7 @@ public enum InitResult {
      * 返回新的服务ip,通常是服务负载过高
      */
     SERVER_IP((byte) 2);
+
 
     private final byte mCode;
 

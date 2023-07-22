@@ -1,7 +1,7 @@
 package com.jav.net.security.channel;
 
-import com.jav.net.security.channel.joggle.IServerChannelStatusListener;
 import com.jav.net.security.channel.base.ConstantCode;
+import com.jav.net.security.channel.joggle.IServerChannelStatusListener;
 
 /**
  * 服务模式的通道的镜像

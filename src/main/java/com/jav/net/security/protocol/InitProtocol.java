@@ -33,7 +33,7 @@ public class InitProtocol extends AbsProxyProtocol {
     }
 
     @Override
-    byte activityCode() {
+    public byte activityCode() {
         return ActivityCode.INIT.getCode();
     }
 

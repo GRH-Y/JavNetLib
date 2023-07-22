@@ -5,6 +5,7 @@ import com.jav.common.cryption.joggle.IDecryptComponent;
 import com.jav.common.util.IoEnvoy;
 import com.jav.net.nio.NioReceiver;
 import com.jav.net.security.channel.base.UnusualBehaviorType;
+import com.jav.net.security.channel.joggle.ISecurityProtocolParser;
 import com.jav.net.security.channel.joggle.ISecurityReceiver;
 
 import java.io.IOException;
@@ -61,7 +62,7 @@ public class SecurityReceiver implements ISecurityReceiver {
     /**
      * 安全协议的解析器
      */
-    private SecurityProtocolParser mProtocolParser;
+    private ISecurityProtocolParser mProtocolParser;
 
     /**
      * 解密组件
@@ -82,7 +83,7 @@ public class SecurityReceiver implements ISecurityReceiver {
     }
 
     @Override
-    public void setProtocolParser(SecurityProtocolParser parser) {
+    public void setProtocolParser(ISecurityProtocolParser parser) {
         this.mProtocolParser = parser;
     }
 
@@ -143,7 +144,7 @@ public class SecurityReceiver implements ISecurityReceiver {
                 int length = mLength.getInt();
                 if (length <= 0 || length > MAX_LENGTH) {
                     String remoteHost = getRemoteHost(channel);
-                    mProtocolParser.callBackDeny(remoteHost, UnusualBehaviorType.EXP_LENGTH);
+                    mProtocolParser.reportPolicyProcessor(remoteHost, UnusualBehaviorType.EXP_LENGTH);
                 }
                 mFullData = ByteBuffer.allocate(length);
                 mLength.clear();

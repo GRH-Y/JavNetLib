@@ -1,7 +1,6 @@
 package com.jav.net.nio;
 
 import com.jav.common.state.joggle.IControlStateMachine;
-import com.jav.common.state.joggle.IStateMachine;
 import com.jav.net.base.NetTaskStatus;
 import com.jav.net.base.joggle.NetErrorType;
 import com.jav.net.entity.FactoryContext;

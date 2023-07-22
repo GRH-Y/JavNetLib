@@ -25,7 +25,8 @@ public abstract class AbsSecurityServerReception extends SecurityChannelClient i
 
 
     @Override
-    protected void onRegistrarReady() {
+    protected void onBeReadyChannel(SocketChannel channel) {
+        super.onBeReadyChannel(channel);
         SecurityServerChanelMeter meter = getChanelMeter();
         mServerChannelImage = SecurityServerChannelImage.builderServerChannelImage(this);
         meter.regServerChannelImage(mServerChannelImage);

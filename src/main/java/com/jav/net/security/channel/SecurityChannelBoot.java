@@ -2,6 +2,7 @@ package com.jav.net.security.channel;
 
 
 import com.jav.common.log.LogDog;
+import com.jav.common.util.NotRetLockLock;
 import com.jav.net.base.joggle.INetTaskComponent;
 import com.jav.net.nio.NioBalancedClientFactory;
 import com.jav.net.nio.NioClientTask;
@@ -9,17 +10,17 @@ import com.jav.net.nio.NioServerFactory;
 import com.jav.net.security.channel.base.AbsSecurityServer;
 import com.jav.net.security.channel.base.ChannelStatus;
 import com.jav.net.security.channel.joggle.IClientChannelStatusListener;
+import com.jav.net.security.channel.joggle.ISecurityChannelChangeListener;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * ChannelManager 通道管理器,管理通道的创建和注册使用通道功能
  *
  * @author yyz
  */
-public class SecurityChannelManager {
+public class SecurityChannelBoot {
 
     /**
      * 工作线程数
@@ -35,6 +36,11 @@ public class SecurityChannelManager {
      * 是否已经初始化
      */
     private volatile boolean mIsInit = false;
+
+    /**
+     * 是否已经链接服务
+     */
+    private volatile boolean mIsConnect = false;
 
     /**
      * 客户端通道集合
@@ -56,17 +62,35 @@ public class SecurityChannelManager {
      */
     private int mChannelIndex = 0;
 
-    private SecurityChannelManager() {
+    /**
+     * 不可重入锁
+     */
+    private NotRetLockLock mLock;
+
+
+    private SecurityChannelBoot() {
         mClientChanelList = new ArrayList<>();
+        mLock = new NotRetLockLock();
     }
 
     private static final class InnerClass {
-        public static final SecurityChannelManager sManager = new SecurityChannelManager();
+        public static final SecurityChannelBoot sManager = new SecurityChannelBoot();
     }
 
-    public static SecurityChannelManager getInstance() {
+    public static SecurityChannelBoot getInstance() {
         return InnerClass.sManager;
     }
+
+    /**
+     * 切换安全服务
+     */
+    private ISecurityChannelChangeListener mChangeListener = new ISecurityChannelChangeListener() {
+        @Override
+        public void onRemoteLowLoadServerConnect(String lowLoadHost, int lowLoadPort) {
+            //链接低负载的服务
+            resetConnectSecurityServer(lowLoadHost, lowLoadPort);
+        }
+    };
 
 
     /**
@@ -96,7 +120,10 @@ public class SecurityChannelManager {
             if (newChannelClient == null) {
                 return null;
             }
+            //如果当前的通道
+            ISecurityChannelChangeListener changeListener = chanelMeter.getmChannelChangeListener();
             chanelMeter = newChannelClient.getChanelMeter();
+            chanelMeter.setChannelChangeListener(changeListener);
         }
         mChannelIndex++;
         if (mChannelIndex == mContext.getChannelNumber()) {
@@ -119,46 +146,48 @@ public class SecurityChannelManager {
         INetTaskComponent<NioClientTask> container = mClientFactory.getNetTaskComponent();
         container.addExecTask(channelClient);
         mClientChanelList.add(channelClient);
-        LogDog.d("connect host = " + mContext.getConnectHost() + ":" + mContext.getConnectPort());
+        LogDog.d("## connect security host = " + mContext.getConnectHost() + ":" + mContext.getConnectPort());
         return channelClient;
     }
 
-    /**
-     * 初始化SyncMeter
-     */
-    private void initSyncMeter() {
-        Map<String, String> syncServer = mContext.getSyncServer();
-        SecuritySyncMeter syncMeter = new SecuritySyncMeter(mContext);
-        syncMeter.loadSyncList(syncServer);
-        mContext.setSyncMeter(syncMeter);
-    }
 
     /**
-     * 连接代理服务端
+     * 连接安全服务端
      */
-    private void startConnectProxyServer() {
-        for (int count = 0; count < mContext.getChannelNumber(); count++) {
-            createChannel();
+    public void startConnectSecurityServer() {
+        if (mIsConnect) {
+            return;
         }
+        for (int count = 0; count < mContext.getChannelNumber(); count++) {
+            SecurityChannelClient channelClient = createChannel();
+            if (count == 0 && channelClient != null) {
+                //只给第一个通道配置监听
+                SecurityClientChanelMeter clientMeter = channelClient.getChanelMeter();
+                clientMeter.setChannelChangeListener(mChangeListener);
+            }
+        }
+        mIsConnect = true;
     }
 
-
+    /**
+     * 初始化客户端链接
+     */
     private void initClientFactory() {
         mClientFactory = new NioBalancedClientFactory(WORK_COUNT);
         mClientFactory.open();
     }
 
     /**
-     * 启动服务
+     * 启动安全服务
      */
-    private void startupServer() {
+    public void startupSecurityServer() {
         List<AbsSecurityServer> serverArray = mContext.getSecurityServer();
         if (serverArray != null) {
             // 开启主服务
             mServerFactory = new NioServerFactory();
             mServerFactory.open();
             for (AbsSecurityServer server : serverArray) {
-                server.init(mContext);
+                server.init(mContext.isEnableIpBlack());
                 mServerFactory.getNetTaskComponent().addExecTask(server);
             }
         }
@@ -171,20 +200,12 @@ public class SecurityChannelManager {
      * @param host
      * @param port
      */
-    protected void resetConnectLowLoadServer(String host, int port) {
+    private void resetConnectSecurityServer(String host, int port) {
         mContext.resetConnectSecurityServer(host, port);
         for (SecurityChannelClient client : mClientChanelList) {
             mClientFactory.getNetTaskComponent().addUnExecTask(client);
         }
-    }
-
-    /**
-     * 重新链接
-     *
-     * @param client
-     */
-    protected void resetChannel(SecurityChannelClient client) {
-        mClientFactory.getNetTaskComponent().addExecTask(client);
+        LogDog.w("## resetConnectSecurityServer lowLoadHost:" + host + ":" + port);
     }
 
 
@@ -199,12 +220,6 @@ public class SecurityChannelManager {
             release();
         }
         initClientFactory();
-        if (context.isServerMode()) {
-            initSyncMeter();
-        } else {
-            startConnectProxyServer();
-        }
-        startupServer();
         mIsInit = true;
     }
 
@@ -219,19 +234,28 @@ public class SecurityChannelManager {
         if (listener == null || !mIsInit || mContext.isServerMode()) {
             return;
         }
-        synchronized (mClientChanelList) {
+        NotRetLockLock.NotRetLockKey lockKey = mLock.lock();
+        try {
             for (SecurityChannelClient client : mClientChanelList) {
                 SecurityClientChanelMeter meter = client.getChanelMeter();
+                if (meter.getCruStatus() == ChannelStatus.INVALID) {
+                    break;
+                }
                 SecurityClientChannelImage image = meter.findListenerToImage(listener);
                 if (image != null) {
+                    mLock.unlock(lockKey);
                     return;
                 }
             }
-        }
-        SecurityClientChanelMeter chanelMeter = pollingChannel();
-        if (chanelMeter != null) {
-            SecurityClientChannelImage image = SecurityClientChannelImage.builderClientChannelImage(listener);
-            chanelMeter.regClientChannelImage(image);
+            SecurityClientChanelMeter chanelMeter = pollingChannel();
+            if (chanelMeter != null) {
+                SecurityClientChannelImage image = SecurityClientChannelImage.builderClientChannelImage(listener);
+                chanelMeter.regClientChannelImage(image);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            mLock.unlock(lockKey);
         }
     }
 
@@ -245,14 +269,14 @@ public class SecurityChannelManager {
         if (image == null || !mIsInit) {
             return;
         }
-        synchronized (mClientChanelList) {
-            for (SecurityChannelClient client : mClientChanelList) {
-                SecurityClientChanelMeter meter = client.getChanelMeter();
-                if (meter.unRegClientChannelImage(image)) {
-                    break;
-                }
+        NotRetLockLock.NotRetLockKey lockKey = mLock.lock();
+        for (SecurityChannelClient client : mClientChanelList) {
+            SecurityClientChanelMeter meter = client.getChanelMeter();
+            if (meter.unRegClientChannelImage(image)) {
+                break;
             }
         }
+        mLock.unlock(lockKey);
     }
 
     /**
@@ -266,11 +290,12 @@ public class SecurityChannelManager {
             if (mServerFactory != null) {
                 mServerFactory.close();
             }
-            synchronized (mClientChanelList) {
-                mChannelIndex = 0;
-                mClientChanelList.clear();
-            }
+            NotRetLockLock.NotRetLockKey lockKey = mLock.lock();
+            mChannelIndex = 0;
+            mClientChanelList.clear();
+            mLock.unlock(lockKey);
             mIsInit = false;
         }
+        mIsConnect = false;
     }
 }

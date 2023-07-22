@@ -3,7 +3,6 @@ package com.jav.net.nio;
 
 import com.jav.common.log.LogDog;
 import com.jav.common.state.joggle.IControlStateMachine;
-import com.jav.common.state.joggle.IStateMachine;
 import com.jav.net.base.NetTaskStatus;
 import com.jav.net.base.joggle.INetTaskComponent;
 import com.jav.net.base.joggle.NetErrorType;

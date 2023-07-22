@@ -39,10 +39,6 @@ public class SecurityPolicyProcessor implements ISecurityPolicyProcessor {
     @Override
     public boolean onCheckMachineId(String checkMid) {
         if (mContext.isServerMode()) {
-            if (checkMid.equalsIgnoreCase(mContext.getMachineId())) {
-                //sync 通讯使用的是服务的mid
-                return true;
-            }
             if (CacheExtMachineIdMater.getInstance().checkMid(checkMid)) {
                 //匹配上分布式的缓存库中的machineId
                 return true;

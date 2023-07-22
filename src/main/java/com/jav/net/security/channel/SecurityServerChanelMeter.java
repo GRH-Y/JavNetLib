@@ -5,14 +5,13 @@ import com.jav.common.cryption.joggle.EncryptionType;
 import com.jav.common.log.LogDog;
 import com.jav.common.security.Md5Helper;
 import com.jav.net.security.cache.CacheChannelIdMater;
-import com.jav.net.security.channel.base.ParserCallBackRegistrar;
 import com.jav.net.security.channel.base.ChannelStatus;
+import com.jav.net.security.channel.base.ParserCallBackRegistrar;
+import com.jav.net.security.channel.base.UnusualBehaviorType;
 import com.jav.net.security.channel.joggle.ISecurityChannelStatusListener;
 import com.jav.net.security.channel.joggle.IServerChannelStatusListener;
 import com.jav.net.security.channel.joggle.IServerEventCallBack;
-import com.jav.net.security.channel.base.ConstantCode;
 import com.jav.net.security.protocol.base.InitResult;
-import com.jav.net.security.channel.base.UnusualBehaviorType;
 
 import java.util.Map;
 import java.util.UUID;

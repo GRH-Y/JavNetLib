@@ -2,7 +2,6 @@ package com.jav.net.security.channel.joggle;
 
 
 import com.jav.common.cryption.joggle.IDecryptComponent;
-import com.jav.net.security.channel.SecurityProtocolParser;
 
 /**
  * 安全协议的接收者
@@ -16,7 +15,7 @@ public interface ISecurityReceiver {
      *
      * @param parser 协议解析器对象
      */
-    void setProtocolParser(SecurityProtocolParser parser);
+    void setProtocolParser(ISecurityProtocolParser parser);
 
 
     /**
