@@ -1,7 +1,7 @@
 package com.jav.net.security.cache;
 
 import com.jav.common.log.LogDog;
-import com.jav.common.util.NotRetLockLock;
+import com.jav.common.util.NotRetLock;
 
 import java.io.Serializable;
 import java.util.*;
@@ -19,7 +19,7 @@ public class CacheChannelIdMater {
      */
     private static final int ONE_DAY = 1000 * 60 * 60 * 24;
 
-    private NotRetLockLock mLock;
+    private NotRetLock mLock;
 
 
     /**
@@ -76,7 +76,7 @@ public class CacheChannelIdMater {
     }
 
     private CacheChannelIdMater() {
-        mLock = new NotRetLockLock();
+        mLock = new NotRetLock();
     }
 
     private static class InnerCore {
@@ -94,7 +94,7 @@ public class CacheChannelIdMater {
      * @param channelId
      */
     public void binderChannelIdToMid(String machineId, String channelId) {
-        NotRetLockLock.NotRetLockKey lockKey = mLock.lock();
+        NotRetLock.NotRetLockKey lockKey = mLock.lock();
         try {
             RecordChannel recordChannel = mChannelCache.get(machineId);
             if (recordChannel == null) {

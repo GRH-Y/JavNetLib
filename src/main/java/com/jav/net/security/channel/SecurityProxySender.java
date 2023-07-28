@@ -1,8 +1,8 @@
 package com.jav.net.security.channel;
 
-import com.jav.common.cryption.joggle.EncryptionType;
 import com.jav.net.entity.MultiByteBuffer;
 import com.jav.net.security.channel.base.ConstantCode;
+import com.jav.net.security.channel.joggle.ChannelEncryption;
 import com.jav.net.security.channel.joggle.IChangeEncryptCallBack;
 import com.jav.net.security.channel.joggle.ISecurityProxySender;
 import com.jav.net.security.protocol.InitProtocol;
@@ -43,7 +43,7 @@ public class SecurityProxySender extends SecuritySender implements ISecurityProx
      * @param changeEncryption      需要切换的加密方式
      * @param changeEncryptCallBack 切换加密方式回调
      */
-    public void requestInitData(String machineId, byte[] initData, EncryptionType changeEncryption,
+    public void requestInitData(String machineId, byte[] initData, ChannelEncryption changeEncryption,
                                 IChangeEncryptCallBack changeEncryptCallBack) {
         // 发送init协议数据
         InitProtocol initProtocol = new InitProtocol(machineId);

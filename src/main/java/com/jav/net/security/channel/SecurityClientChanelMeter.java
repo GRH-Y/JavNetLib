@@ -5,10 +5,7 @@ import com.jav.common.cryption.joggle.EncryptionType;
 import com.jav.net.security.channel.base.ChannelStatus;
 import com.jav.net.security.channel.base.ParserCallBackRegistrar;
 import com.jav.net.security.channel.base.UnusualBehaviorType;
-import com.jav.net.security.channel.joggle.IClientChannelStatusListener;
-import com.jav.net.security.channel.joggle.IClientEventCallBack;
-import com.jav.net.security.channel.joggle.ISecurityChannelChangeListener;
-import com.jav.net.security.channel.joggle.ISecurityChannelStatusListener;
+import com.jav.net.security.channel.joggle.*;
 
 import java.util.*;
 
@@ -57,6 +54,7 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
 
     /**
      * 获取监听器
+     *
      * @return
      */
     protected ISecurityChannelChangeListener getmChannelChangeListener() {
@@ -303,19 +301,21 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
     protected void onExtChannelReady() {
         String machineId = mContext.getMachineId();
         // 获取加密的方式
-        String encryption = mContext.getEncryption();
-        EncryptionType configEncryptionType = EncryptionType.getInstance(encryption);
+        ChannelEncryption encryption = mContext.getChannelEncryption();
         byte[] initData = null;
         // 根据不同加密方式发送不同的数据
-        if (configEncryptionType == EncryptionType.AES) {
-            String desPassword = mContext.getDesPassword();
+        ChannelEncryption.TransmitEncryption transmitEncryption = encryption.getTransmitEncryption();
+        if (transmitEncryption.getEncryptionType() == EncryptionType.AES) {
+            String desPassword = transmitEncryption.getPassword();
             initData = desPassword.getBytes();
         }
         // 客户端模式下请求init交互验证,完成init交互验证即可正常转发数据
         SecurityProxySender proxySender = getSender();
-        proxySender.requestInitData(machineId, initData, configEncryptionType, encryptionType -> {
+        proxySender.requestInitData(machineId, initData, encryption, channelEncryption -> {
             // init交互数据发送完成开始切换加密方式
-            changeEncryptionType(encryptionType);
+            ChannelEncryption.TransmitEncryption changeEncryption = channelEncryption.getTransmitEncryption();
+            EncryptionType encryptionType = changeEncryption.getEncryptionType();
+            configEncryptionMode(encryptionType, channelEncryption);
         });
     }
 

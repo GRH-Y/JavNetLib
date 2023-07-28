@@ -11,6 +11,7 @@ import com.jav.net.security.channel.base.AbsSecurityMeter;
 import com.jav.net.security.channel.base.ChannelStatus;
 import com.jav.net.security.channel.base.ParserCallBackRegistrar;
 import com.jav.net.security.channel.base.SecurityPolicyProcessor;
+import com.jav.net.security.channel.joggle.ChannelEncryption;
 
 /**
  * ChanelMeter 通道辅助，向外提供服务
@@ -50,17 +51,6 @@ public class SecurityChanelMeter extends AbsSecurityMeter {
 
 
     /**
-     * 默认是RSA加密方式
-     *
-     * @return
-     */
-    @Override
-    protected EncryptionType initEncryptionType() {
-        return EncryptionType.RSA;
-    }
-
-
-    /**
      * 设置协议解析回调对象
      *
      * @param registrar
@@ -71,24 +61,27 @@ public class SecurityChanelMeter extends AbsSecurityMeter {
 
 
     /**
-     * 切换加密方式
+     * 配置加密方式
      *
-     * @param encryption 加密方式
+     * @param encryptionType 加密方式
+     * @param encryptionType 加密方式
      */
-    protected void changeEncryptionType(EncryptionType encryption) {
+    protected void configEncryptionMode(EncryptionType encryptionType, ChannelEncryption encryption) {
         // 发送完init数据,开始切换加密方式
-        mDataSafeManager.init(encryption);
+        mDataSafeManager.init(encryptionType);
         IDecryptComponent decryptComponent = mDataSafeManager.getDecrypt();
         IEncryptComponent encryptComponent = mDataSafeManager.getEncrypt();
-        if (encryption == EncryptionType.AES) {
+        if (encryptionType == EncryptionType.AES) {
             // 获取AES对称密钥
-            String desPassword = mContext.getDesPassword();
+            ChannelEncryption.TransmitEncryption transmitEncryption = encryption.getTransmitEncryption();
+            String desPassword = transmitEncryption.getPassword();
             byte[] aesKey = desPassword.getBytes();
             AESDataEnvoy encryptEnvoy = encryptComponent.getComponent();
             encryptEnvoy.initKey(aesKey);
-        } else if (encryption == EncryptionType.RSA) {
-            String publicFile = mContext.getInitRsaPublicFile();
-            String privateFile = mContext.getInitRsaPrivateFile();
+        } else if (encryptionType == EncryptionType.RSA) {
+            ChannelEncryption.InitEncryption initEncryption = encryption.getInitEncryption();
+            String publicFile = initEncryption.getPublicFile();
+            String privateFile = initEncryption.getPrivateFile();
             try {
                 RSADataEnvoy decode = decryptComponent.getComponent();
                 RSADataEnvoy encode = encryptComponent.getComponent();
@@ -116,8 +109,9 @@ public class SecurityChanelMeter extends AbsSecurityMeter {
         super.onChannelReady(sender, receiver);
 
         //设置加密方式
-        EncryptionType encryptionType = initEncryptionType();
-        changeEncryptionType(encryptionType);
+        ChannelEncryption encryption = mContext.getChannelEncryption();
+        EncryptionType encryptionType = encryption.getInitEncryption().getEncryptionType();
+        configEncryptionMode(encryptionType, encryption);
         // 设置协议解析器
         mRealReceiver.setProtocolParser(mProtocolParser);
         //重置接收,断线重连接需要恢复状态

@@ -8,6 +8,7 @@ import com.jav.net.security.cache.CacheChannelIdMater;
 import com.jav.net.security.channel.base.ChannelStatus;
 import com.jav.net.security.channel.base.ParserCallBackRegistrar;
 import com.jav.net.security.channel.base.UnusualBehaviorType;
+import com.jav.net.security.channel.joggle.ChannelEncryption;
 import com.jav.net.security.channel.joggle.ISecurityChannelStatusListener;
 import com.jav.net.security.channel.joggle.IServerChannelStatusListener;
 import com.jav.net.security.channel.joggle.IServerEventCallBack;
@@ -43,7 +44,8 @@ public class SecurityServerChanelMeter extends SecurityChanelMeter {
         @Override
         public void onInitForServerCallBack(EncryptionType encryption, byte[] aesKey, String machineId) {
             // 根据客户端,切换加密方式
-            changeEncryptionType(encryption);
+            ChannelEncryption channelEncryption = mContext.getChannelEncryption();
+            configEncryptionMode(encryption, channelEncryption);
 
             IServerChannelStatusListener supperListener = mServerImage.getChannelStatusListener();
             boolean intercept = supperListener.onRespondInitData(machineId);

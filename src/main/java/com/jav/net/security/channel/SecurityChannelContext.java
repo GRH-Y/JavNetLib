@@ -1,6 +1,7 @@
 package com.jav.net.security.channel;
 
 import com.jav.net.security.channel.base.AbsSecurityServer;
+import com.jav.net.security.channel.joggle.ChannelEncryption;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,20 +33,8 @@ public class SecurityChannelContext {
         return mBuilder.mMachineId;
     }
 
-    public String getEncryption() {
+    public ChannelEncryption getChannelEncryption() {
         return mBuilder.mEncryption;
-    }
-
-    public String getInitRsaPublicFile() {
-        return mBuilder.mPublicFile;
-    }
-
-    public String getInitRsaPrivateFile() {
-        return mBuilder.mPrivateFile;
-    }
-
-    public String getDesPassword() {
-        return mBuilder.mDesPassword;
     }
 
     public List<String> getMachineList() {
@@ -76,7 +65,6 @@ public class SecurityChannelContext {
         mBuilder.mHost = host;
         mBuilder.mPort = port;
     }
-
 
 
     public static class Builder {
@@ -118,23 +106,8 @@ public class SecurityChannelContext {
         /**
          * 加密的方式
          */
-        private String mEncryption;
+        private ChannelEncryption mEncryption;
 
-        /**
-         * rsa公钥文件路径
-         */
-        private String mPublicFile;
-
-        /**
-         * rsa私钥文件路径
-         */
-        private String mPrivateFile;
-
-
-        /**
-         * des密码
-         */
-        private String mDesPassword;
 
         /**
          * 机器id列表
@@ -168,34 +141,43 @@ public class SecurityChannelContext {
             return this;
         }
 
-        public Builder setServerMode(boolean isServerMode) {
-            this.mIsServerMode = isServerMode;
-            return this;
-        }
 
         public Builder setMachineId(String machineId) {
             this.mMachineId = machineId;
             return this;
         }
 
-        public Builder setEncryption(String encryption, String password) {
-            this.mEncryption = encryption;
-            this.mDesPassword = password;
-            return this;
-        }
-
-        public Builder setInitRsaKeyFile(String publicFile, String privateFile) {
-            this.mPublicFile = publicFile;
-            this.mPrivateFile = privateFile;
-            return this;
-        }
 
         public Builder setMachineList(List<String> machineList) {
             this.mMachineList = machineList;
             return this;
         }
 
-        public SecurityChannelContext builder() {
+        /**
+         * 初始化为服务端
+         *
+         * @param encryption 加密方式
+         * @return
+         */
+        public SecurityChannelContext asServer(ChannelEncryption encryption) {
+            this.mIsServerMode = true;
+            this.mEncryption = encryption;
+            return builder();
+        }
+
+        /**
+         * 初始化为客户端
+         *
+         * @param encryption 加密方式
+         * @return
+         */
+        public SecurityChannelContext asClient(ChannelEncryption encryption) {
+            this.mIsServerMode = false;
+            this.mEncryption = encryption;
+            return builder();
+        }
+
+        private SecurityChannelContext builder() {
             return new SecurityChannelContext(this);
         }
     }

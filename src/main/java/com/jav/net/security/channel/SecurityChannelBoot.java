@@ -2,7 +2,7 @@ package com.jav.net.security.channel;
 
 
 import com.jav.common.log.LogDog;
-import com.jav.common.util.NotRetLockLock;
+import com.jav.common.util.NotRetLock;
 import com.jav.net.base.joggle.INetTaskComponent;
 import com.jav.net.nio.NioBalancedClientFactory;
 import com.jav.net.nio.NioClientTask;
@@ -65,12 +65,12 @@ public class SecurityChannelBoot {
     /**
      * 不可重入锁
      */
-    private NotRetLockLock mLock;
+    private NotRetLock mLock;
 
 
     private SecurityChannelBoot() {
         mClientChanelList = new ArrayList<>();
-        mLock = new NotRetLockLock();
+        mLock = new NotRetLock();
     }
 
     private static final class InnerClass {
@@ -234,7 +234,7 @@ public class SecurityChannelBoot {
         if (listener == null || !mIsInit || mContext.isServerMode()) {
             return;
         }
-        NotRetLockLock.NotRetLockKey lockKey = mLock.lock();
+        NotRetLock.NotRetLockKey lockKey = mLock.lock();
         try {
             for (SecurityChannelClient client : mClientChanelList) {
                 SecurityClientChanelMeter meter = client.getChanelMeter();
@@ -269,7 +269,7 @@ public class SecurityChannelBoot {
         if (image == null || !mIsInit) {
             return;
         }
-        NotRetLockLock.NotRetLockKey lockKey = mLock.lock();
+        NotRetLock.NotRetLockKey lockKey = mLock.lock();
         for (SecurityChannelClient client : mClientChanelList) {
             SecurityClientChanelMeter meter = client.getChanelMeter();
             if (meter.unRegClientChannelImage(image)) {
@@ -290,7 +290,7 @@ public class SecurityChannelBoot {
             if (mServerFactory != null) {
                 mServerFactory.close();
             }
-            NotRetLockLock.NotRetLockKey lockKey = mLock.lock();
+            NotRetLock.NotRetLockKey lockKey = mLock.lock();
             mChannelIndex = 0;
             mClientChanelList.clear();
             mLock.unlock(lockKey);

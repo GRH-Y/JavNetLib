@@ -1,7 +1,6 @@
 package com.jav.net.security.channel.base;
 
 
-import com.jav.common.cryption.joggle.EncryptionType;
 import com.jav.net.security.channel.SecurityReceiver;
 import com.jav.net.security.channel.SecuritySender;
 
@@ -27,14 +26,6 @@ public abstract class AbsSecurityMeter {
      * 数据接收者
      */
     protected SecurityReceiver mRealReceiver;
-
-
-    /**
-     * 默认是RSA加密方式
-     *
-     * @return
-     */
-    protected abstract EncryptionType initEncryptionType();
 
 
     public <T extends SecuritySender> T getSender() {
