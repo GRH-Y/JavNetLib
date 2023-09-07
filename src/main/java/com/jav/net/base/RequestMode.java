@@ -1,4 +1,4 @@
-package com.jav.net.entity;
+package com.jav.net.base;
 
 /**
  * 请求类型

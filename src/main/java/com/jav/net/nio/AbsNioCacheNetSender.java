@@ -1,9 +1,9 @@
 package com.jav.net.nio;
 
 import com.jav.net.base.AbsNetSender;
+import com.jav.net.base.MultiBuffer;
 import com.jav.net.component.CacheComponent;
 import com.jav.net.component.joggle.ICacheComponent;
-import com.jav.net.entity.MultiByteBuffer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -16,25 +16,28 @@ import java.nio.channels.SelectionKey;
  */
 public abstract class AbsNioCacheNetSender<T> extends AbsNetSender<T> {
 
-    protected ICacheComponent<Object> mCacheComponent;
+    /**
+     * 缓存组件
+     */
+    protected ICacheComponent<T> mCacheComponent;
 
     protected SelectionKey mSelectionKey = null;
 
     public AbsNioCacheNetSender() {
         mCacheComponent = getCacheComponent();
         if (mCacheComponent == null) {
-            mCacheComponent = new CacheComponent();
+            mCacheComponent = new CacheComponent<>();
         }
     }
 
-    public ICacheComponent getCacheComponent() {
+    public ICacheComponent<T> getCacheComponent() {
         return mCacheComponent;
     }
 
     /**
      * 发送数据
      *
-     * @param data
+     * @param data 要发送的数据
      */
     @Override
     public void sendData(T data) {
@@ -43,7 +46,7 @@ public abstract class AbsNioCacheNetSender<T> extends AbsNetSender<T> {
         }
         if (mSelectionKey == null || !mSelectionKey.isValid()) {
             if (mFeedback != null) {
-                mFeedback.onSenderFeedBack(this, data, null);
+                mFeedback.onSenderFeedBack(this, data, new IOException("SelectionKey is null or isValid !"));
             }
             return;
         }
@@ -65,33 +68,33 @@ public abstract class AbsNioCacheNetSender<T> extends AbsNetSender<T> {
     /**
      * 根据不同类型的数据处理
      *
-     * @param data
-     * @return
-     * @throws Throwable
+     * @param data 要发送的数据
+     * @return 返回状态码 @see AbsNetSender SEND_COMPLETE , SEND_FAIL or SEND_CHANNEL_BUSY
+     * @throws Throwable 出错抛异常到上层处理
      */
-    protected int onHandleSendData(Object data) throws Throwable {
+    protected int onHandleSendData(T data) throws Throwable {
         int ret = SEND_COMPLETE;
-        if (data instanceof MultiByteBuffer) {
-            MultiByteBuffer buffer = (MultiByteBuffer) data;
+        if (data instanceof MultiBuffer) {
+            MultiBuffer buffer = (MultiBuffer) data;
             if (buffer.isClear()) {
                 // 当前buf没有数据
                 return SEND_COMPLETE;
             }
-            ByteBuffer[] sendDataBuf = buffer.getTmpBuf();
+            ByteBuffer[] sendDataBuf = buffer.getFreezeBuf();
             if (sendDataBuf == null) {
                 // sendDataBuf 为null 说明是第一次处理数据，不为null说明上次数据发送不完整
-                sendDataBuf = buffer.getUseBuf(true);
+                sendDataBuf = buffer.getDirtyBuf(true);
             }
             ret = sendDataImp(sendDataBuf);
             if (ret == SEND_CHANNEL_BUSY) {
                 // 当前数据没有发送完，则临时记录起来
-                buffer.setTmpBuf(sendDataBuf);
+                buffer.setFreezeBuf(sendDataBuf);
                 // 加入发送队列等待下次处理
-                mCacheComponent.addFirstData(buffer);
-                return SEND_CHANNEL_BUSY;
+                mCacheComponent.addFirstData(data);
+                return ret;
             }
-            buffer.setTmpBuf(null);
-            buffer.setBackBuf(sendDataBuf);
+            buffer.setFreezeBuf(null);
+            buffer.restoredBuf(sendDataBuf);
         }
         return ret;
     }
@@ -103,7 +106,7 @@ public abstract class AbsNioCacheNetSender<T> extends AbsNetSender<T> {
      */
     @Override
     protected void onSendNetData() throws Throwable {
-        Object sendData = mCacheComponent.pollFirstData();
+        T sendData = mCacheComponent.pollFirstData();
         Throwable exception = null;
         try {
             int ret = onHandleSendData(sendData);
@@ -132,14 +135,6 @@ public abstract class AbsNioCacheNetSender<T> extends AbsNetSender<T> {
         }
     }
 
-    protected boolean hasRemaining(ByteBuffer[] buffers) {
-        for (ByteBuffer buffer : buffers) {
-            if (buffer.hasRemaining()) {
-                return true;
-            }
-        }
-        return false;
-    }
 
     /**
      * 具体实现发送数据
@@ -148,5 +143,5 @@ public abstract class AbsNioCacheNetSender<T> extends AbsNetSender<T> {
      * @return
      * @throws IOException
      */
-    protected abstract int sendDataImp(ByteBuffer[] data) throws IOException;
+    protected abstract int sendDataImp(Object data) throws IOException;
 }

@@ -1,15 +1,12 @@
 package com.jav.net.component;
 
+import com.jav.net.base.MultiBuffer;
 import com.jav.net.component.joggle.ICacheComponent;
-import com.jav.net.entity.MultiByteBuffer;
 
-public class DefaultCacheComponentPicker implements ICacheComponent.IClearPolicy {
+public class DefaultCacheComponentPicker implements ICacheComponent.IClearPolicy<MultiBuffer> {
 
     @Override
-    public void clear(Object data) {
-        if (data instanceof MultiByteBuffer) {
-            MultiByteBuffer buffer = (MultiByteBuffer) data;
-            buffer.release();
-        }
+    public void clear(MultiBuffer data) {
+        data.release();
     }
 }

@@ -3,10 +3,11 @@ package com.jav.net.nio;
 
 import com.jav.common.log.LogDog;
 import com.jav.common.state.joggle.IControlStateMachine;
+import com.jav.net.base.FactoryContext;
 import com.jav.net.base.NetTaskStatus;
 import com.jav.net.base.joggle.INetTaskComponent;
+import com.jav.net.base.joggle.ISSLComponent;
 import com.jav.net.base.joggle.NetErrorType;
-import com.jav.net.entity.FactoryContext;
 import com.jav.net.ssl.TLSHandler;
 
 import java.io.IOException;
@@ -18,11 +19,9 @@ import java.nio.channels.SocketChannel;
 /**
  * 非阻塞客户端事务,处理net work的生命周期事件
  *
- * @param <T> 网络任务
- * @param <C> 通道对象
  * @author yyz
  */
-public class NioClientWork<T extends NioClientTask, C extends SocketChannel> extends AbsNioNetWork<T, C> {
+public class NioClientWork extends AbsNioNetWork<NioClientTask, SocketChannel> {
 
     protected NioClientWork(FactoryContext context) {
         super(context);
@@ -30,14 +29,17 @@ public class NioClientWork<T extends NioClientTask, C extends SocketChannel> ext
 
     //---------------------------------------------------------------------------------------------------------------
 
-    /**
-     * 创建通道
-     *
-     * @param netTask
-     * @return
-     */
+
+    protected void initSSLConnect(NioClientTask netTask) {
+        if (netTask.isTls()) {
+            ISSLComponent sslFactory = mFactoryContext.getSSLFactory();
+            netTask.onCreateSSLContext(sslFactory);
+        }
+    }
+
+
     @Override
-    protected C onCreateChannel(T netTask) throws IOException {
+    protected SocketChannel onCreateChannel(NioClientTask netTask) throws IOException {
         InetSocketAddress address = new InetSocketAddress(netTask.getHost(), netTask.getPort());
         SocketChannel channel = SocketChannel.open();
         channel.configureBlocking(false);
@@ -48,18 +50,18 @@ public class NioClientWork<T extends NioClientTask, C extends SocketChannel> ext
         netTask.onConfigChannel(channel);
         channel.connect(address);
         netTask.setChannel(channel);
-        return (C) channel;
+        return channel;
     }
 
     @Override
-    protected void onInitChannel(T netTask, C channel) throws IOException {
+    protected void onInitChannel(NioClientTask netTask, SocketChannel channel) throws IOException {
         if (channel.isBlocking()) {
             // 设置为非阻塞
             channel.configureBlocking(false);
         }
     }
 
-    protected void registerEvent(T netTask, C channel) throws IOException {
+    protected void registerEvent(NioClientTask netTask, SocketChannel channel) throws IOException {
         initSSLConnect(netTask);
         SelectionKey selectionKey = channel.register(mSelector, SelectionKey.OP_READ, netTask);
         netTask.setSelectionKey(selectionKey);
@@ -68,7 +70,7 @@ public class NioClientWork<T extends NioClientTask, C extends SocketChannel> ext
     }
 
     @Override
-    protected void onRegisterChannel(T netTask, C channel) throws IOException {
+    protected void onRegisterChannel(NioClientTask netTask, SocketChannel channel) throws IOException {
         if (channel.isConnected()) {
             registerEvent(netTask, channel);
         } else {
@@ -83,14 +85,14 @@ public class NioClientWork<T extends NioClientTask, C extends SocketChannel> ext
         if (channel == null) {
             return;
         }
-        T netTask = (T) key.attachment();
+        NioClientTask netTask = (NioClientTask) key.attachment();
         try {
             boolean isConnect = channel.finishConnect();
             if (isConnect) {
-                registerEvent(netTask, (C) channel);
+                registerEvent(netTask, channel);
             } else {
                 // 连接失败，则结束任务
-                INetTaskComponent taskFactory = mFactoryContext.getNetTaskComponent();
+                INetTaskComponent<NioClientTask> taskFactory = mFactoryContext.getNetTaskComponent();
                 taskFactory.addUnExecTask(netTask);
                 LogDog.e("## NioClientWork onConnectEvent task fails !!!");
             }
@@ -108,7 +110,7 @@ public class NioClientWork<T extends NioClientTask, C extends SocketChannel> ext
         if (channel == null) {
             return;
         }
-        T netTask = (T) key.attachment();
+        NioClientTask netTask = (NioClientTask) key.attachment();
         NioReceiver receive = netTask.getReceiver();
         if (receive != null) {
             try {
@@ -125,7 +127,7 @@ public class NioClientWork<T extends NioClientTask, C extends SocketChannel> ext
         if (channel == null) {
             return;
         }
-        T netTask = (T) key.attachment();
+        NioClientTask netTask = (NioClientTask) key.attachment();
         NioSender sender = netTask.getSender();
         if (sender != null) {
             try {
@@ -137,17 +139,48 @@ public class NioClientWork<T extends NioClientTask, C extends SocketChannel> ext
     }
 
 
-    /**
-     * 准备断开链接回调
-     *
-     * @param netTask 网络请求任务
-     */
     @Override
-    protected void onDisconnectTask(T netTask) {
-        super.onDisconnectTask(netTask);
-        TLSHandler tlsHandler = netTask.getTlsHandler();
-        if (tlsHandler != null) {
-            tlsHandler.release();
+    public boolean onDisconnectTask(NioClientTask netTask) {
+        try {
+            netTask.onCloseChannel();
+        } catch (Throwable e) {
+            e.printStackTrace();
+        } finally {
+            if (netTask.getSelectionKey() != null) {
+                try {
+                    netTask.getSelectionKey().cancel();
+                } catch (Throwable e) {
+                    e.printStackTrace();
+                }
+            }
+            if (netTask.getChannel() != null) {
+                try {
+                    netTask.getChannel().shutdownOutput();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                try {
+                    netTask.getChannel().shutdownInput();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                try {
+                    netTask.getChannel().close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            TLSHandler tlsHandler = netTask.getTlsHandler();
+            if (tlsHandler != null) {
+                tlsHandler.release();
+            }
+        }
+        try {
+            netTask.onRecovery();
+        } catch (Throwable e) {
+            e.printStackTrace();
+        } finally {
+            return true;
         }
     }
 

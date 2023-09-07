@@ -2,9 +2,8 @@ package com.jav.net.security.channel;
 
 
 import com.jav.common.log.LogDog;
-import com.jav.common.util.NotRetLock;
 import com.jav.net.base.joggle.INetTaskComponent;
-import com.jav.net.nio.NioBalancedClientFactory;
+import com.jav.net.nio.NioClientFactory;
 import com.jav.net.nio.NioClientTask;
 import com.jav.net.nio.NioServerFactory;
 import com.jav.net.security.channel.base.AbsSecurityServer;
@@ -37,10 +36,6 @@ public class SecurityChannelBoot {
      */
     private volatile boolean mIsInit = false;
 
-    /**
-     * 是否已经链接服务
-     */
-    private volatile boolean mIsConnect = false;
 
     /**
      * 客户端通道集合
@@ -50,7 +45,7 @@ public class SecurityChannelBoot {
     /**
      * socket客户端通信
      */
-    private NioBalancedClientFactory mClientFactory;
+    private NioClientFactory mClientFactory;
 
     /**
      * socket服务端通信
@@ -65,12 +60,16 @@ public class SecurityChannelBoot {
     /**
      * 不可重入锁
      */
-    private NotRetLock mLock;
+    private final Object mLock = new Object() {
+        @Override
+        public int hashCode() {
+            return (int) System.nanoTime();
+        }
+    };
 
 
     private SecurityChannelBoot() {
         mClientChanelList = new ArrayList<>();
-        mLock = new NotRetLock();
     }
 
     private static final class InnerClass {
@@ -84,12 +83,9 @@ public class SecurityChannelBoot {
     /**
      * 切换安全服务
      */
-    private ISecurityChannelChangeListener mChangeListener = new ISecurityChannelChangeListener() {
-        @Override
-        public void onRemoteLowLoadServerConnect(String lowLoadHost, int lowLoadPort) {
-            //链接低负载的服务
-            resetConnectSecurityServer(lowLoadHost, lowLoadPort);
-        }
+    private final ISecurityChannelChangeListener mChangeListener = (lowLoadHost, lowLoadPort) -> {
+        //链接低负载的服务
+        resetConnectSecurityServer(lowLoadHost, lowLoadPort);
     };
 
 
@@ -114,21 +110,26 @@ public class SecurityChannelBoot {
         SecurityChannelClient channelClient = mClientChanelList.get(mChannelIndex);
         SecurityClientChanelMeter chanelMeter = channelClient.getChanelMeter();
         if (chanelMeter.getCruStatus() == ChannelStatus.INVALID) {
+            LogDog.w("@@ channel is INVALID , need new channel !!!");
             mClientChanelList.remove(channelClient);
             mChannelIndex = 0;
             SecurityChannelClient newChannelClient = createChannel();
             if (newChannelClient == null) {
                 return null;
             }
-            //如果当前的通道
-            ISecurityChannelChangeListener changeListener = chanelMeter.getmChannelChangeListener();
+            //如果当前的主通道，配置主通道的监听
+            ISecurityChannelChangeListener changeListener = chanelMeter.getChannelChangeListener();
             chanelMeter = newChannelClient.getChanelMeter();
             chanelMeter.setChannelChangeListener(changeListener);
+
+            INetTaskComponent<NioClientTask> container = mClientFactory.getNetTaskComponent();
+            container.addExecTask(newChannelClient);
         }
         mChannelIndex++;
         if (mChannelIndex == mContext.getChannelNumber()) {
             mChannelIndex = 0;
         }
+        LogDog.d("@@ chose channel index = " + mChannelIndex);
         return chanelMeter;
     }
 
@@ -143,10 +144,8 @@ public class SecurityChannelBoot {
         }
         SecurityChannelClient channelClient = new SecurityChannelClient(mContext);
         channelClient.setAddress(mContext.getConnectHost(), mContext.getConnectPort());
-        INetTaskComponent<NioClientTask> container = mClientFactory.getNetTaskComponent();
-        container.addExecTask(channelClient);
         mClientChanelList.add(channelClient);
-        LogDog.d("## connect security host = " + mContext.getConnectHost() + ":" + mContext.getConnectPort());
+        LogDog.d("@@ connect security host = " + mContext.getConnectHost() + ":" + mContext.getConnectPort());
         return channelClient;
     }
 
@@ -155,37 +154,40 @@ public class SecurityChannelBoot {
      * 连接安全服务端
      */
     public void startConnectSecurityServer() {
-        if (mIsConnect) {
+        if (mClientFactory != null) {
             return;
         }
+        mClientFactory = new NioClientFactory();
+        mClientFactory.open();
+
         for (int count = 0; count < mContext.getChannelNumber(); count++) {
             SecurityChannelClient channelClient = createChannel();
-            if (count == 0 && channelClient != null) {
+            if (channelClient == null) {
+                continue;
+            }
+            if (count == 0) {
                 //只给第一个通道配置监听
                 SecurityClientChanelMeter clientMeter = channelClient.getChanelMeter();
                 clientMeter.setChannelChangeListener(mChangeListener);
             }
+            INetTaskComponent<NioClientTask> container = mClientFactory.getNetTaskComponent();
+            container.addExecTask(channelClient);
         }
-        mIsConnect = true;
     }
 
-    /**
-     * 初始化客户端链接
-     */
-    private void initClientFactory() {
-        mClientFactory = new NioBalancedClientFactory(WORK_COUNT);
-        mClientFactory.open();
-    }
 
     /**
      * 启动安全服务
      */
     public void startupSecurityServer() {
+        if (mServerFactory != null) {
+            return;
+        }
+        mServerFactory = new NioServerFactory();
+        mServerFactory.open();
         List<AbsSecurityServer> serverArray = mContext.getSecurityServer();
         if (serverArray != null) {
             // 开启主服务
-            mServerFactory = new NioServerFactory();
-            mServerFactory.open();
             for (AbsSecurityServer server : serverArray) {
                 server.init(mContext.isEnableIpBlack());
                 mServerFactory.getNetTaskComponent().addExecTask(server);
@@ -205,7 +207,7 @@ public class SecurityChannelBoot {
         for (SecurityChannelClient client : mClientChanelList) {
             mClientFactory.getNetTaskComponent().addUnExecTask(client);
         }
-        LogDog.w("## resetConnectSecurityServer lowLoadHost:" + host + ":" + port);
+        LogDog.w("@@ resetConnectSecurityServer lowLoadHost:" + host + ":" + port);
     }
 
 
@@ -216,10 +218,6 @@ public class SecurityChannelBoot {
      */
     public void init(SecurityChannelContext context) {
         mContext = context;
-        if (mIsInit) {
-            release();
-        }
-        initClientFactory();
         mIsInit = true;
     }
 
@@ -234,28 +232,27 @@ public class SecurityChannelBoot {
         if (listener == null || !mIsInit || mContext.isServerMode()) {
             return;
         }
-        NotRetLock.NotRetLockKey lockKey = mLock.lock();
-        try {
-            for (SecurityChannelClient client : mClientChanelList) {
-                SecurityClientChanelMeter meter = client.getChanelMeter();
-                if (meter.getCruStatus() == ChannelStatus.INVALID) {
-                    break;
+        synchronized (mLock) {
+            try {
+                for (SecurityChannelClient client : mClientChanelList) {
+                    SecurityClientChanelMeter meter = client.getChanelMeter();
+                    if (meter.getCruStatus() == ChannelStatus.INVALID) {
+                        break;
+                    }
+                    SecurityClientChannelImage image = meter.findListenerToImage(listener);
+                    if (image != null) {
+                        return;
+                    }
                 }
-                SecurityClientChannelImage image = meter.findListenerToImage(listener);
-                if (image != null) {
-                    mLock.unlock(lockKey);
-                    return;
+                SecurityClientChanelMeter chanelMeter = pollingChannel();
+                if (chanelMeter != null) {
+                    SecurityClientChannelImage image = SecurityClientChannelImage.builderClientChannelImage(listener);
+                    chanelMeter.regClientChannelImage(image);
+                    LogDog.w("@@ register Client Channel !!!" + image);
                 }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-            SecurityClientChanelMeter chanelMeter = pollingChannel();
-            if (chanelMeter != null) {
-                SecurityClientChannelImage image = SecurityClientChannelImage.builderClientChannelImage(listener);
-                chanelMeter.regClientChannelImage(image);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            mLock.unlock(lockKey);
         }
     }
 
@@ -269,33 +266,41 @@ public class SecurityChannelBoot {
         if (image == null || !mIsInit) {
             return;
         }
-        NotRetLock.NotRetLockKey lockKey = mLock.lock();
-        for (SecurityChannelClient client : mClientChanelList) {
-            SecurityClientChanelMeter meter = client.getChanelMeter();
-            if (meter.unRegClientChannelImage(image)) {
-                break;
+        synchronized (mLock) {
+            for (SecurityChannelClient client : mClientChanelList) {
+                SecurityClientChanelMeter meter = client.getChanelMeter();
+                if (meter.unRegClientChannelImage(image)) {
+                    LogDog.w("@@ unRegister Client Channel !!!" + image);
+                    break;
+                }
             }
         }
-        mLock.unlock(lockKey);
     }
+
+    protected void stopChannel(SecurityChannelClient client) {
+        if (client != null && mClientFactory != null) {
+            mClientFactory.getNetTaskComponent().addUnExecTask(client);
+        }
+        LogDog.w("@@ stop Channel !!!");
+    }
+
 
     /**
      * 资源回收，释放通道组
      */
     public void release() {
-        if (mIsInit) {
-            if (mClientFactory != null) {
-                mClientFactory.close();
-            }
-            if (mServerFactory != null) {
-                mServerFactory.close();
-            }
-            NotRetLock.NotRetLockKey lockKey = mLock.lock();
+        if (mClientFactory != null) {
+            mClientFactory.close();
+            mClientFactory = null;
+        }
+        if (mServerFactory != null) {
+            mServerFactory.close();
+            mServerFactory = null;
+        }
+        synchronized (mLock) {
             mChannelIndex = 0;
             mClientChanelList.clear();
-            mLock.unlock(lockKey);
-            mIsInit = false;
         }
-        mIsConnect = false;
+        mIsInit = false;
     }
 }

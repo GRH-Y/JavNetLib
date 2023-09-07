@@ -1,7 +1,8 @@
 package com.jav.net.nio;
 
+import com.jav.net.base.FactoryContext;
+import com.jav.net.base.joggle.ISSLComponent;
 import com.jav.net.base.joggle.NetErrorType;
-import com.jav.net.entity.FactoryContext;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -14,30 +15,34 @@ import java.nio.channels.SocketChannel;
 /**
  * nio 服务端的事物
  *
- * @param <T> 服务端的对象类型
- * @param <C> 服务端的通道类型
  * @author yyz
  */
-public class NioServerWork<T extends NioServerTask, C extends ServerSocketChannel> extends AbsNioNetWork<T, C> {
+public class NioServerWork extends AbsNioNetWork<NioServerTask, ServerSocketChannel> {
 
     protected NioServerWork(FactoryContext context) {
         super(context);
     }
 
+    protected void initSSLConnect(NioServerTask netTask) {
+        if (netTask.isTls()) {
+            ISSLComponent sslFactory = mFactoryContext.getSSLFactory();
+            netTask.onCreateSSLContext(sslFactory);
+        }
+    }
 
     @Override
-    protected C onCreateChannel(T netTask) throws IOException {
+    protected ServerSocketChannel onCreateChannel(NioServerTask netTask) throws IOException {
         ServerSocketChannel channel = ServerSocketChannel.open();
         channel.configureBlocking(false);
         channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
         netTask.onConfigChannel(channel);
         channel.bind(new InetSocketAddress(netTask.getHost(), netTask.getPort()), netTask.getMaxConnect());
         netTask.setChannel(channel);
-        return (C) channel;
+        return channel;
     }
 
     @Override
-    protected void onInitChannel(T netTask, C channel) throws IOException {
+    protected void onInitChannel(NioServerTask netTask, ServerSocketChannel channel) throws IOException {
         if (!channel.isOpen() && channel.isRegistered()) {
             throw new IllegalStateException("channel is unavailable !!! ");
         }
@@ -54,7 +59,7 @@ public class NioServerWork<T extends NioServerTask, C extends ServerSocketChanne
     }
 
     @Override
-    protected void onRegisterChannel(T netTask, C channel) throws ClosedChannelException {
+    protected void onRegisterChannel(NioServerTask netTask, ServerSocketChannel channel) throws ClosedChannelException {
         // 注册监听链接事件
         SelectionKey selectionKey = channel.register(mSelector, SelectionKey.OP_ACCEPT, netTask);
         netTask.setSelectionKey(selectionKey);
@@ -66,7 +71,7 @@ public class NioServerWork<T extends NioServerTask, C extends ServerSocketChanne
         if (serverSocketChannel == null) {
             return;
         }
-        T netTask = (T) key.attachment();
+        NioServerTask netTask = (NioServerTask) key.attachment();
         try {
             SocketChannel channel = serverSocketChannel.accept();
             netTask.onAcceptServerChannel(channel);

@@ -19,7 +19,7 @@ public enum ActivityCode {
      */
     KEEP((byte) 8);
 
-    private byte mCode;
+    private final byte mCode;
 
     ActivityCode(byte code) {
         mCode = code;

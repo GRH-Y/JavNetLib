@@ -1,7 +1,7 @@
 package com.jav.net.aio;
 
-import com.jav.net.base.AbsNetEngine;
 import com.jav.net.base.AbsNetFactory;
+import com.jav.net.base.BaseNetEngine;
 import com.jav.net.base.BaseNetWork;
 import com.jav.net.base.joggle.INetFactory;
 import com.jav.net.base.joggle.ISSLComponent;
@@ -13,7 +13,7 @@ public class AioServerFactory extends AbsNetFactory<AioServerTask> {
         public static final AioServerFactory sFactory = new AioServerFactory();
     }
 
-    public static synchronized INetFactory getFactory() {
+    public static synchronized INetFactory<AioServerTask> getFactory() {
         return InnerClass.sFactory;
     }
 
@@ -22,7 +22,7 @@ public class AioServerFactory extends AbsNetFactory<AioServerTask> {
     }
 
     @Override
-    protected AbsNetEngine initNetEngine() {
+    protected BaseNetEngine initNetEngine() {
         return new AioEngine(mFactoryContext);
     }
 

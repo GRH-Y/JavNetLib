@@ -27,5 +27,4 @@ public class ConstantCode {
     public static final byte REP_EXCEPTION_CODE = 64;
 
 
-
 }

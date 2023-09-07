@@ -3,7 +3,6 @@ package com.jav.net.base;
 import com.jav.net.base.joggle.INetFactory;
 import com.jav.net.base.joggle.INetTaskComponent;
 import com.jav.net.base.joggle.ISSLComponent;
-import com.jav.net.entity.FactoryContext;
 
 /**
  * 复用的工厂
@@ -32,7 +31,7 @@ public abstract class AbsNetFactory<T extends BaseNetTask> implements INetFactor
         }
         mFactoryContext.setNetWork(netWork);
 
-        AbsNetEngine netEngine = initNetEngine();
+        BaseNetEngine netEngine = initNetEngine();
         if (netEngine == null) {
             throw new IllegalStateException("initNetEngine() This method returns value can not be null");
         }
@@ -52,7 +51,7 @@ public abstract class AbsNetFactory<T extends BaseNetTask> implements INetFactor
      *
      * @return 返回实例
      */
-    abstract protected AbsNetEngine initNetEngine();
+    abstract protected BaseNetEngine initNetEngine();
 
     /**
      * 初始化网络事物，处理网络任务的周期事件
@@ -99,7 +98,7 @@ public abstract class AbsNetFactory<T extends BaseNetTask> implements INetFactor
 
     @Override
     public void close() {
-        AbsNetEngine engine = mFactoryContext.getNetEngine();
+        BaseNetEngine engine = mFactoryContext.getNetEngine();
         if (engine != null) {
             engine.stopEngine();
         }

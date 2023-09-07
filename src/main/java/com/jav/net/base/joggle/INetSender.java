@@ -13,7 +13,7 @@ public interface INetSender<T> {
      *
      * @param feedback
      */
-    void setSenderFeedback(ISenderFeedback feedback);
+    void setSenderFeedback(ISenderFeedback<T> feedback);
 
     /**
      * 发送数据

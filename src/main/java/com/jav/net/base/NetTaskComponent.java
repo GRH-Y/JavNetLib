@@ -3,7 +3,6 @@ package com.jav.net.base;
 import com.jav.common.log.LogDog;
 import com.jav.common.state.joggle.IControlStateMachine;
 import com.jav.net.base.joggle.INetTaskComponent;
-import com.jav.net.entity.FactoryContext;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -37,6 +36,7 @@ public class NetTaskComponent<T extends BaseNetTask> implements INetTaskComponen
         mCreate = context;
         mConnectCache = new ConcurrentLinkedQueue<>();
         mDestroyCache = new ConcurrentLinkedQueue<>();
+        LogDog.w("------> new NetTaskComponent " + this);
     }
 
     public void setDestroyFactoryContext(FactoryContext destroy) {
@@ -54,7 +54,7 @@ public class NetTaskComponent<T extends BaseNetTask> implements INetTaskComponen
             LogDog.e("## addExecTask add task fails, status code = " + stateMachine.getState());
             return false;
         }
-        AbsNetEngine netEngine = mCreate.getNetEngine();
+        BaseNetEngine netEngine = mCreate.getNetEngine();
         if (netEngine.isEngineStop()) {
             LogDog.e("## addExecTask netEngine not running !");
             return false;
@@ -70,8 +70,8 @@ public class NetTaskComponent<T extends BaseNetTask> implements INetTaskComponen
         ret = mConnectCache.offer(task);
         if (ret) {
             netEngine.resumeEngine();
+//            LogDog.i("## addExecTask  task = " + task + " component = " + this);
         } else {
-            stateMachine.updateState(NetTaskStatus.LOAD, NetTaskStatus.INVALID);
             LogDog.e("## addExecTask offer fails !");
         }
         return ret;
@@ -89,7 +89,7 @@ public class NetTaskComponent<T extends BaseNetTask> implements INetTaskComponen
             LogDog.e("## addUnExecTask add task fails, status code = " + stateMachine.getState());
             return false;
         }
-        AbsNetEngine netEngine;
+        BaseNetEngine netEngine;
         if (mDestroy == null) {
             netEngine = mCreate.getNetEngine();
         } else {
@@ -100,32 +100,31 @@ public class NetTaskComponent<T extends BaseNetTask> implements INetTaskComponen
             return false;
         }
         boolean ret;
-        synchronized (mDestroyCache) {
-            if (mDestroyCache.contains(task)) {
-                LogDog.e("## addUnExecTask destroy cache repeat , status = " + stateMachine.getState() + " task = " + task);
+        if (mDestroyCache.contains(task)) {
+            LogDog.e("## addUnExecTask destroy cache repeat , status = " + stateMachine.getState() + " task = " + task);
+            return false;
+        }
+        // attach FINISHING
+        for (; !stateMachine.isAttachState(NetTaskStatus.FINISHING); ) {
+            int state = stateMachine.getState();
+            if (state == NetTaskStatus.INVALID) {
+                // 其他线程修改了状态
                 return false;
-            }
-            // attach FINISHING
-            for (; !stateMachine.isAttachState(NetTaskStatus.FINISHING); ) {
-                int state = stateMachine.getState();
-                if (state == NetTaskStatus.INVALID) {
-                    // 其他线程修改了状态
-                    return false;
-                } else if (state == NetTaskStatus.LOAD) {
-                    //任务状态还没开始执行，直接切换为INVALID状态
-                    if (stateMachine.updateState(NetTaskStatus.LOAD, NetTaskStatus.INVALID)) {
-                        return true;
-                    }
-                } else {
-                    if (stateMachine.attachState(NetTaskStatus.FINISHING)) {
-                        break;
-                    }
+            } else if (state == NetTaskStatus.LOAD) {
+                //任务状态还没开始执行，直接切换为INVALID状态
+                if (stateMachine.updateState(NetTaskStatus.LOAD, NetTaskStatus.INVALID)) {
+                    return true;
+                }
+            } else {
+                if (stateMachine.attachState(NetTaskStatus.FINISHING)) {
+                    break;
                 }
             }
-            ret = mDestroyCache.offer(task);
-            if (ret) {
-                netEngine.resumeEngine();
-            }
+        }
+        ret = mDestroyCache.offer(task);
+        if (ret) {
+            netEngine.resumeEngine();
+//            LogDog.i("## addUnExecTask  task = " + task + " netEngine = " + netEngine + " component = " + this);
         }
         return ret;
     }

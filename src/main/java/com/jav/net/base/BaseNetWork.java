@@ -2,7 +2,6 @@ package com.jav.net.base;
 
 import com.jav.common.state.joggle.IControlStateMachine;
 import com.jav.net.base.joggle.INetTaskComponent;
-import com.jav.net.entity.FactoryContext;
 
 /**
  * 基本网络事务,提供事务的生命周期回调方法
@@ -15,7 +14,8 @@ import com.jav.net.entity.FactoryContext;
  * @param <T>
  * @author yyz
  */
-public class BaseNetWork<T extends BaseNetTask> {
+public abstract class BaseNetWork<T extends BaseNetTask> {
+
 
     protected FactoryContext mFactoryContext;
 
@@ -35,13 +35,12 @@ public class BaseNetWork<T extends BaseNetTask> {
     /**
      * 初始化操作,engine触发执行
      */
-    protected void init() {
-    }
+    abstract public void onWorkBegin();
 
     /**
      * 检查要链接任务,engine触发执行
      */
-    protected void onCreateTask() {
+    public void onConnectNetTaskBegin() {
         // 检测是否有新的任务添加
         INetTaskComponent<T> taskFactory = mFactoryContext.getNetTaskComponent();
         T netTask = taskFactory.pollConnectTask();
@@ -59,48 +58,30 @@ public class BaseNetWork<T extends BaseNetTask> {
                 }
             }
             // LogDog.w("## onCreateTask task state = " + stateMachine.getState() + " task = " + netTask);
-            createTaskImp(netTask);
+            onConnectTask(netTask);
         }
     }
-
-    protected void createTaskImp(T netTask) {
-        onConnectTask(netTask);
-    }
-
-
-    /**
-     * 执行事件,engine触发执行
-     */
-    protected void onSelectEvent() {
-    }
-
 
     /**
      * 检查要移除任务,engine触发执行
      */
-    protected void onDestroyTask() {
+    public void onDisconnectNetTaskEnd() {
         INetTaskComponent<T> taskFactory = mFactoryContext.getNetTaskComponent();
         T netTask = taskFactory.pollDestroyTask();
         if (netTask != null) {
-            destroyTaskImp(netTask);
+            IControlStateMachine<Integer> stateMachine = netTask.getStatusMachine();
+            boolean ret = onDisconnectTask(netTask);
+            if (ret) {
+                stateMachine.updateState(stateMachine.getState(), NetTaskStatus.INVALID);
+            }
         }
-    }
-
-    protected void destroyTaskImp(T netTask) {
-        IControlStateMachine<Integer> stateMachine = netTask.getStatusMachine();
-        stateMachine.updateState(stateMachine.getState(), NetTaskStatus.FINISHING);
-        onDisconnectTask(netTask);
-        stateMachine.updateState(NetTaskStatus.FINISHING, NetTaskStatus.INVALID);
-        onRecoveryTask(netTask);
     }
 
 
     /**
      * 销毁所有任务,engine触发执行
      */
-    protected void onDestroyTaskAll() {
-    }
-
+    abstract public void onWorkEnd();
 
     //----------------------------------- on -------------------------------------------------
 
@@ -109,28 +90,15 @@ public class BaseNetWork<T extends BaseNetTask> {
      *
      * @param netTask 网络请求任务
      */
-    protected void onConnectTask(T netTask) {
-    }
+    abstract public void onConnectTask(T netTask);
 
 
     /**
      * 准备断开链接回调
      *
      * @param netTask 网络请求任务
+     * @return 返回true则断开连接成功
      */
-    protected void onDisconnectTask(T netTask) {
-    }
+    abstract public boolean onDisconnectTask(T netTask);
 
-    /**
-     * 断开链接后回调
-     *
-     * @param netTask 网络请求任务
-     */
-    protected void onRecoveryTask(T netTask) {
-        try {
-            netTask.onRecovery();
-        } catch (Throwable e) {
-            e.printStackTrace();
-        }
-    }
 }

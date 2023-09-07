@@ -1,7 +1,7 @@
 package com.jav.net.xhttp.entity;
 
 
-import com.jav.net.entity.RequestMode;
+import com.jav.net.base.RequestMode;
 import com.jav.net.xhttp.utils.XUrlMedia;
 
 import java.util.LinkedHashMap;
@@ -37,7 +37,7 @@ public class XRequest {
     /**
      * 回调接口返回结果的值
      */
-    private Object mResultType = null;
+    private Class mResultType = null;
     /**
      * 接口回调类
      */
@@ -74,7 +74,7 @@ public class XRequest {
         this.mCallBackTarget = callBackTarget;
     }
 
-    public Object getResultType() {
+    public Class getResultType() {
         return mResultType;
     }
 
@@ -130,7 +130,7 @@ public class XRequest {
         this.mProcessMethod = processMethod;
     }
 
-    public void setResultType(Object resultType) {
+    public void setResultType(Class resultType) {
         this.mResultType = resultType;
     }
 

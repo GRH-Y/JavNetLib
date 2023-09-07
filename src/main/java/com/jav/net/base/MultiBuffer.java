@@ -1,4 +1,4 @@
-package com.jav.net.entity;
+package com.jav.net.base;
 
 
 import java.nio.ByteBuffer;
@@ -10,7 +10,7 @@ import java.util.List;
  *
  * @author yyz
  */
-public class MultiByteBuffer {
+public class MultiBuffer {
 
     private boolean mIsDirect;
 
@@ -55,7 +55,7 @@ public class MultiByteBuffer {
      */
     private int mLendCount = 0;
 
-    public MultiByteBuffer(byte[] data) {
+    public MultiBuffer(byte[] data) {
         mBufList = new ArrayList<>();
         mBufSize = data.length;
         mOffset = mBufSize;
@@ -66,7 +66,7 @@ public class MultiByteBuffer {
         mLimit = mBufSize;
     }
 
-    public MultiByteBuffer(ByteBuffer data) {
+    public MultiBuffer(ByteBuffer data) {
         mBufList = new ArrayList<>();
         data.position(data.limit());
         mBufSize = data.limit();
@@ -74,11 +74,11 @@ public class MultiByteBuffer {
         mBufList.add(data);
     }
 
-    public MultiByteBuffer() {
+    public MultiBuffer() {
         this(true, DEFAULT_SIZE);
     }
 
-    public MultiByteBuffer(boolean isDirect, int bufSize) {
+    public MultiBuffer(boolean isDirect, int bufSize) {
         mBufList = new ArrayList<>();
         this.mBufSize = bufSize;
         mIsDirect = isDirect;
@@ -86,6 +86,9 @@ public class MultiByteBuffer {
     }
 
 
+    /**
+     * 扩容缓存
+     */
     public void appendBuffer() {
         synchronized (mBufList) {
             if (mIsDirect) {
@@ -104,8 +107,8 @@ public class MultiByteBuffer {
      *
      * @return
      */
-    public final ByteBuffer[] getUseBuf() {
-        return getUseBuf(false);
+    public final ByteBuffer[] getDirtyBuf() {
+        return getDirtyBuf(false);
     }
 
     /**
@@ -114,7 +117,7 @@ public class MultiByteBuffer {
      * @param isFlip 为true则对每个ByteBuffer进行flip调用
      * @return
      */
-    public final ByteBuffer[] getUseBuf(boolean isFlip) {
+    public final ByteBuffer[] getDirtyBuf(boolean isFlip) {
         synchronized (mBufList) {
             if (mLendCount > 0) {
                 throw new IllegalStateException("## getUseBuf buf is use ing !!!");
@@ -135,11 +138,11 @@ public class MultiByteBuffer {
 
 
     /**
-     * 获取所有的buf(没有条件限制)
+     * 获取所有的buf
      *
      * @return
      */
-    public final ByteBuffer[] getAllBuf() {
+    public final ByteBuffer[] rentAllBuf() {
         synchronized (mBufList) {
             if (mLendCount > 0) {
                 throw new IllegalStateException("## getAllBuf buf is use ing !!!");
@@ -156,7 +159,7 @@ public class MultiByteBuffer {
      *
      * @return
      */
-    public final ByteBuffer getSingleBuf() {
+    public final ByteBuffer rentSingleBuf() {
         synchronized (mBufList) {
             if (mLendCount > 0) {
                 throw new IllegalStateException("## getLendBuf buf is use ing !!!");
@@ -167,21 +170,21 @@ public class MultiByteBuffer {
     }
 
     /**
-     * 获取暂存的buf
+     * 获取冻结的buf
      *
      * @return
      */
-    public ByteBuffer[] getTmpBuf() {
+    public ByteBuffer[] getFreezeBuf() {
         return mTmpCacheBuf;
     }
 
 
     /**
-     * 暂存buf
+     * 冻结buf
      *
      * @param buffer
      */
-    public final void setTmpBuf(ByteBuffer[] buffer) {
+    public final void setFreezeBuf(ByteBuffer[] buffer) {
         this.mTmpCacheBuf = buffer;
     }
 
@@ -191,7 +194,7 @@ public class MultiByteBuffer {
      *
      * @param buffer
      */
-    public final void setBackBuf(ByteBuffer... buffer) {
+    public final void restoredBuf(ByteBuffer... buffer) {
         synchronized (mBufList) {
             if (mLendCount == 0 || buffer == null || buffer.length == 0 || mLendCount != buffer.length) {
                 throw new IllegalStateException("## setBackBuf the number of returned buf is inconsistent");
@@ -204,18 +207,11 @@ public class MultiByteBuffer {
             }
             mLendCount = 0;
             for (int index = 0; index < buffer.length; index++) {
+                mOffset = buffer[index].position();
+                mBufIndex = index;
                 if (buffer[index].hasRemaining()) {
                     // buf没有存满则认为最后的buf
-                    mOffset = buffer[index].position();
-                    mBufIndex = index;
                     break;
-                } else {
-                    if (index == buffer.length - 1) {
-                        // 最后的buf存满，则扩容
-                        appendBuffer();
-                        mBufIndex++;
-                        mOffset = 0;
-                    }
                 }
             }
         }
@@ -226,7 +222,7 @@ public class MultiByteBuffer {
      *
      * @return 把数据转换成byte数据返回
      */
-    public final byte[] array() {
+    public final byte[] asByte() {
         synchronized (mBufList) {
             if (mLendCount > 0) {
                 throw new IllegalStateException("currently in borrowing state,please call setBackBuf() !!!");
@@ -330,7 +326,7 @@ public class MultiByteBuffer {
      */
     public final boolean isFull() {
         ByteBuffer buffer = mBufList.get(mBufIndex);
-        return buffer.hasRemaining() && mBufIndex == mBufList.size() - 1;
+        return !buffer.hasRemaining() && mBufIndex == mBufList.size() - 1;
     }
 
 

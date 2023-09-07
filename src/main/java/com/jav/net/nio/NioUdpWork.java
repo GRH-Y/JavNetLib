@@ -2,9 +2,9 @@ package com.jav.net.nio;
 
 
 import com.jav.common.state.joggle.IControlStateMachine;
+import com.jav.net.base.FactoryContext;
 import com.jav.net.base.NetTaskStatus;
 import com.jav.net.base.joggle.NetErrorType;
-import com.jav.net.entity.FactoryContext;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -13,14 +13,19 @@ import java.net.StandardSocketOptions;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 
-public class NioUdpWork<T extends NioUdpTask, C extends DatagramChannel> extends AbsNioNetWork<T, C> {
+public class NioUdpWork extends AbsNioNetWork<NioUdpTask, DatagramChannel> {
+
+    /**
+     * ip协议最大的包
+     */
+    private static final int MAX_IP_PACKAGE = 65536;
 
     public NioUdpWork(FactoryContext intent) {
         super(intent);
     }
 
     @Override
-    protected C onCreateChannel(T netTask) throws IOException {
+    protected DatagramChannel onCreateChannel(NioUdpTask netTask) throws IOException {
         DatagramChannel channel;
         if (netTask.isBroadcast()) {
             channel = DatagramChannel.open(StandardProtocolFamily.INET);
@@ -41,6 +46,8 @@ public class NioUdpWork<T extends NioUdpTask, C extends DatagramChannel> extends
          */
         channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
         channel.setOption(StandardSocketOptions.SO_BROADCAST, true);
+        channel.setOption(StandardSocketOptions.SO_RCVBUF, MAX_IP_PACKAGE);
+        channel.setOption(StandardSocketOptions.SO_SNDBUF, MAX_IP_PACKAGE);
         channel.setOption(StandardSocketOptions.IP_MULTICAST_LOOP, false);
         channel.setOption(StandardSocketOptions.IP_MULTICAST_TTL, netTask.getLiveTime().getTtl());
         netTask.onConfigChannel(channel);
@@ -51,11 +58,11 @@ public class NioUdpWork<T extends NioUdpTask, C extends DatagramChannel> extends
             channel.connect(address);
         }
         netTask.setChannel(channel);
-        return (C) channel;
+        return channel;
     }
 
     @Override
-    protected void onInitChannel(T netTask, C channel) throws IOException {
+    protected void onInitChannel(NioUdpTask netTask, DatagramChannel channel) throws IOException {
         if (channel.isBlocking()) {
             // 设置为非阻塞
             channel.configureBlocking(false);
@@ -63,7 +70,7 @@ public class NioUdpWork<T extends NioUdpTask, C extends DatagramChannel> extends
     }
 
     @Override
-    protected void onRegisterChannel(T netTask, C channel) {
+    protected void onRegisterChannel(NioUdpTask netTask, DatagramChannel channel) {
         try {
             SelectionKey selectionKey = channel.register(mSelector, SelectionKey.OP_READ, netTask);
             netTask.setSelectionKey(selectionKey);
@@ -82,7 +89,7 @@ public class NioUdpWork<T extends NioUdpTask, C extends DatagramChannel> extends
         if (channel == null) {
             return;
         }
-        T netTask = (T) key.attachment();
+        NioUdpTask netTask = (NioUdpTask) key.attachment();
         NioUdpReceiver receive = netTask.getReceiver();
         if (receive != null) {
             try {
@@ -99,7 +106,7 @@ public class NioUdpWork<T extends NioUdpTask, C extends DatagramChannel> extends
         if (channel == null) {
             return;
         }
-        T netTask = (T) key.attachment();
+        NioUdpTask netTask = (NioUdpTask) key.attachment();
         NioUdpSender sender = netTask.getSender();
         if (sender != null) {
             try {
@@ -110,33 +117,12 @@ public class NioUdpWork<T extends NioUdpTask, C extends DatagramChannel> extends
         }
     }
 
-    /**
-     * 准备断开链接回调
-     *
-     * @param netTask 网络请求任务
-     */
-    @Override
-    public void onDisconnectTask(T netTask) {
-        try {
-            netTask.onCloseChannel();
-        } catch (Throwable e) {
-            e.printStackTrace();
-        } finally {
-            if (netTask.getChannel() != null) {
-                try {
-                    netTask.getChannel().close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
 
-    protected void hasErrorToUnExecTask(T netTask, Throwable e) {
+    protected void hasErrorToUnExecTask(NioUdpTask netTask, Throwable e) {
 //        INetTaskComponent taskFactory = mFactoryContext.getNetTaskComponent();
 //        taskFactory.addUnExecTask(netTask);
 //        if (!(e instanceof SocketChannelCloseException)) {
-            e.printStackTrace();
+        e.printStackTrace();
 //        }
     }
 }

@@ -24,7 +24,14 @@ public class XHttpsSender extends NioSender {
     }
 
     @Override
-    protected int sendDataImp(ByteBuffer[] buffers) {
+    protected int sendDataImp(Object data) {
+        ByteBuffer[] buffers = null;
+        if (data instanceof ByteBuffer[]) {
+            buffers = (ByteBuffer[]) data;
+        }
+        if (buffers == null) {
+            return SEND_FAIL;
+        }
         try {
             mTLSHandler.wrapAndWrite(mChannel, buffers);
         } catch (Throwable e) {

@@ -1,7 +1,7 @@
 package com.jav.net.nio;
 
 
-import com.jav.net.entity.MultiByteBuffer;
+import com.jav.net.base.MultiBuffer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -13,7 +13,7 @@ import java.nio.channels.SocketChannel;
  *
  * @author yyz
  */
-public class NioSender extends AbsNioCacheNetSender<MultiByteBuffer> {
+public class NioSender extends AbsNioCacheNetSender<MultiBuffer> {
 
     protected SocketChannel mChannel;
 
@@ -26,7 +26,7 @@ public class NioSender extends AbsNioCacheNetSender<MultiByteBuffer> {
     }
 
     @Override
-    public void sendData(MultiByteBuffer data) {
+    public void sendData(MultiBuffer data) {
         if (data == null || data.isClear()) {
             // 当前buf没有内容
             return;
@@ -35,8 +35,15 @@ public class NioSender extends AbsNioCacheNetSender<MultiByteBuffer> {
     }
 
     @Override
-    protected int sendDataImp(ByteBuffer[] buffers) throws IOException {
-        if (mChannel == null || buffers == null || !mChannel.isConnected()) {
+    protected int sendDataImp(Object data) throws IOException {
+        if (mChannel == null || data == null || !mChannel.isConnected()) {
+            return SEND_FAIL;
+        }
+        ByteBuffer[] buffers = null;
+        if (data instanceof ByteBuffer[]) {
+            buffers = (ByteBuffer[]) data;
+        }
+        if (buffers == null) {
             return SEND_FAIL;
         }
         do {
@@ -49,4 +56,14 @@ public class NioSender extends AbsNioCacheNetSender<MultiByteBuffer> {
         } while (hasRemaining(buffers) && mChannel.isConnected());
         return SEND_COMPLETE;
     }
+
+    protected boolean hasRemaining(ByteBuffer[] buffers) {
+        for (ByteBuffer buffer : buffers) {
+            if (buffer.hasRemaining()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

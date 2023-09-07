@@ -2,8 +2,8 @@ package com.jav.net.nio;
 
 
 import com.jav.net.base.AbsNetReceiver;
+import com.jav.net.base.MultiBuffer;
 import com.jav.net.base.SocketChannelCloseException;
-import com.jav.net.entity.MultiByteBuffer;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
@@ -13,7 +13,7 @@ import java.nio.channels.SocketChannel;
  *
  * @author yyz
  */
-public class NioReceiver extends AbsNetReceiver<SocketChannel, MultiByteBuffer> {
+public class NioReceiver extends AbsNetReceiver<SocketChannel, MultiBuffer> {
 
     /**
      * 读取输入流数据
@@ -22,45 +22,46 @@ public class NioReceiver extends AbsNetReceiver<SocketChannel, MultiByteBuffer> 
      */
     @Override
     protected void onReadNetData(SocketChannel channel) throws Throwable {
-        Throwable catchException = null;
-        MultiByteBuffer newBuffer = new MultiByteBuffer();
-
-        try {
-            onReadImp(channel, newBuffer);
-        } catch (Throwable e) {
-            catchException = e;
-        } finally {
-            notifyCallBack(newBuffer, catchException);
-        }
-        if (catchException != null) {
-            throw catchException;
-        }
+        onReadImp(channel);
     }
 
-    protected void onReadImp(SocketChannel channel, MultiByteBuffer newBuffer) throws Throwable {
-        long code;
-        ByteBuffer[] buffer = newBuffer.getAllBuf();
+    protected void onReadImp(SocketChannel channel) throws Throwable {
+        long code = 0;
+        Throwable catchException = null;
+        MultiBuffer multiBuffer = new MultiBuffer();
+        ByteBuffer[] buffer = multiBuffer.rentAllBuf();
         if (buffer == null) {
             throw new RuntimeException("## buf is busy !!!");
         }
         try {
             do {
                 code = channel.read(buffer);
-                if (newBuffer.isFull()) {
-                    newBuffer.setBackBuf(buffer);
-                    buffer = newBuffer.getAllBuf();
+                //buf已用满容量
+                if (multiBuffer.isFull()) {
+                    //归还buf
+                    multiBuffer.restoredBuf(buffer);
+                    //扩容
+                    multiBuffer.appendBuffer();
+                    //再租用buf
+                    buffer = multiBuffer.rentAllBuf();
                 }
             } while (code > 0);
+        } catch (Throwable e) {
+            catchException = e;
         } finally {
-            newBuffer.setBackBuf(buffer);
-            newBuffer.flip();
+            multiBuffer.restoredBuf(buffer);
+            multiBuffer.flip();
+            notifyCallBack(multiBuffer, catchException);
+        }
+        if (catchException != null) {
+            throw catchException;
         }
         if (code < 0) {
             throw new SocketChannelCloseException();
         }
     }
 
-    protected void notifyCallBack(MultiByteBuffer buf, Throwable e) {
+    protected void notifyCallBack(MultiBuffer buf, Throwable e) {
         if (mReceiver != null) {
             if (!buf.isClear()) {
                 mReceiver.onReceiveFullData(buf);

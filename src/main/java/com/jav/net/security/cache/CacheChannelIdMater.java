@@ -1,7 +1,7 @@
 package com.jav.net.security.cache;
 
 import com.jav.common.log.LogDog;
-import com.jav.common.util.NotRetLock;
+import com.jav.net.security.channel.SecurityChannelContext;
 
 import java.io.Serializable;
 import java.util.*;
@@ -19,7 +19,12 @@ public class CacheChannelIdMater {
      */
     private static final int ONE_DAY = 1000 * 60 * 60 * 24;
 
-    private NotRetLock mLock;
+    private final Object mLock = new Object() {
+        @Override
+        public int hashCode() {
+            return (int) System.nanoTime();
+        }
+    };
 
 
     /**
@@ -29,7 +34,6 @@ public class CacheChannelIdMater {
 
         private final List<String> mChannelList = new LinkedList<>();
 
-        private final int mLimitSize = 4;
 
         /**
          * 记录channel访问的当前时间
@@ -45,7 +49,7 @@ public class CacheChannelIdMater {
             if (isValidChannelId(channelId)) {
                 return;
             }
-            if (mChannelList.size() >= mLimitSize) {
+            if (mChannelList.size() >= SecurityChannelContext.MAX_CHANNEL) {
                 String clearChannelId = mChannelList.remove(0);
                 LogDog.w("## channelId cache full size, clear channelId = " + clearChannelId);
             }
@@ -55,6 +59,10 @@ public class CacheChannelIdMater {
         public void reset() {
             mChannelList.clear();
             mTime = System.currentTimeMillis();
+        }
+
+        public void removeChannelId(String channelId) {
+            mChannelList.remove(channelId);
         }
 
         public boolean isValidChannelId(String channelId) {
@@ -76,7 +84,6 @@ public class CacheChannelIdMater {
     }
 
     private CacheChannelIdMater() {
-        mLock = new NotRetLock();
     }
 
     private static class InnerCore {
@@ -94,8 +101,7 @@ public class CacheChannelIdMater {
      * @param channelId
      */
     public void binderChannelIdToMid(String machineId, String channelId) {
-        NotRetLock.NotRetLockKey lockKey = mLock.lock();
-        try {
+        synchronized (mLock) {
             RecordChannel recordChannel = mChannelCache.get(machineId);
             if (recordChannel == null) {
                 recordChannel = new RecordChannel();
@@ -107,8 +113,6 @@ public class CacheChannelIdMater {
                 }
             }
             recordChannel.recodeChannelId(channelId);
-        } finally {
-            mLock.unlock(lockKey);
         }
     }
 
@@ -127,5 +131,22 @@ public class CacheChannelIdMater {
             }
         }
         return false;
+    }
+
+    /**
+     * 作废指定的channelId
+     *
+     * @param channelId
+     */
+    public void repealChannelId(String machineId, String channelId) {
+        if (machineId == null || channelId == null) {
+            return;
+        }
+        synchronized (mLock) {
+            RecordChannel recordChannel = mChannelCache.get(machineId);
+            if (recordChannel != null) {
+                recordChannel.removeChannelId(channelId);
+            }
+        }
     }
 }

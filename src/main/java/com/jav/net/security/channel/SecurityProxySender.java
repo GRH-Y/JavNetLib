@@ -1,6 +1,6 @@
 package com.jav.net.security.channel;
 
-import com.jav.net.entity.MultiByteBuffer;
+import com.jav.net.base.MultiBuffer;
 import com.jav.net.security.channel.base.ConstantCode;
 import com.jav.net.security.channel.joggle.ChannelEncryption;
 import com.jav.net.security.channel.joggle.IChangeEncryptCallBack;
@@ -34,6 +34,14 @@ public class SecurityProxySender extends SecuritySender implements ISecurityProx
         mChannelId = channelId;
     }
 
+    /**
+     * 返回channelId
+     *
+     * @return
+     */
+    public String getChannelId() {
+        return mChannelId;
+    }
 
     /**
      * 客户端向服务端发起init协议请求
@@ -51,7 +59,7 @@ public class SecurityProxySender extends SecuritySender implements ISecurityProx
         initProtocol.setOperateCode(EncodeCode.BASE64.getType());
         ByteBuffer encode = initProtocol.toData(mEncryptComponent);
         changeEncryptCallBack.onChange(changeEncryption);
-        mCoreSender.sendData(new MultiByteBuffer(encode));
+        mCoreSender.sendData(new MultiBuffer(encode));
     }
 
     /**
@@ -67,7 +75,7 @@ public class SecurityProxySender extends SecuritySender implements ISecurityProx
         initProtocol.setOperateCode(repCode);
         initProtocol.setSendData(initData);
         ByteBuffer encode = initProtocol.toData(mEncryptComponent);
-        mCoreSender.sendData(new MultiByteBuffer(encode));
+        mCoreSender.sendData(new MultiBuffer(encode));
     }
 
 
@@ -86,7 +94,7 @@ public class SecurityProxySender extends SecuritySender implements ISecurityProx
         byte operateCode = (byte) (status | TransOperateCode.ADDRESS.getCode());
         connectProtocol.setOperateCode(operateCode);
         ByteBuffer encodeData = connectProtocol.toData(mEncryptComponent);
-        mCoreSender.sendData(new MultiByteBuffer(encodeData));
+        mCoreSender.sendData(new MultiBuffer(encodeData));
     }
 
 
@@ -105,7 +113,7 @@ public class SecurityProxySender extends SecuritySender implements ISecurityProx
         connectProtocol.setOperateCode(TransOperateCode.ADDRESS.getCode());
         connectProtocol.setSendData(address);
         ByteBuffer encodeData = connectProtocol.toData(mEncryptComponent);
-        mCoreSender.sendData(new MultiByteBuffer(encodeData));
+        mCoreSender.sendData(new MultiBuffer(encodeData));
     }
 
     /**
@@ -123,7 +131,7 @@ public class SecurityProxySender extends SecuritySender implements ISecurityProx
         transProtocol.setOperateCode(TransOperateCode.DATA.getCode());
         transProtocol.setSendData(data);
         ByteBuffer encodeData = transProtocol.toData(mEncryptComponent);
-        mCoreSender.sendData(new MultiByteBuffer(encodeData));
+        mCoreSender.sendData(new MultiBuffer(encodeData));
     }
 
     /**
@@ -141,6 +149,6 @@ public class SecurityProxySender extends SecuritySender implements ISecurityProx
         transProtocol.setOperateCode(operateCode);
         transProtocol.setSendData(data);
         ByteBuffer encodeData = transProtocol.toData(mEncryptComponent);
-        mCoreSender.sendData(new MultiByteBuffer(encodeData));
+        mCoreSender.sendData(new MultiBuffer(encodeData));
     }
 }

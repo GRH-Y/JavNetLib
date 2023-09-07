@@ -1,6 +1,6 @@
 package com.jav.net.xhttp;
 
-import com.jav.net.entity.MultiByteBuffer;
+import com.jav.net.base.MultiBuffer;
 import com.jav.net.nio.NioReceiver;
 import com.jav.net.ssl.TLSHandler;
 
@@ -24,24 +24,32 @@ public class XHttpsReceiver extends NioReceiver {
 
 
     @Override
-    protected void onReadImp(SocketChannel channel, MultiByteBuffer newBuffer) throws Throwable {
+    protected void onReadImp(SocketChannel channel) throws Throwable {
         ByteBuffer[] cacheData = null;
+        Throwable catchException = null;
+        MultiBuffer multiBuffer = new MultiBuffer();
         int ret;
         try {
             do {
-                cacheData = newBuffer.getAllBuf();
+                cacheData = multiBuffer.rentAllBuf();
                 ret = mTLSHandler.readAndUnwrap(channel, false, cacheData);
                 if (ret == TLSHandler.NOT_ENOUGH_CAPACITY) {
                     // 解码缓存容量不够，则需要多传byteBuffer
-                    newBuffer.setBackBuf(cacheData);
-                    newBuffer.appendBuffer();
+                    multiBuffer.restoredBuf(cacheData);
+                    multiBuffer.appendBuffer();
+                    cacheData = multiBuffer.rentAllBuf();
                 }
             } while (ret == TLSHandler.NOT_ENOUGH_CAPACITY);
         } catch (Throwable e) {
-            throw e;
+            catchException = e;
         } finally {
-            newBuffer.setBackBuf(cacheData);
-            newBuffer.flip();
+            multiBuffer.restoredBuf(cacheData);
+            multiBuffer.flip();
+            notifyCallBack(multiBuffer, catchException);
+        }
+
+        if (catchException != null) {
+            throw catchException;
         }
     }
 }

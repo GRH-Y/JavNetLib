@@ -1,8 +1,8 @@
 package com.jav.net.nio;
 
+import com.jav.net.base.FactoryContext;
 import com.jav.net.base.NetTaskComponent;
 import com.jav.net.base.joggle.INetTaskComponent;
-import com.jav.net.entity.FactoryContext;
 
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -15,7 +15,7 @@ import java.util.List;
  *
  * @author yyz
  */
-public class NioBalancedNetWork<T extends NioClientTask, C extends SocketChannel> extends NioClientWork<T, C> {
+public class NioBalancedNetWork extends NioClientWork {
 
     private List<NioReadWriteNetWork> mRWNetWorkList;
 
@@ -54,8 +54,8 @@ public class NioBalancedNetWork<T extends NioClientTask, C extends SocketChannel
     }
 
     @Override
-    protected void init() {
-        super.init();
+    public void onWorkBegin() {
+        super.onWorkBegin();
         initRWNetWork(mConfigWorkCount);
     }
 
@@ -91,7 +91,7 @@ public class NioBalancedNetWork<T extends NioClientTask, C extends SocketChannel
     private void initRWNetWork(int workCount) {
         // 设置监听主Component，用于唤醒clear engine处理移除task
         FactoryContext mainContext = getFactoryContext();
-        NetTaskComponent mainComponent = mainContext.getNetTaskComponent();
+        NetTaskComponent<NioClientTask> mainComponent = mainContext.getNetTaskComponent();
 
         FactoryContext clearContext = new FactoryContext();
         clearContext.setNetTaskComponent(mainComponent);
@@ -104,16 +104,16 @@ public class NioBalancedNetWork<T extends NioClientTask, C extends SocketChannel
             FactoryContext rwContext = new FactoryContext();
             rwContext.setNetTaskComponent(mainComponent);
             rwContext.setSSLFactory(mainContext.getSSLFactory());
-            NioReadWriteNetWork netWork = new NioReadWriteNetWork<>(rwContext);
+            NioReadWriteNetWork netWork = new NioReadWriteNetWork(rwContext);
             rwContext.setNetWork(netWork);
-            netWork.init();
+            netWork.onWorkBegin();
             mRWNetWorkList.add(netWork);
         }
     }
 
 
     @Override
-    protected void registerEvent(T netTask, C channel) {
+    protected void registerEvent(NioClientTask netTask, SocketChannel channel) {
         SelectionKey selectionKey = netTask.getSelectionKey();
         if (selectionKey != null) {
             // 解绑当前的selector,取消通道注册

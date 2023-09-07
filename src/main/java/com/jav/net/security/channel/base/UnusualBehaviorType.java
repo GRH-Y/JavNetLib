@@ -25,8 +25,8 @@ public enum UnusualBehaviorType {
     EXP_INIT_DATA(0x119, "illegal init data");
 
 
-    private String mErrorMsg;
-    private int mErrorCode;
+    private final String mErrorMsg;
+    private final int mErrorCode;
 
     UnusualBehaviorType(int errorCode, String errorMsg) {
         this.mErrorCode = errorCode;

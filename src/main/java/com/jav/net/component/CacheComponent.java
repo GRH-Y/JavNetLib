@@ -9,12 +9,12 @@ import java.util.LinkedList;
  *
  * @author yyz
  */
-public class CacheComponent implements ICacheComponent<Object> {
+public class CacheComponent<T> implements ICacheComponent<T> {
 
-    protected final LinkedList<Object> mDataQueue = new LinkedList();
+    protected final LinkedList<T> mDataQueue = new LinkedList();
 
     @Override
-    public boolean addLastData(Object data) {
+    public boolean addLastData(T data) {
         if (data == null) {
             return false;
         }
@@ -25,7 +25,7 @@ public class CacheComponent implements ICacheComponent<Object> {
     }
 
     @Override
-    public boolean addFirstData(Object data) {
+    public boolean addFirstData(T data) {
         if (data == null) {
             return false;
         }
@@ -37,14 +37,14 @@ public class CacheComponent implements ICacheComponent<Object> {
 
 
     @Override
-    public Object pollFirstData() {
+    public T pollFirstData() {
         synchronized (mDataQueue) {
             return mDataQueue.pollFirst();
         }
     }
 
     @Override
-    public Object pollLastData() {
+    public T pollLastData() {
         synchronized (mDataQueue) {
             return mDataQueue.pollLast();
         }
@@ -56,13 +56,13 @@ public class CacheComponent implements ICacheComponent<Object> {
     }
 
     @Override
-    public void clearCache(IClearPolicy picker) {
+    public void clearCache(IClearPolicy<T> picker) {
         if (mDataQueue.isEmpty()) {
             return;
         }
         if (picker != null) {
             synchronized (mDataQueue) {
-                for (Object data : mDataQueue) {
+                for (T data : mDataQueue) {
                     picker.clear(data);
                 }
             }

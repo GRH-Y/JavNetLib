@@ -1,7 +1,7 @@
 package com.jav.net.aio;
 
-import com.jav.net.base.BaseNetWork;
-import com.jav.net.entity.FactoryContext;
+import com.jav.net.base.FactoryContext;
+import com.jav.net.base.joggle.INetTaskComponent;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -9,14 +9,14 @@ import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 
-public class AioServerNetWork<T extends AioServerTask> extends BaseNetWork<T> implements CompletionHandler<AsynchronousSocketChannel, T> {
+public class AioServerNetWork extends AioNetWork<AioServerTask> implements CompletionHandler<AsynchronousSocketChannel, AioServerTask> {
 
     protected AioServerNetWork(FactoryContext context) {
         super(context);
     }
 
     @Override
-    protected void onConnectTask(T netTask) {
+    public void onConnectTask(AioServerTask netTask) {
         try {
             AsynchronousServerSocketChannel channel = AsynchronousServerSocketChannel.open(netTask.getChannelGroup());
             InetSocketAddress hostAddress = new InetSocketAddress(netTask.getHost(), netTask.getPort());
@@ -30,14 +30,15 @@ public class AioServerNetWork<T extends AioServerTask> extends BaseNetWork<T> im
     }
 
     @Override
-    public void completed(AsynchronousSocketChannel result, T netTask) {
+    public void completed(AsynchronousSocketChannel result, AioServerTask netTask) {
         netTask.onAcceptServerChannel(result);
 
     }
 
     @Override
-    public void failed(Throwable exc, T attachment) {
+    public void failed(Throwable exc, AioServerTask attachment) {
         exc.printStackTrace();
-        mFactoryContext.getNetTaskComponent().addUnExecTask(attachment);
+        INetTaskComponent<AioServerTask> netTaskComponent = mFactoryContext.getNetTaskComponent();
+        netTaskComponent.addUnExecTask(attachment);
     }
 }

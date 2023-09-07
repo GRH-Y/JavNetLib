@@ -33,10 +33,11 @@ public class XHttpConnect {
         mHttpTaskManger = XMultiplexCacheManger.getInstance();
         mNioNetFactory = new NioClientFactory();
         mAioNetFactory = new AioClientFactory();
-        mNioNetTaskFactory = mNioNetFactory.getNetTaskComponent();
-        mAioNetTaskFactory = mAioNetFactory.getNetTaskComponent();
         mNioNetFactory.open();
         mAioNetFactory.open();
+
+        mNioNetTaskFactory = mNioNetFactory.getNetTaskComponent();
+        mAioNetTaskFactory = mAioNetFactory.getNetTaskComponent();
     }
 
     private static final class InnerClass {
@@ -70,8 +71,8 @@ public class XHttpConnect {
     }
 
     private XRequest crateRequest(IXHttpRequestEntity entity, Object callBackTarget) {
-        Class clx = entity.getClass();
-        AXHttpRequest request = (AXHttpRequest) clx.getAnnotation(AXHttpRequest.class);
+        Class<?> clx = entity.getClass();
+        AXHttpRequest request = clx.getAnnotation(AXHttpRequest.class);
         if (request == null) {
             throw new IllegalArgumentException("The entity has no annotations ARequest !!! ");
         }

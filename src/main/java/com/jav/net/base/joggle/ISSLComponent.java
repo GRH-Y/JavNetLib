@@ -7,8 +7,8 @@ import javax.net.ssl.SSLSocketFactory;
 
 public interface ISSLComponent {
 
-    SSLContext  getSSLContext();
-    
+    SSLContext getSSLContext();
+
     SSLSocketFactory getSSLSocketFactory();
 
     ServerSocketFactory getSSLServerSocketFactory();

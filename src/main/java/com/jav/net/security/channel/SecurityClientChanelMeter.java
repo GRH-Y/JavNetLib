@@ -2,6 +2,7 @@ package com.jav.net.security.channel;
 
 
 import com.jav.common.cryption.joggle.EncryptionType;
+import com.jav.common.log.LogDog;
 import com.jav.net.security.channel.base.ChannelStatus;
 import com.jav.net.security.channel.base.ParserCallBackRegistrar;
 import com.jav.net.security.channel.base.UnusualBehaviorType;
@@ -57,7 +58,7 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
      *
      * @return
      */
-    protected ISecurityChannelChangeListener getmChannelChangeListener() {
+    protected ISecurityChannelChangeListener getChannelChangeListener() {
         return mChannelChangeListener;
     }
 
@@ -66,8 +67,8 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
      */
     private class RegEntity {
 
-        private ISecurityChannelStatusListener mListener;
-        private SecurityClientChannelImage mImage;
+        private final ISecurityChannelStatusListener mListener;
+        private final SecurityClientChannelImage mImage;
 
         public RegEntity(ISecurityChannelStatusListener listener, SecurityClientChannelImage image) {
             mListener = listener;
@@ -159,6 +160,7 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
             synchronized (mDelayListener) {
                 mDelayListener.add(regEntity);
             }
+            LogDog.w("@@ Delay registration and wait for the channel to be ready !" + image);
         } else if (getCruStatus() == ChannelStatus.READY) {
             image.updateStatus(getCruStatus());
             ISecurityChannelStatusListener listener = image.getChannelStatusListener();
@@ -166,6 +168,7 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
             synchronized (mChannelImageMap) {
                 mChannelImageMap.put(image.getRequestId(), image);
             }
+            LogDog.w("@@ Register Client Channel success !!!" + image);
         }
     }
 
@@ -205,6 +208,7 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
             }
             mDelayListener.clear();
         }
+        LogDog.i("@@ notifyChannelReady !!!");
     }
 
     /**
@@ -225,6 +229,7 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
                 listener.onChannelInvalid();
             }
         }
+        LogDog.i("@@ notifyChannelInvalid !!!");
     }
 
 
@@ -295,6 +300,7 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
                 listener.onChannelError(error, extData);
             }
         }
+        LogDog.i("@@ notifyChannelError !!!");
     }
 
     @Override

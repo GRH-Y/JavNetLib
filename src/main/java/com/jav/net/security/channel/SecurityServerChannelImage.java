@@ -10,7 +10,7 @@ import com.jav.net.security.channel.joggle.IServerChannelStatusListener;
  */
 public class SecurityServerChannelImage extends SecurityChannelImage {
 
-    private IServerChannelStatusListener mListener;
+    private final IServerChannelStatusListener mListener;
 
     protected SecurityServerChannelImage(IServerChannelStatusListener listener) {
         mListener = listener;

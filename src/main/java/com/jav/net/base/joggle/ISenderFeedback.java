@@ -5,7 +5,7 @@ package com.jav.net.base.joggle;
  *
  * @author yyz
  */
-public interface ISenderFeedback {
+public interface ISenderFeedback<T> {
 
     /**
      * 发送数据回调反馈
@@ -14,5 +14,5 @@ public interface ISenderFeedback {
      * @param data
      * @param e
      */
-    void onSenderFeedBack(INetSender sender, Object data, Throwable e);
+    void onSenderFeedBack(INetSender<T> sender, T data, Throwable e);
 }

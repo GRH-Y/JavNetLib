@@ -2,13 +2,11 @@ package com.jav.net.nio;
 
 import com.jav.common.log.LogDog;
 import com.jav.common.state.joggle.IControlStateMachine;
-import com.jav.common.state.joggle.IStateMachine;
 import com.jav.net.base.BaseNetWork;
+import com.jav.net.base.FactoryContext;
 import com.jav.net.base.NetTaskStatus;
 import com.jav.net.base.joggle.INetTaskComponent;
-import com.jav.net.base.joggle.ISSLComponent;
 import com.jav.net.base.joggle.NetErrorType;
-import com.jav.net.entity.FactoryContext;
 
 import java.io.IOException;
 import java.nio.channels.NetworkChannel;
@@ -23,7 +21,8 @@ import java.util.Iterator;
  * @param <C>
  * @author yyz
  */
-public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends NetworkChannel> extends BaseNetWork<T> {
+public abstract class AbsNioNetWork<T extends NioSelectionTask<?>, C extends NetworkChannel>
+        extends BaseNetWork<T> {
 
     protected Selector mSelector;
 
@@ -32,7 +31,7 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
     }
 
     @Override
-    protected void init() {
+    public void onWorkBegin() {
         try {
             // use time 310ms
             mSelector = Selector.open();
@@ -45,7 +44,7 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
      * Callback for the beginning of a network task,
      * If the link is empty, it is generally used to create a link.
      *
-     * @param netTask
+     * @param netTask network task
      * @return
      * @throws IOException
      */
@@ -89,15 +88,8 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
     }
 
 
-    protected void initSSLConnect(T netTask) {
-        if (netTask.isTls()) {
-            ISSLComponent sslFactory = mFactoryContext.getSSLFactory();
-            netTask.onCreateSSLContext(sslFactory);
-        }
-    }
-
     protected void callChannelError(T netTask, NetErrorType errorType, Throwable e) {
-        IStateMachine<Integer> stateMachine = netTask.getStatusMachine();
+        IControlStateMachine<Integer> stateMachine = netTask.getStatusMachine();
         if (!stateMachine.isAttachState(NetTaskStatus.FINISHING) && stateMachine.getState() != NetTaskStatus.INVALID) {
             try {
                 netTask.onErrorChannel(errorType, e);
@@ -105,20 +97,13 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
                 e.printStackTrace();
             }
             // 有异常，结束任务
-            INetTaskComponent taskFactory = mFactoryContext.getNetTaskComponent();
+            INetTaskComponent<T> taskFactory = mFactoryContext.getNetTaskComponent();
             taskFactory.addUnExecTask(netTask);
         }
     }
 
     //------------------------------------------------------------------------------------------------------------------
 
-    /**
-     * 1.检查要链接任务
-     */
-    @Override
-    protected void onCreateTask() {
-        super.onCreateTask();
-    }
 
     /**
      * 2.处理链接
@@ -126,10 +111,9 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
      * @param netTask 网络请求任务
      */
     @Override
-    protected void onConnectTask(T netTask) {
+    public void onConnectTask(T netTask) {
         C channel = (C) netTask.getChannel();
-
-        IControlStateMachine<Integer> stateMachine = (IControlStateMachine<Integer>) netTask.getStatusMachine();
+        IControlStateMachine<Integer> stateMachine = netTask.getStatusMachine();
         try {
             if (channel == null) {
                 // 创建通道
@@ -162,10 +146,9 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
     /**
      * 3.获取准备好的任务
      */
-    @Override
     protected void onSelectEvent() {
         int count = 0;
-        INetTaskComponent taskFactory = mFactoryContext.getNetTaskComponent();
+        INetTaskComponent<T> taskFactory = mFactoryContext.getNetTaskComponent();
         if (taskFactory.isConnectQueueEmpty() && taskFactory.isDestroyQueueEmpty()) {
             try {
                 count = mSelector.select();
@@ -191,38 +174,6 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
         }
     }
 
-    /**
-     * 4.处理销毁的任务
-     */
-    @Override
-    protected void onDestroyTask() {
-        super.onDestroyTask();
-    }
-
-
-    @Override
-    protected void onDisconnectTask(T netTask) {
-        try {
-            netTask.onCloseChannel();
-        } catch (Throwable e) {
-            e.printStackTrace();
-        } finally {
-            if (netTask.getSelectionKey() != null) {
-                try {
-                    netTask.getSelectionKey().cancel();
-                } catch (Throwable e) {
-                    e.printStackTrace();
-                }
-            }
-            if (netTask.getChannel() != null) {
-                try {
-                    netTask.getChannel().close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
 
     private void changeStateToClearCondition(IControlStateMachine<Integer> stateMachine) {
         if (stateMachine.getState() == NetTaskStatus.INVALID) {
@@ -230,13 +181,13 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
             return;
         }
         // 移除 run 状态
-        for (; stateMachine.isAttachState(NetTaskStatus.RUN); ) {
+        while (stateMachine.isAttachState(NetTaskStatus.RUN)) {
             if (stateMachine.detachState(NetTaskStatus.RUN)) {
                 break;
             }
         }
         // 添加 IDLING 状态
-        for (; !stateMachine.isAttachState(NetTaskStatus.IDLING); ) {
+        while (!stateMachine.isAttachState(NetTaskStatus.IDLING)) {
             if (stateMachine.getState() == NetTaskStatus.INVALID || stateMachine.attachState(NetTaskStatus.IDLING)) {
                 //当前状态是INVALID 则不再修改状态为IDLING，或者修改状态为IDLING成功
                 break;
@@ -258,7 +209,8 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
             selectionKey.cancel();
             return;
         }
-        IControlStateMachine<Integer> stateMachine = (IControlStateMachine<Integer>) netTask.getStatusMachine();
+        netTask.setSelectionKey(selectionKey);
+        IControlStateMachine<Integer> stateMachine = netTask.getStatusMachine();
         if (stateMachine.getState() == NetTaskStatus.INVALID) {
             selectionKey.cancel();
             return;
@@ -295,17 +247,53 @@ public abstract class AbsNioNetWork<T extends BaseNioSelectionTask, C extends Ne
     }
 
     @Override
-    protected void onDestroyTaskAll() {
+    public boolean onDisconnectTask(T netTask) {
+        try {
+            netTask.onCloseChannel();
+        } catch (Throwable e) {
+            e.printStackTrace();
+        } finally {
+            if (netTask.getSelectionKey() != null) {
+                try {
+                    netTask.getSelectionKey().cancel();
+                } catch (Throwable e) {
+                    e.printStackTrace();
+                }
+            }
+            if (netTask.getChannel() != null) {
+                try {
+                    netTask.getChannel().close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        try {
+            netTask.onRecovery();
+        } catch (Throwable e) {
+            e.printStackTrace();
+        } finally {
+            return true;
+        }
+    }
+
+    @Override
+    public void onWorkEnd() {
         if (mSelector != null) {
             // 线程准备结束，释放所有链接
             for (SelectionKey selectionKey : mSelector.keys()) {
                 T task = (T) selectionKey.attachment();
                 if (task != null) {
-                    destroyTaskImp(task);
+                    onDisconnectTask(task);
                 }
             }
+            try {
+                mSelector.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
-        INetTaskComponent taskFactory = mFactoryContext.getNetTaskComponent();
+        INetTaskComponent<T> taskFactory = mFactoryContext.getNetTaskComponent();
         taskFactory.clearAllQueue();
     }
 

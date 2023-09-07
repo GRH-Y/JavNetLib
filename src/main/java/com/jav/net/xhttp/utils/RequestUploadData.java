@@ -11,10 +11,10 @@ public class RequestUploadData {
     //编节符
     private final String boundary = "-------------------------" + System.currentTimeMillis();
     private final String dispositionBoundary = "-----------------------------" + System.currentTimeMillis();
-    private final String endDispositionBoundary = "----------------------------";
+    private final static String endDispositionBoundary = "----------------------------";
     private final String contentType = "multipart/form-data; boundary=" + boundary;
     //前缀 上传时需要多出两个-- 一定需要注意！！！
-    private final String prefix = "--";
+    private final static String prefix = "--";
     //这里也需要注意，在html协议中，用 “\r\n” 换行，而不是 “\n”。
     private final String end = "\r\n";
 

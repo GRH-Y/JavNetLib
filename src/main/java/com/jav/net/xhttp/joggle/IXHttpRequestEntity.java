@@ -7,5 +7,5 @@ public interface IXHttpRequestEntity extends Serializable {
 
     LinkedHashMap<Object, Object> getRequestProperty();
 
-   byte[] getSendData();
+    byte[] getSendData();
 }

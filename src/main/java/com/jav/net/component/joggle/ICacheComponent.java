@@ -64,5 +64,5 @@ public interface ICacheComponent<T> {
      *
      * @param picker
      */
-    void clearCache(IClearPolicy picker);
+    void clearCache(IClearPolicy<T> picker);
 }

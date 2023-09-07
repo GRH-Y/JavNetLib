@@ -29,6 +29,16 @@ public class SecurityServerChanelMeter extends SecurityChanelMeter {
      */
     private volatile SecurityServerChannelImage mServerImage;
 
+    /**
+     * 客户端的machine id
+     */
+    private String mMachineId;
+
+    /**
+     * 记录生成的channel id
+     */
+    private String mChannelId;
+
     public SecurityServerChanelMeter(SecurityChannelContext context) {
         super(context);
         ReceiveProxy receiveProxy = new ReceiveProxy();
@@ -57,7 +67,7 @@ public class SecurityServerChanelMeter extends SecurityChanelMeter {
             // 配置channel id
             SecurityProxySender proxySender = getSender();
             proxySender.setChannelId(channelId);
-            LogDog.d("创建channel id 返回给客户端 " + channelId);
+            LogDog.i("@@ return channel id to client = " + channelId);
 
             proxySender.respondToInitRequest(machineId, InitResult.CHANNEL_ID.getCode(), channelId.getBytes());
         }
@@ -97,8 +107,10 @@ public class SecurityServerChanelMeter extends SecurityChanelMeter {
      * @return 返回通道id
      */
     private String createChannelId(String machineId) {
+        mMachineId = machineId;
         String uuidStr = UUID.randomUUID().toString() + System.nanoTime();
         String channelId = Md5Helper.md5_32(uuidStr);
+        mChannelId = channelId;
         CacheChannelIdMater.getInstance().binderChannelIdToMid(machineId, channelId);
         return channelId;
     }
@@ -161,6 +173,7 @@ public class SecurityServerChanelMeter extends SecurityChanelMeter {
             ISecurityChannelStatusListener listener = mServerImage.getChannelStatusListener();
             listener.onChannelInvalid();
         }
+        CacheChannelIdMater.getInstance().repealChannelId(mMachineId, mChannelId);
     }
 
 }

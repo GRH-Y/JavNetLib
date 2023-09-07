@@ -22,7 +22,7 @@ public class InitProtocol extends AbsProxyProtocol {
     /**
      * 机器码（32Byte）
      */
-    private byte[] mMachineId;
+    private final byte[] mMachineId;
 
 
     public InitProtocol(String machineId) {

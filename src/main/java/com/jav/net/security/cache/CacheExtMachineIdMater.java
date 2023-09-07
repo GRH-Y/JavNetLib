@@ -11,7 +11,7 @@ public class CacheExtMachineIdMater {
     /**
      * 缓存machine id
      */
-    private Set<String> mCacheMachine = new LinkedHashSet<>();
+    private final Set<String> mCacheMachine = new LinkedHashSet<>();
 
 
     private CacheExtMachineIdMater() {

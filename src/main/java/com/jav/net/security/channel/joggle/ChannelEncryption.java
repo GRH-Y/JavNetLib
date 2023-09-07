@@ -8,14 +8,14 @@ import com.jav.common.cryption.joggle.EncryptionType;
 public class ChannelEncryption {
 
 
-    private Builder mBuilder;
+    private final Builder mBuilder;
 
 
     public static class InitEncryption {
 
-        private EncryptionType mEncryptionType;
-        private String mPublicFile;
-        private String mPrivateFile;
+        private final EncryptionType mEncryptionType;
+        private final String mPublicFile;
+        private final String mPrivateFile;
 
         private InitEncryption(String publicFile, String privateFile) {
             mPublicFile = publicFile;
@@ -39,7 +39,7 @@ public class ChannelEncryption {
     public static class TransmitEncryption {
 
         private String mPassword;
-        private EncryptionType mEncryptionType;
+        private final EncryptionType mEncryptionType;
 
         private TransmitEncryption(EncryptionType encryptionType, String password) {
             mPassword = password;

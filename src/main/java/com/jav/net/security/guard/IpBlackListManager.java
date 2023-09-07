@@ -28,20 +28,20 @@ public class IpBlackListManager {
     /**
      * 确认目标的缓存
      */
-    private LinkedList<String> mConfirmCache = new LinkedList<>();
+    private final LinkedList<String> mConfirmCache = new LinkedList<>();
 
     /**
      * 加载固定黑名单列表
      */
-    private LinkedList<String> mFixedTarget = new LinkedList<>();
+    private final LinkedList<String> mFixedTarget = new LinkedList<>();
 
     /**
      * 怀疑目标,有3次机会
      */
-    private Map<String, ObserveEntity> mObserveCache = new LinkedHashMap<>();
+    private final Map<String, ObserveEntity> mObserveCache = new LinkedHashMap<>();
 
-    private class ObserveEntity {
-        private String mHost;
+    private static class ObserveEntity {
+        private final String mHost;
         private int mCount = 1;
 
         private static final int sConfirmCount = 3;
@@ -77,7 +77,7 @@ public class IpBlackListManager {
         synchronized (mConfirmCache) {
             objects = mConfirmCache.toArray();
         }
-        if (objects == null || objects.length == 0) {
+        if (objects.length == 0) {
             return null;
         }
         ByteArrayOutputStream stream = new ByteArrayOutputStream();

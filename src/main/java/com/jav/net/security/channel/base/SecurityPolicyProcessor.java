@@ -15,7 +15,7 @@ import java.util.List;
  */
 public class SecurityPolicyProcessor implements ISecurityPolicyProcessor {
 
-    private SecurityChannelContext mContext;
+    private final SecurityChannelContext mContext;
 
 
     /**

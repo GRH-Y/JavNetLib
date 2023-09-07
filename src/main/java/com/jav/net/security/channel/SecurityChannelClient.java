@@ -1,6 +1,9 @@
 package com.jav.net.security.channel;
 
+import com.jav.net.base.MultiBuffer;
 import com.jav.net.base.SocketChannelCloseException;
+import com.jav.net.base.joggle.INetSender;
+import com.jav.net.base.joggle.ISenderFeedback;
 import com.jav.net.base.joggle.NetErrorType;
 import com.jav.net.nio.NioClientTask;
 import com.jav.net.nio.NioReceiver;
@@ -65,7 +68,6 @@ public class SecurityChannelClient extends NioClientTask {
     }
 
 
-
     @Override
     protected void onBeReadyChannel(SocketChannel channel) {
         SecurityReceiver securityReceiver = mChanelMeter.getReceiver();
@@ -80,6 +82,14 @@ public class SecurityChannelClient extends NioClientTask {
             securitySender = initSender();
             NioSender coreSender = securitySender.getCoreSender();
             coreSender.setChannel(getSelectionKey(), channel);
+            coreSender.setSenderFeedback(new ISenderFeedback<MultiBuffer>() {
+                @Override
+                public void onSenderFeedBack(INetSender<MultiBuffer> sender, MultiBuffer data, Throwable e) {
+                    if (e != null) {
+                        SecurityChannelBoot.getInstance().stopChannel(SecurityChannelClient.this);
+                    }
+                }
+            });
             setSender(coreSender);
         }
 

@@ -6,7 +6,7 @@ import com.jav.net.base.joggle.NetErrorType;
 
 import java.nio.channels.NetworkChannel;
 
-public class BaseAioChannelTask<T extends NetworkChannel> extends BaseTlsTask<T> {
+public class AioChannelTask<T extends NetworkChannel> extends BaseTlsTask<T> {
 
     @Override
     protected void onCreateSSLContext(ISSLComponent sslFactory) {

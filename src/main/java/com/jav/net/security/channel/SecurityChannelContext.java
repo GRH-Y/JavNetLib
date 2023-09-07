@@ -14,11 +14,16 @@ import java.util.List;
 public class SecurityChannelContext {
 
     /**
+     * 最少的通道数
+     */
+    private static final int MIN_CHANNEL = 1;
+
+    /**
      * 最大的通道数
      */
-    private static final int MAX_CHANNEL = 2;
+    public static final int MAX_CHANNEL = 6;
 
-    private Builder mBuilder;
+    private final Builder mBuilder;
 
 
     private SecurityChannelContext(Builder builder) {
@@ -130,7 +135,10 @@ public class SecurityChannelContext {
 
         public Builder setChannelNumber(int channelNumber) {
             this.mChannelNumber = channelNumber;
-            if (mChannelNumber <= 0) {
+            if (mChannelNumber <= MIN_CHANNEL) {
+                this.mChannelNumber = MIN_CHANNEL;
+            }
+            if (mChannelNumber >= MAX_CHANNEL) {
                 this.mChannelNumber = MAX_CHANNEL;
             }
             return this;

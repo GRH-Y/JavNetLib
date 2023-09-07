@@ -1,6 +1,6 @@
 package com.jav.net.xhttp.utils;
 
-import com.jav.net.entity.RequestMode;
+import com.jav.net.base.RequestMode;
 import com.jav.net.xhttp.entity.XRequest;
 
 import java.util.LinkedHashMap;

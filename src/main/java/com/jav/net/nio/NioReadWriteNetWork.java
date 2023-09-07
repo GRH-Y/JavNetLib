@@ -1,13 +1,12 @@
 package com.jav.net.nio;
 
 import com.jav.common.state.joggle.IControlStateMachine;
+import com.jav.net.base.FactoryContext;
 import com.jav.net.base.NetTaskStatus;
 import com.jav.net.base.joggle.NetErrorType;
-import com.jav.net.entity.FactoryContext;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -17,16 +16,16 @@ import java.util.List;
  *
  * @author yyz
  */
-public class NioReadWriteNetWork<T extends NioClientTask, C extends SocketChannel> extends NioClientWork<T, C> {
+public class NioReadWriteNetWork extends NioClientWork {
 
-    private List<T> mWaiteRegNetTaskList;
+    private final List<NioClientTask> mWaiteRegNetTaskList;
 
     protected NioReadWriteNetWork(FactoryContext context) {
         super(context);
         mWaiteRegNetTaskList = new ArrayList<>();
     }
 
-    public void registerReadWriteEvent(T netTask) {
+    public void registerReadWriteEvent(NioClientTask netTask) {
         synchronized (mWaiteRegNetTaskList) {
             mWaiteRegNetTaskList.add(netTask);
         }
@@ -35,14 +34,14 @@ public class NioReadWriteNetWork<T extends NioClientTask, C extends SocketChanne
 
     private void regWaitNetTask() {
         synchronized (mWaiteRegNetTaskList) {
-            for (T netTask : mWaiteRegNetTaskList) {
+            for (NioClientTask netTask : mWaiteRegNetTaskList) {
                 IControlStateMachine<Integer> stateMachine = netTask.getStatusMachine();
                 if (stateMachine.isAttachState(NetTaskStatus.FINISHING)
                         || stateMachine.getState() == NetTaskStatus.INVALID) {
                     continue;
                 }
                 try {
-                    registerEvent(netTask, (C) netTask.getChannel());
+                    registerEvent(netTask, netTask.getChannel());
                 } catch (IOException e) {
                     stateMachine.detachState(NetTaskStatus.RUN);
                     stateMachine.attachState(NetTaskStatus.IDLING);

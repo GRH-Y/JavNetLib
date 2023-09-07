@@ -82,7 +82,7 @@ public class SecurityClientChannelImage extends SecurityChannelImage {
     protected static SecurityClientChannelImage builderClientChannelImage(IClientChannelStatusListener listener) {
         String uuidStr = UUID.randomUUID().toString();
         String requestId = Md5Helper.md5_32(uuidStr);
-        LogDog.d("builderClientChannelImage requestId = " + requestId);
+        LogDog.d("@@ builderClientChannelImage requestId = " + requestId);
         return new SecurityClientChannelImage(requestId, listener);
     }
 

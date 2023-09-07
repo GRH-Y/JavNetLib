@@ -23,13 +23,13 @@ public class TransProtocol extends AbsProxyProtocol {
     /**
      * 通道id，区分不同的客户端，由服务端init数据生成返回
      */
-    private byte[] mChannelId;
+    private final byte[] mChannelId;
 
 
     /**
      * 请求id，区分http请求的链路
      */
-    private byte[] mRequestId;
+    private final byte[] mRequestId;
 
 
     public TransProtocol(String channelId, String requestId) {

@@ -1,7 +1,7 @@
 package com.jav.net.xhttp.entity;
 
 
-import com.jav.net.entity.RequestMode;
+import com.jav.net.base.RequestMode;
 
 import java.net.HttpURLConnection;
 import java.util.List;

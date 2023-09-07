@@ -78,11 +78,13 @@ public class SecurityCommProtocolParser extends AbsSecurityProtocolParser {
         byte realOperateCode = (byte) (oCode & (~ConstantCode.REP_EXCEPTION_CODE));
         byte status = (byte) (oCode & ConstantCode.REP_EXCEPTION_CODE);
         if (status == ConstantCode.REP_EXCEPTION_CODE) {
+            LogDog.e("@@ channel status = " + UnusualBehaviorType.EXP_INIT_DATA.getErrorMsg());
             throw new RuntimeException(UnusualBehaviorType.EXP_INIT_DATA.getErrorMsg());
         }
         // 当前处理服务端响应数据
         InitResult result = InitResult.getInstance(realOperateCode);
         if (InitResult.ERROR == result) {
+            LogDog.e("@@ channel status = " + UnusualBehaviorType.EXP_INIT_DATA.getErrorMsg());
             throw new RuntimeException(UnusualBehaviorType.EXP_INIT_DATA.getErrorMsg());
         }
         byte[] context = new byte[data.limit() - data.position()];
@@ -93,6 +95,7 @@ public class SecurityCommProtocolParser extends AbsSecurityProtocolParser {
             String[] arrays = contextStr.split(":");
             if (arrays.length != ConstantCode.NORMAL_ADDRESS_LENGTH) {
                 // 返回的数据有异常,断开链接
+                LogDog.e("@@ channel status = " + UnusualBehaviorType.EXP_ADDRESS_LENGTH.getErrorMsg());
                 throw new RuntimeException(UnusualBehaviorType.EXP_ADDRESS_LENGTH.getErrorMsg());
             }
             if (mCallBackRegistrar != null) {
@@ -103,7 +106,7 @@ public class SecurityCommProtocolParser extends AbsSecurityProtocolParser {
             }
         } else if (InitResult.CHANNEL_ID == result) {
             // 配置服务端返回的 channel id
-            LogDog.d("接收到服务端返回的 channel id = " + contextStr);
+            LogDog.i("@@ receiver channel id = " + contextStr);
             if (mCallBackRegistrar != null) {
                 IClientEventCallBack callBack = mCallBackRegistrar.getClientCallBack();
                 if (callBack != null) {
@@ -135,6 +138,7 @@ public class SecurityCommProtocolParser extends AbsSecurityProtocolParser {
             boolean isOk = parseCheckChannelId(decodeData);
             if (!isOk) {
                 //channel id 异常, 断开链接
+                LogDog.e("@@ channel status = " + UnusualBehaviorType.EXP_CHANNEL_ID.getErrorMsg());
                 throw new IllegalStateException(UnusualBehaviorType.EXP_CHANNEL_ID.getErrorMsg());
             }
             if (cmd == ActivityCode.KEEP.getCode()) {
@@ -182,6 +186,7 @@ public class SecurityCommProtocolParser extends AbsSecurityProtocolParser {
         data.get(requestIdByte);
         String requestId = new String(requestIdByte);
         if (StringEnvoy.isEmpty(requestId)) {
+            LogDog.e("@@ channel status = " + UnusualBehaviorType.EXP_REQUEST_ID.getErrorMsg());
             throw new RuntimeException(UnusualBehaviorType.EXP_REQUEST_ID.getErrorMsg());
         }
         byte[] context = getContextData(data);
@@ -190,10 +195,12 @@ public class SecurityCommProtocolParser extends AbsSecurityProtocolParser {
             notifyTransAddress(oCode, requestId, context);
         } else if (realOperateCode == TransOperateCode.DATA.getCode()) {
             if (context == null) {
+                LogDog.e("@@ channel status = " + UnusualBehaviorType.EXP_TRANS_DATA.getErrorMsg());
                 throw new RuntimeException(UnusualBehaviorType.EXP_TRANS_DATA.getErrorMsg());
             }
             notifyTransData(oCode, requestId, context);
         } else {
+            LogDog.e("@@ channel status = " + UnusualBehaviorType.EXP_OPERATE_CODE.getErrorMsg());
             throw new RuntimeException(UnusualBehaviorType.EXP_OPERATE_CODE.getErrorMsg());
         }
     }
@@ -208,6 +215,7 @@ public class SecurityCommProtocolParser extends AbsSecurityProtocolParser {
     private void notifyTransAddress(byte oCode, String requestId, byte[] context) {
         if (mContext.isServerMode()) {
             if (context == null) {
+                LogDog.e("@@ channel status = " + UnusualBehaviorType.EXP_TRANS_DATA.getErrorMsg());
                 throw new RuntimeException(UnusualBehaviorType.EXP_TRANS_DATA.getErrorMsg());
             }
             String[] realHost = parseRequestAddress(context);
@@ -252,6 +260,7 @@ public class SecurityCommProtocolParser extends AbsSecurityProtocolParser {
         } else {
             byte status = (byte) (oCode & ConstantCode.REP_EXCEPTION_CODE);
             if (status == ConstantCode.REP_EXCEPTION_CODE) {
+                LogDog.e("@@ channel status = " + UnusualBehaviorType.EXP_TRANS_DATA.getErrorMsg());
                 throw new RuntimeException(UnusualBehaviorType.EXP_TRANS_DATA.getErrorMsg());
             }
             if (mCallBackRegistrar == null) {

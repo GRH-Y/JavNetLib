@@ -3,9 +3,9 @@ package com.jav.net.ssl;
 import com.jav.common.log.LogDog;
 import com.jav.common.util.IoEnvoy;
 import com.jav.common.util.SpeedReflex;
+import com.jav.net.base.MultiBuffer;
 import com.jav.net.base.SocketChannelCloseException;
 import com.jav.net.base.joggle.ITLSHandler;
-import com.jav.net.entity.MultiByteBuffer;
 
 import javax.net.ssl.*;
 import java.io.IOException;
@@ -25,7 +25,7 @@ public class TLSHandler implements ITLSHandler {
     protected ByteBuffer mReceiveBuffer;
     protected ByteBuffer mAppDataBuffer;
 
-    protected MultiByteBuffer mSendBuf;
+    protected MultiBuffer mSendBuf;
 
     public static final int NOT_ENOUGH_CAPACITY = 3;
     public static final int OK = 0;
@@ -47,7 +47,7 @@ public class TLSHandler implements ITLSHandler {
         this.mSSLEngine = engine;
         this.mSendBuffer = newPacketBuffer();
         this.mReceiveBuffer = newPacketBuffer();
-        mSendBuf = new MultiByteBuffer();
+        mSendBuf = new MultiBuffer();
         this.mAppDataBuffer = ByteBuffer.allocateDirect(mSSLEngine.getSession().getApplicationBufferSize());
     }
 

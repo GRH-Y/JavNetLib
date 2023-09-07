@@ -1,7 +1,8 @@
 package com.jav.net.nio;
 
-import com.jav.net.entity.MultiByteBuffer;
+import com.jav.net.base.MultiBuffer;
 
+import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
@@ -11,14 +12,17 @@ public class NioUdpSender extends AbsNioCacheNetSender<NioUdpSender.SenderPacket
 
     protected DatagramChannel mChannel;
 
-    public static final int MAX_LENGTH = 65506;
+    /**
+     * 最大的udp单包大小
+     */
+    public static final int MAX_PACK_LENGTH = 1440;
 
 
     public static class SenderPacket {
         public final SocketAddress mAddress;
-        public final MultiByteBuffer mData;
+        public final MultiBuffer mData;
 
-        public SenderPacket(SocketAddress address, MultiByteBuffer data) {
+        public SenderPacket(SocketAddress address, MultiBuffer data) {
             this.mAddress = address;
             this.mData = data;
         }
@@ -34,86 +38,58 @@ public class NioUdpSender extends AbsNioCacheNetSender<NioUdpSender.SenderPacket
 
 
     @Override
-    protected int onHandleSendData(Object data) throws Throwable {
-        if (data instanceof SenderPacket) {
-            SenderPacket packet = (SenderPacket) data;
-            if (packet.mAddress == null) {
-                return super.onHandleSendData(packet.mData);
-            }
-            int ret = sendUdpDataImp(packet);
-            if (ret == SEND_CHANNEL_BUSY) {
-                mCacheComponent.addFirstData(data);
-            } else if (ret == SEND_COMPLETE) {
-                packet.mData.clear();
-            }
-            return ret;
+    protected int onHandleSendData(NioUdpSender.SenderPacket packet) throws Throwable {
+        int ret = sendDataImp(packet);
+        if (ret == SEND_CHANNEL_BUSY) {
+            mCacheComponent.addFirstData(packet);
+        } else if (ret == SEND_COMPLETE) {
+            packet.mData.clear();
         }
-        return SEND_COMPLETE;
+        return ret;
     }
 
     @Override
-    protected int sendDataImp(ByteBuffer[] buffers) {
-        if (mChannel == null || buffers == null || !mChannel.isOpen()) {
+    protected int sendDataImp(Object data) throws IOException {
+        if (mChannel == null || data == null || !mChannel.isOpen()) {
             return SEND_FAIL;
         }
-        for (ByteBuffer buffer : buffers) {
-            try {
-                int realLength = 0;
-                if (buffer.limit() > MAX_LENGTH) {
-                    realLength = buffer.limit();
-                    buffer.limit(MAX_LENGTH);
-                }
-                while (mChannel.isOpen()) {
-                    int ret = mChannel.write(buffer);
-                    if (ret < 0) {
-                        return SEND_FAIL;
-                    } else if (ret == 0 && mChannel.isOpen()) {
-                        return buffer.hasRemaining() ? SEND_CHANNEL_BUSY : SEND_FAIL;
-                    }
-                    realLength -= ret;
-                    if (realLength > 0) {
-                        if (realLength > MAX_LENGTH) {
-                            buffer.limit(buffer.position() + MAX_LENGTH);
-                        } else {
-                            buffer.limit(buffer.position() + realLength);
-                        }
-                    } else {
-                        break;
-                    }
-                }
-            } catch (Throwable e) {
-                return SEND_FAIL;
-            }
+        NioUdpSender.SenderPacket packet = null;
+        if (data instanceof NioUdpSender.SenderPacket) {
+            packet = (SenderPacket) data;
         }
-        return SEND_COMPLETE;
-    }
-
-    protected int sendUdpDataImp(SenderPacket packet) throws Throwable {
-        if (mChannel == null || packet == null || !mChannel.isOpen() || packet.mData == null || packet.mAddress == null) {
+        if (packet == null) {
             return SEND_FAIL;
         }
-        ByteBuffer[] sendDataBuf = packet.mData.getTmpBuf();
+        ByteBuffer[] sendDataBuf = packet.mData.getFreezeBuf();
         if (sendDataBuf == null) {
-            sendDataBuf = packet.mData.getUseBuf(true);
+            sendDataBuf = packet.mData.getDirtyBuf(true);
         }
         for (ByteBuffer buffer : sendDataBuf) {
+            if (!buffer.hasRemaining()) {
+                continue;
+            }
             int realLength = 0;
-            if (buffer.limit() > MAX_LENGTH) {
+            if (buffer.limit() > MAX_PACK_LENGTH) {
                 realLength = buffer.limit();
-                buffer.limit(MAX_LENGTH);
+                buffer.limit(MAX_PACK_LENGTH);
             }
             while (buffer.hasRemaining() && mChannel.isOpen()) {
-                long ret = mChannel.send(buffer, packet.mAddress);
+                long ret;
+                if (packet.mAddress == null) {
+                    ret = mChannel.write(buffer);
+                } else {
+                    ret = mChannel.send(buffer, packet.mAddress);
+                }
                 if (ret < 0) {
                     return SEND_FAIL;
                 } else if (ret == 0 && mChannel.isOpen() && buffer.hasRemaining()) {
-                    packet.mData.setBackBuf(sendDataBuf);
+                    packet.mData.restoredBuf(sendDataBuf);
                     return buffer.hasRemaining() ? SEND_CHANNEL_BUSY : SEND_FAIL;
                 }
                 if (realLength > 0) {
                     realLength -= ret;
-                    if (realLength > MAX_LENGTH) {
-                        buffer.limit(buffer.position() + MAX_LENGTH);
+                    if (realLength > MAX_PACK_LENGTH) {
+                        buffer.limit(buffer.position() + MAX_PACK_LENGTH);
                     } else {
                         buffer.limit(buffer.position() + realLength);
                     }

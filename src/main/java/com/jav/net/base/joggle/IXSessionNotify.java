@@ -26,5 +26,5 @@ public interface IXSessionNotify {
      *
      * @param request
      */
-    void notifyError(XRequest request,  Throwable e);
+    void notifyError(XRequest request, Throwable e);
 }

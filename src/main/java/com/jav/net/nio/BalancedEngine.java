@@ -1,6 +1,6 @@
 package com.jav.net.nio;
 
-import com.jav.net.entity.FactoryContext;
+import com.jav.net.base.FactoryContext;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -19,12 +19,13 @@ public class BalancedEngine extends NioNetEngine {
 
     public BalancedEngine(FactoryContext context) {
         super(context);
+        //负责创建连接，连接也需要select事件处理，一旦建立连接成功则把任务交给 NioReadWriteNetWork 事物处理
         setWorkStep((byte) (CREATE | SELECT));
     }
 
     @Override
-    protected void onInitTask() {
-        super.onInitTask();
+    protected void onEngineInit() {
+        super.onEngineInit();
         // 新建独立的 NioEngine 绑定  NioClearWork
         NioBalancedNetWork mainNetWork = mFactoryContext.getNetWork();
         NioClearWork clearWork = mainNetWork.getClearWork();
@@ -43,7 +44,7 @@ public class BalancedEngine extends NioNetEngine {
                 NioNetEngine netEngine = new NioNetEngine(context);
                 // 绑定net engine
                 context.setNetEngine(netEngine);
-                // 只负责读写的任务
+                // 只负责连接成功后的读写的任务
                 netEngine.setWorkStep(SELECT);
                 netEngine.startEngine();
                 mEngineList.add(netEngine);
@@ -51,9 +52,10 @@ public class BalancedEngine extends NioNetEngine {
         }
     }
 
+
     @Override
-    protected void onDestroyTask() {
-        super.onDestroyTask();
+    protected void onEngineDestroy() {
+        super.onEngineDestroy();
         if (mClearEngine != null) {
             mClearEngine.stopEngine();
         }
@@ -61,7 +63,7 @@ public class BalancedEngine extends NioNetEngine {
 
 
     @Override
-    protected void stopEngine() {
+    public void stopEngine() {
         super.stopEngine();
         if (mEngineList != null) {
             for (Iterator<NioNetEngine> iterator = mEngineList.iterator(); iterator.hasNext(); ) {

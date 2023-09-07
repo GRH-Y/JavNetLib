@@ -4,7 +4,7 @@ public enum XHttpCode {
 
     OK(200), REDIRECT(300), NOT_FOUND(400), INTERNAL_ERROR(500);
 
-    private int mCode;
+    private final int mCode;
 
     XHttpCode(int code) {
         mCode = code;

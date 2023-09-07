@@ -15,6 +15,7 @@ public abstract class AbsNetReceiver<C, T> {
 
     /**
      * 设置数据接收
+     *
      * @param receiver
      */
     public void setDataReceiver(INetReceiver<T> receiver) {

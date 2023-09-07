@@ -34,7 +34,7 @@ public class SecurityChanelMeter extends AbsSecurityMeter {
     /**
      * 协议解析器
      */
-    private SecurityCommProtocolParser mProtocolParser;
+    private final SecurityCommProtocolParser mProtocolParser;
 
 
     public SecurityChanelMeter(SecurityChannelContext context) {

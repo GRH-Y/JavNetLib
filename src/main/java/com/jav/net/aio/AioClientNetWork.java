@@ -1,10 +1,10 @@
 package com.jav.net.aio;
 
 
+import com.jav.net.base.FactoryContext;
 import com.jav.net.base.joggle.INetTaskComponent;
 import com.jav.net.base.joggle.ISSLComponent;
 import com.jav.net.base.joggle.NetErrorType;
-import com.jav.net.entity.FactoryContext;
 import com.jav.net.ssl.TLSHandler;
 
 import java.io.IOException;
@@ -13,7 +13,7 @@ import java.net.StandardSocketOptions;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 
-public class AioClientNetWork<T extends AioClientTask> extends AioNetWork<T> implements CompletionHandler<Void, T> {
+public class AioClientNetWork extends AioNetWork<AioClientTask> implements CompletionHandler<Void, AioClientTask> {
 
 
     protected AioClientNetWork(FactoryContext context) {
@@ -22,12 +22,7 @@ public class AioClientNetWork<T extends AioClientTask> extends AioNetWork<T> imp
     }
 
     @Override
-    protected void onCreateTask() {
-        super.onCreateTask();
-    }
-
-    @Override
-    protected void onConnectTask(T netTask) {
+    public void onConnectTask(AioClientTask netTask) {
         try {
             AsynchronousSocketChannel channel = AsynchronousSocketChannel.open(netTask.onInitChannelGroup());
             // Disable the Nagle algorithm
@@ -37,7 +32,7 @@ public class AioClientNetWork<T extends AioClientTask> extends AioNetWork<T> imp
             // Re-use address
             channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
             netTask.setChannel(channel);
-            INetTaskComponent netTaskFactory = mFactoryContext.getNetTaskComponent();
+            INetTaskComponent<AioClientTask> netTaskFactory = mFactoryContext.getNetTaskComponent();
             netTask.setNetTaskFactory(netTaskFactory);
             netTask.onConfigChannel(channel);
             channel.connect(new InetSocketAddress(netTask.getHost(), netTask.getPort()), netTask, this);
@@ -46,25 +41,16 @@ public class AioClientNetWork<T extends AioClientTask> extends AioNetWork<T> imp
         }
     }
 
-    private void initSSLConnect(T netTask) {
+    private void initSSLConnect(AioClientTask netTask) {
         if (netTask.isTls()) {
             ISSLComponent sslFactory = mFactoryContext.getSSLFactory();
             netTask.onCreateSSLContext(sslFactory);
         }
     }
 
-    @Override
-    protected void onDestroyTask() {
-        super.onDestroyTask();
-    }
 
     @Override
-    protected void onDestroyTaskAll() {
-        super.onDestroyTaskAll();
-    }
-
-    @Override
-    protected void onDisconnectTask(T netTask) {
+    public boolean onDisconnectTask(AioClientTask netTask) {
         try {
             netTask.onCloseChannel();
         } catch (Exception e) {
@@ -72,14 +58,6 @@ public class AioClientNetWork<T extends AioClientTask> extends AioNetWork<T> imp
         } finally {
             try {
                 AsynchronousSocketChannel channel = netTask.getChannel();
-                try {
-                    channel.shutdownInput();
-                } catch (Exception e) {
-                }
-                try {
-                    channel.shutdownOutput();
-                } catch (Exception e) {
-                }
                 channel.close();
             } catch (Exception e) {
                 e.printStackTrace();
@@ -90,10 +68,11 @@ public class AioClientNetWork<T extends AioClientTask> extends AioNetWork<T> imp
                 }
             }
         }
+        return true;
     }
 
     @Override
-    public void completed(Void result, T task) {
+    public void completed(Void result, AioClientTask task) {
         try {
             initSSLConnect(task);
             task.onBeReadyChannel(task.getChannel());
@@ -103,13 +82,13 @@ public class AioClientNetWork<T extends AioClientTask> extends AioNetWork<T> imp
     }
 
     @Override
-    public void failed(Throwable exc, T task) {
+    public void failed(Throwable exc, AioClientTask task) {
         try {
             task.onErrorChannel(NetErrorType.OTHER, exc);
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            destroyTaskImp(task);
+            mFactoryContext.getNetTaskComponent().addUnExecTask(task);
         }
     }
 }

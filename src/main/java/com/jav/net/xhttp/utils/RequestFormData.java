@@ -11,7 +11,7 @@ public class RequestFormData {
     }
 
     public static String convert(Object entity) {
-        Class cls = entity.getClass();
+        Class<?> cls = entity.getClass();
         SpeedReflex reflex = SpeedReflex.getInstance();
         StringBuilder builder = new StringBuilder();
 

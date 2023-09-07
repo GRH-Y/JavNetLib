@@ -58,7 +58,7 @@ public class SecurityReceiver implements ISecurityReceiver {
     /**
      * 真正的数据接收者
      */
-    private CoreReceiver mCoreReceiver;
+    private final CoreReceiver mCoreReceiver;
     /**
      * 安全协议的解析器
      */

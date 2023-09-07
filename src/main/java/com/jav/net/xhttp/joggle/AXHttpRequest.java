@@ -1,6 +1,6 @@
 package com.jav.net.xhttp.joggle;
 
-import com.jav.net.entity.RequestMode;
+import com.jav.net.base.RequestMode;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

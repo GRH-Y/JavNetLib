@@ -80,9 +80,11 @@ public class XHttpDefaultResponseConvert implements IXHttpResponseConvert {
                 response.setHttpData(GZipUtils.unCompress(response.getHttpData()));
             }
         }
-        Object resultType = request.getResultType();
-        if (resultType instanceof Class && !isBasicDataType((Class) resultType)) {
-            response.setResult(JsonEnvoy.toEntity((Class) resultType, new String(response.getHttpData())));
+        Class resultType = request.getResultType();
+        if (isBasicDataType(resultType)) {
+            response.setResult(response.getHttpData());
+        } else {
+            response.setResult(JsonEnvoy.toEntity(resultType, new String(response.getHttpData())));
         }
     }
 

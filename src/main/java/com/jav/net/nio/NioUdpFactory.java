@@ -1,7 +1,7 @@
 package com.jav.net.nio;
 
-import com.jav.net.base.AbsNetEngine;
 import com.jav.net.base.AbsNetFactory;
+import com.jav.net.base.BaseNetEngine;
 import com.jav.net.base.BaseNetWork;
 import com.jav.net.base.joggle.INetFactory;
 import com.jav.net.base.joggle.ISSLComponent;
@@ -24,7 +24,7 @@ public class NioUdpFactory extends AbsNetFactory<NioUdpTask> {
     }
 
     @Override
-    protected AbsNetEngine initNetEngine() {
+    protected BaseNetEngine initNetEngine() {
         return new NioNetEngine(getFactoryContext());
     }
 

@@ -1,7 +1,7 @@
 package com.jav.net.nio;
 
 
-import com.jav.common.state.joggle.IStateMachine;
+import com.jav.common.state.joggle.IControlStateMachine;
 import com.jav.net.base.BaseTlsTask;
 import com.jav.net.base.joggle.ISSLComponent;
 import com.jav.net.base.joggle.NetErrorType;
@@ -16,8 +16,7 @@ import java.nio.channels.SelectionKey;
  * @param <T>
  * @author yyz
  */
-public class BaseNioSelectionTask<T extends NetworkChannel> extends BaseTlsTask<T> {
-
+public class NioSelectionTask<T extends NetworkChannel> extends BaseTlsTask<T> {
 
     protected SelectionKey mSelectionKey;
 
@@ -40,7 +39,7 @@ public class BaseNioSelectionTask<T extends NetworkChannel> extends BaseTlsTask<
     }
 
     @Override
-    protected <M extends IStateMachine> M getStatusMachine() {
+    protected IControlStateMachine<Integer> getStatusMachine() {
         return super.getStatusMachine();
     }
 

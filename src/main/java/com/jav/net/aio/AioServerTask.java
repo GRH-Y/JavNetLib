@@ -4,7 +4,7 @@ import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 
-public class AioServerTask extends BaseAioChannelTask<AsynchronousServerSocketChannel> {
+public class AioServerTask extends AioChannelTask<AsynchronousServerSocketChannel> {
 
     public AsynchronousChannelGroup getChannelGroup() {
         return null;

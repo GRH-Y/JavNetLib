@@ -3,9 +3,9 @@ package com.jav.net.xhttp;
 import com.jav.common.log.LogDog;
 import com.jav.common.state.joggle.IControlStateMachine;
 import com.jav.common.util.StringEnvoy;
+import com.jav.net.base.MultiBuffer;
 import com.jav.net.base.NetTaskStatus;
 import com.jav.net.base.joggle.*;
-import com.jav.net.entity.MultiByteBuffer;
 import com.jav.net.nio.NioClientTask;
 import com.jav.net.nio.NioReceiver;
 import com.jav.net.nio.NioSender;
@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 
-public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INetReceiver<MultiByteBuffer> {
+public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INetReceiver<MultiBuffer> {
 
     private XRequest mRequest;
     private final XHttpConfig mHttpConfig;
@@ -75,8 +75,8 @@ public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INet
 
 
     @Override
-    public void onReceiveFullData(MultiByteBuffer buf) {
-        byte[] data = buf.array();
+    public void onReceiveFullData(MultiBuffer buf) {
+        byte[] data = buf.asByte();
         XHttpDecoderStatus status = XHttpDecoderStatus.OVER;
         if (data != null) {
             mHttpDecoderProcessor.decoderData(data, data.length);
@@ -154,8 +154,8 @@ public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INet
                 setSender(new XHttpsSender(getTlsHandler(), mSelectionKey, channel));
             }
             if (receiver instanceof XHttpsReceiver) {
-                // 说明上次任务也是https，则复用
                 XHttpsReceiver httpsReceiver = (XHttpsReceiver) receiver;
+                // 说明上次任务也是https，则复用
                 httpsReceiver.setTlsHandler(getTlsHandler());
             } else {
                 receiver = new XHttpsReceiver(getTlsHandler());
@@ -179,10 +179,10 @@ public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INet
 
         byte[] head = mHttpProtocol.toByte();
         getSender().setSenderFeedback(this);
-        getSender().sendData(new MultiByteBuffer(head));
+        getSender().sendData(new MultiBuffer(head));
         byte[] body = mRequest.getSendData();
         if (body != null) {
-            getSender().sendData(new MultiByteBuffer(body));
+            getSender().sendData(new MultiBuffer(body));
         }
         //        LogDog.d("==> head = " + new String(head));
     }

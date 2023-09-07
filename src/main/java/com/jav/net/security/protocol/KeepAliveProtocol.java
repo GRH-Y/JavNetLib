@@ -22,7 +22,7 @@ public class KeepAliveProtocol extends AbsProxyProtocol {
     /**
      * 通道id，区分不同的客户端，由服务端init数据生成返回
      */
-    private byte[] mChannelId;
+    private final byte[] mChannelId;
 
 
     public KeepAliveProtocol(String channelId) {

@@ -2,7 +2,7 @@ package com.jav.net.aio;
 
 import com.jav.net.base.BaseNetTask;
 import com.jav.net.base.BaseNetWork;
-import com.jav.net.entity.FactoryContext;
+import com.jav.net.base.FactoryContext;
 
 public class AioNetWork<T extends BaseNetTask> extends BaseNetWork<T> {
 
@@ -11,18 +11,23 @@ public class AioNetWork<T extends BaseNetTask> extends BaseNetWork<T> {
     }
 
     @Override
-    protected void onCreateTask() {
-        super.onCreateTask();
-    }
+    public void onWorkBegin() {
 
-
-    @Override
-    protected void onDestroyTask() {
-        super.onDestroyTask();
     }
 
     @Override
-    protected void onDestroyTaskAll() {
-        super.onDestroyTaskAll();
+    public void onWorkEnd() {
+
     }
+
+    @Override
+    public void onConnectTask(T netTask) {
+
+    }
+
+    @Override
+    public boolean onDisconnectTask(T netTask) {
+        return true;
+    }
+
 }

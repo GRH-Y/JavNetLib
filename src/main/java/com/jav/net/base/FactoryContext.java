@@ -1,7 +1,5 @@
-package com.jav.net.entity;
+package com.jav.net.base;
 
-import com.jav.net.base.AbsNetEngine;
-import com.jav.net.base.BaseNetWork;
 import com.jav.net.base.joggle.INetTaskComponent;
 import com.jav.net.base.joggle.ISSLComponent;
 
@@ -12,7 +10,7 @@ import com.jav.net.base.joggle.ISSLComponent;
  */
 public class FactoryContext {
 
-    private AbsNetEngine mNetEngine;
+    private BaseNetEngine mNetEngine;
 
     private BaseNetWork mNetWork;
 
@@ -20,11 +18,11 @@ public class FactoryContext {
 
     private INetTaskComponent mNetTaskComponent;
 
-    public <T extends AbsNetEngine> T getNetEngine() {
+    public <T extends BaseNetEngine> T getNetEngine() {
         return (T) mNetEngine;
     }
 
-    public void setNetEngine(AbsNetEngine engine) {
+    public void setNetEngine(BaseNetEngine engine) {
         this.mNetEngine = engine;
     }
 

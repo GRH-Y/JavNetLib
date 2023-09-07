@@ -2,36 +2,35 @@ package com.jav.net.nio;
 
 import com.jav.common.log.LogDog;
 import com.jav.common.state.joggle.IControlStateMachine;
+import com.jav.net.base.BaseNetWork;
+import com.jav.net.base.FactoryContext;
 import com.jav.net.base.NetTaskStatus;
 import com.jav.net.base.joggle.INetTaskComponent;
-import com.jav.net.entity.FactoryContext;
-
-import java.nio.channels.SocketChannel;
 
 /**
  * NioClearWork 只处理断开连接移除请求的事件
  *
  * @author yyz
  */
-public class NioClearWork<T extends NioClientTask, C extends SocketChannel> extends NioClientWork<T, C> {
+public class NioClearWork extends BaseNetWork<NioClientTask> {
 
     protected NioClearWork(FactoryContext context) {
         super(context);
     }
 
     @Override
-    protected void init() {
-        // 重写init方法，避免创建Selector
+    public void onWorkBegin() {
+
     }
 
     private boolean checkIdle() {
-        INetTaskComponent container = mFactoryContext.getNetTaskComponent();
+        INetTaskComponent<NioClientTask> container = mFactoryContext.getNetTaskComponent();
         return container.isDestroyQueueEmpty();
     }
 
 
     @Override
-    protected void onDestroyTask() {
+    public void onDisconnectNetTaskEnd() {
         if (checkIdle()) {
             // 没有任务则进入休眠
             FactoryContext context = getFactoryContext();
@@ -39,36 +38,37 @@ public class NioClearWork<T extends NioClientTask, C extends SocketChannel> exte
             engine.pauseEngine();
             LogDog.w("## enter sleep !!! ");
         } else {
-            super.onDestroyTask();
+            super.onDisconnectNetTaskEnd();
         }
     }
-
 
     @Override
-    protected void destroyTaskImp(T netTask) {
-        try {
-            execRemoverTask(netTask);
-        } catch (Throwable e) {
-            e.printStackTrace();
-        }
+    public void onWorkEnd() {
+        INetTaskComponent<NioClientTask> container = mFactoryContext.getNetTaskComponent();
+        container.clearAllQueue();
+    }
+
+    @Override
+    public void onConnectTask(NioClientTask netTask) {
+
+    }
+
+    @Override
+    public boolean onDisconnectTask(NioClientTask netTask) {
+        return execDisconnectTask(netTask);
     }
 
 
-    private void execRemoverTask(T netTask) {
+    private boolean execDisconnectTask(NioClientTask netTask) {
         // 等待task状态进入IDLING再执行回收
         IControlStateMachine<Integer> stateMachine = netTask.getStatusMachine();
         if (stateMachine.getState() == NetTaskStatus.INVALID) {
             // 避免多次执行
-            LogDog.w("## execRemoverTask task state is  INVALID !!!");
-            return;
+            LogDog.w("## disconnect task state is  INVALID !!!");
+            return true;
         }
         if (stateMachine.isAttachState(NetTaskStatus.IDLING)) {
-            onDisconnectTask(netTask);
-            while (!stateMachine.updateState(stateMachine.getState(), NetTaskStatus.INVALID)) {
-                LogDog.w("## execRemoverTask updateState state = " + stateMachine.getState());
-            }
-            onRecoveryTask(netTask);
-//                LogDog.i("## execRemoverTask task complete, task = " + netTask);
+            disconnectImp(netTask);
         } else {
             while (checkIdle() && stateMachine.isAttachState(NetTaskStatus.RUN)) {
                 //如果当前队列没有任务则进入等待模式
@@ -76,13 +76,60 @@ public class NioClearWork<T extends NioClientTask, C extends SocketChannel> exte
                 stateMachine.enterWait();
                 break;
             }
-            if (stateMachine.getState() != NetTaskStatus.INVALID) {
+            if (stateMachine.isAttachState(NetTaskStatus.IDLING)) {
+                disconnectImp(netTask);
+            } else if (stateMachine.getState() != NetTaskStatus.INVALID) {
                 LogDog.w("## put the task back in the queue and process it next time ,task = " + netTask);
-                INetTaskComponent container = mFactoryContext.getNetTaskComponent();
+                INetTaskComponent<NioClientTask> container = mFactoryContext.getNetTaskComponent();
                 container.addUnExecTask(netTask);
+                return false;
             }
         }
+        return true;
 //        LogDog.w("## execRemoverTask found error state = " + stateMachine.getState() + " task = " + netTask);
+    }
+
+    private void disconnectImp(NioClientTask netTask) {
+        IControlStateMachine<Integer> stateMachine = netTask.getStatusMachine();
+        try {
+            netTask.onCloseChannel();
+        } catch (Throwable e) {
+            e.printStackTrace();
+        } finally {
+            if (netTask.getSelectionKey() != null) {
+                try {
+                    netTask.getSelectionKey().cancel();
+                } catch (Throwable e) {
+                    e.printStackTrace();
+                }
+            }
+            if (netTask.getChannel() != null) {
+                if (netTask.getChannel().isConnected()) {
+                    try {
+                        netTask.getChannel().shutdownInput();
+                    } catch (Throwable e) {
+                        e.printStackTrace();
+                    }
+                    try {
+                        netTask.getChannel().shutdownOutput();
+                    } catch (Throwable e) {
+                        e.printStackTrace();
+                    }
+                }
+                try {
+                    netTask.getChannel().close();
+                } catch (Throwable e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        try {
+            netTask.onRecovery();
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
+        stateMachine.updateState(stateMachine.getState(), NetTaskStatus.INVALID);
+        LogDog.i("## disconnect task complete, task = " + netTask);
     }
 
 }

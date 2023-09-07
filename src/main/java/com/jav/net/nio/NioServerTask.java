@@ -10,7 +10,7 @@ import java.nio.channels.SocketChannel;
  * @author yyz
  * @version 1.0
  */
-public class NioServerTask extends BaseNioSelectionTask<ServerSocketChannel> {
+public class NioServerTask extends NioSelectionTask<ServerSocketChannel> {
 
     private int mMaxConnect = 50;
 

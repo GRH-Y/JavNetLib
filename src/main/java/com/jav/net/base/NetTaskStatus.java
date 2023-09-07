@@ -43,7 +43,7 @@ public class NetTaskStatus implements IState<AtomicInteger> {
     public static final int IDLING = 32;
 
 
-    private volatile AtomicInteger mStatus = new AtomicInteger(NONE);
+    private final AtomicInteger mStatus = new AtomicInteger(NONE);
 
     @Override
     public AtomicInteger getStateEntity() {
@@ -53,25 +53,25 @@ public class NetTaskStatus implements IState<AtomicInteger> {
 
     @Override
     public String toString() {
-        String name;
+        String name = "NULL";
         switch (mStatus.get()) {
-            case 1:
-                name = "FINISH";
+            case INVALID:
+                name = "INVALID";
                 break;
-            case 2:
+            case FINISHING:
+                name = "FINISHING";
+                break;
+            case NONE:
                 name = "NONE";
                 break;
-            case 4:
+            case LOAD:
                 name = "LOAD";
                 break;
-            case 8:
+            case RUN:
                 name = "RUN";
                 break;
-            case 16:
+            case IDLING:
                 name = "IDLING";
-                break;
-            default:
-                name = "INVALID";
                 break;
         }
         return "NetTaskStatus { code = " + mStatus + " name = " + name + " }";

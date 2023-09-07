@@ -24,10 +24,13 @@ public abstract class AbsNetSender<T> implements INetSender<T> {
      */
     public final static int SEND_CHANNEL_BUSY = -2;
 
-    protected ISenderFeedback mFeedback;
+    /**
+     * 发送回调，每发送完数据包触发一次
+     */
+    protected ISenderFeedback<T> mFeedback;
 
     @Override
-    public void setSenderFeedback(ISenderFeedback feedback) {
+    public void setSenderFeedback(ISenderFeedback<T> feedback) {
         this.mFeedback = feedback;
     }
 

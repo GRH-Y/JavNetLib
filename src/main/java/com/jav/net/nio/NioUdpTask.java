@@ -1,32 +1,20 @@
 package com.jav.net.nio;
 
+import com.jav.net.base.UdpPackLiveTime;
+
 import java.nio.channels.DatagramChannel;
 
-public class NioUdpTask extends BaseNioSelectionTask<DatagramChannel> {
+public class NioUdpTask extends NioSelectionTask<DatagramChannel> {
 
     private NioUdpReceiver mReceive;
     private NioUdpSender mSender;
 
     private boolean mIsServer = false;
     private boolean mIsBroadcast = false;
-    private LiveTime mLiveTime = LiveTime.EVERYWHERE;
+    private UdpPackLiveTime mLiveTime = UdpPackLiveTime.EVERYWHERE;
 
-    public enum LiveTime {
 
-        LOCAL_NETWORK(1), NETWORK_SITE(32), LOCAL_AREA(64), LOCAL_CONTINENT(128), EVERYWHERE(255);
-
-        final int ttl;
-
-        LiveTime(int ttl) {
-            this.ttl = ttl;
-        }
-
-        public int getTtl() {
-            return ttl;
-        }
-    }
-
-    public void setLiveTime(LiveTime liveTime) {
+    public void setLiveTime(UdpPackLiveTime liveTime) {
         this.mLiveTime = liveTime;
     }
 
@@ -42,7 +30,7 @@ public class NioUdpTask extends BaseNioSelectionTask<DatagramChannel> {
         return mIsServer;
     }
 
-    public LiveTime getLiveTime() {
+    public UdpPackLiveTime getLiveTime() {
         return mLiveTime;
     }
 
@@ -77,17 +65,17 @@ public class NioUdpTask extends BaseNioSelectionTask<DatagramChannel> {
     /**
      * 配置SocketChannel
      *
-     * @param channel
+     * @param channel udp通道
      */
     protected void onConfigChannel(DatagramChannel channel) {
         //监听者
-//        NetworkInterface interf = NetworkInterface.getByInetAddress(InetAddress.getByName("192.168.1.181"));
+//        NetworkInterface inter = NetworkInterface.getByInetAddress(InetAddress.getByName("192.168.1.181"));
 //        InetSocketAddress group = new InetSocketAddress(InetAddress.getByName("224.0.0.1"), 2000);
 //        //设置组播地址
 //        channel.bind(group);
 //        channel.configureBlocking(true);
 //        MulticastChannel multicast = channel;
-//        multicast.join(group.getAddress(), interf);
+//        multicast.join(group.getAddress(), inter);
     }
 
 }

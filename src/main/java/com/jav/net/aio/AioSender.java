@@ -8,11 +8,11 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
 
-public class AioSender implements INetSender<byte[]> {
+public class AioSender implements INetSender<ByteBuffer> {
 
     protected AsynchronousSocketChannel mChannel;
     protected TLSHandler mTLSHandler;
-    protected ISenderFeedback mFeedback;
+    protected ISenderFeedback<ByteBuffer> mFeedback;
     private final HandlerCore mHandlerCore;
 
     public AioSender(AsynchronousSocketChannel channel) {
@@ -21,7 +21,7 @@ public class AioSender implements INetSender<byte[]> {
     }
 
     @Override
-    public void setSenderFeedback(ISenderFeedback feedback) {
+    public void setSenderFeedback(ISenderFeedback<ByteBuffer> feedback) {
         this.mFeedback = feedback;
     }
 
@@ -34,29 +34,26 @@ public class AioSender implements INetSender<byte[]> {
     }
 
     @Override
-    public void sendData(byte[] data) {
+    public void sendData(ByteBuffer data) {
         if (data == null) {
             return;
         }
-        if (data instanceof byte[]) {
-            ByteBuffer byteBuffer = ByteBuffer.wrap(data);
-            if (mTLSHandler != null) {
-                try {
-                    mTLSHandler.wrapAndWrite(mChannel, byteBuffer, mHandlerCore);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    if (mFeedback != null) {
-                        mFeedback.onSenderFeedBack(this, byteBuffer, e);
-                    }
+        if (mTLSHandler != null) {
+            try {
+                mTLSHandler.wrapAndWrite(mChannel, data, mHandlerCore);
+            } catch (Exception e) {
+                e.printStackTrace();
+                if (mFeedback != null) {
+                    mFeedback.onSenderFeedBack(this, data, e);
                 }
-            } else {
-                try {
-                    mChannel.write(byteBuffer, byteBuffer, mHandlerCore);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    if (mFeedback != null) {
-                        mFeedback.onSenderFeedBack(this, byteBuffer, e);
-                    }
+            }
+        } else {
+            try {
+                mChannel.write(data, data, mHandlerCore);
+            } catch (Exception e) {
+                e.printStackTrace();
+                if (mFeedback != null) {
+                    mFeedback.onSenderFeedBack(this, data, e);
                 }
             }
         }

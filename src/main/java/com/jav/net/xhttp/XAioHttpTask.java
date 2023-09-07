@@ -24,7 +24,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
 
-public class XAioHttpTask extends AioClientTask implements ISenderFeedback, IAioNetReceiver {
+public class XAioHttpTask extends AioClientTask implements ISenderFeedback<ByteBuffer>, IAioNetReceiver {
 
     private XRequest mRequest;
     private final XHttpConfig mHttpConfig;
@@ -66,7 +66,7 @@ public class XAioHttpTask extends AioClientTask implements ISenderFeedback, IAio
     }
 
     @Override
-    public void onSenderFeedBack(INetSender sender, Object data, Throwable e) {
+    public void onSenderFeedBack(INetSender<ByteBuffer> sender, ByteBuffer data, Throwable e) {
         if (e != null) {
             mNetTaskFactory.addUnExecTask(this);
         }
@@ -110,8 +110,8 @@ public class XAioHttpTask extends AioClientTask implements ISenderFeedback, IAio
         receiver.triggerReceiver();
         byte[] head = mHttpProtocol.toByte();
         sender.setSenderFeedback(this);
-        sender.sendData(head);
-        sender.sendData(mRequest.getSendData());
+        sender.sendData(ByteBuffer.wrap(head));
+        sender.sendData(ByteBuffer.wrap(mRequest.getSendData()));
         //        LogDog.d("==> head = " + new String(head));
     }
 

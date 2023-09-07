@@ -12,13 +12,12 @@ import java.nio.channels.SocketChannel;
  * @author yyz
  * @version 1.0
  */
-public class NioClientTask extends BaseNioSelectionTask<SocketChannel> {
+public class NioClientTask extends NioSelectionTask<SocketChannel> {
 
     protected NioSender mSender = null;
 
     protected NioReceiver mReceiver = null;
 
-    protected TLSHandler mTLSHandler = null;
 
     public NioClientTask() {
     }
@@ -41,15 +40,9 @@ public class NioClientTask extends BaseNioSelectionTask<SocketChannel> {
         this.mReceiver = receiver;
     }
 
-    public void setTLSHandler(TLSHandler tlsHandler) {
-        this.mTLSHandler = tlsHandler;
-    }
 
     //---------------------------- get ---------------------------------------
 
-    public TLSHandler getTlsHandler() {
-        return mTLSHandler;
-    }
 
     public <T extends NioSender> T getSender() {
         return (T) mSender;

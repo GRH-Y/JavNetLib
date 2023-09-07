@@ -1,6 +1,6 @@
 package com.jav.net.nio;
 
-import com.jav.net.base.AbsNetEngine;
+import com.jav.net.base.BaseNetEngine;
 import com.jav.net.base.BaseNetWork;
 import com.jav.net.base.joggle.INetFactory;
 import com.jav.net.base.joggle.INetTaskComponent;
@@ -39,7 +39,7 @@ public class NioBalancedClientFactory extends NioClientFactory {
     }
 
     @Override
-    protected AbsNetEngine initNetEngine() {
+    protected BaseNetEngine initNetEngine() {
         return new BalancedEngine(getFactoryContext());
     }
 

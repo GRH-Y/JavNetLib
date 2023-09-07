@@ -1,6 +1,7 @@
 package com.jav.net.base;
 
 import com.jav.net.base.joggle.ISSLComponent;
+import com.jav.net.ssl.TLSHandler;
 
 import java.nio.channels.NetworkChannel;
 
@@ -9,9 +10,11 @@ import java.nio.channels.NetworkChannel;
  *
  * @author yyz
  */
-public class BaseTlsTask<T extends NetworkChannel> extends BaseNetChannelTask<T> {
+public class BaseTlsTask<T extends NetworkChannel> extends BaseNetTask<T> {
 
     protected boolean mIsTls = false;
+
+    protected TLSHandler mTLSHandler = null;
 
     public void setTls(boolean TLS) {
         mIsTls = TLS;
@@ -29,4 +32,11 @@ public class BaseTlsTask<T extends NetworkChannel> extends BaseNetChannelTask<T>
     protected void onCreateSSLContext(ISSLComponent sslFactory) {
     }
 
+    protected void setTLSHandler(TLSHandler tlsHandler) {
+        this.mTLSHandler = tlsHandler;
+    }
+
+    public TLSHandler getTlsHandler() {
+        return mTLSHandler;
+    }
 }
