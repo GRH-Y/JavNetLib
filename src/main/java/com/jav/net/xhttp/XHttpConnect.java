@@ -1,7 +1,5 @@
 package com.jav.net.xhttp;
 
-import com.jav.net.aio.AioClientFactory;
-import com.jav.net.aio.AioClientTask;
 import com.jav.net.base.AbsNetFactory;
 import com.jav.net.base.joggle.INetTaskComponent;
 import com.jav.net.nio.NioClientFactory;
@@ -21,23 +19,18 @@ public class XHttpConnect {
 
     private final AbsNetFactory mNioNetFactory;
 
-    private final AbsNetFactory mAioNetFactory;
 
     private volatile static XHttpConnect sHttpConnect = null;
 
-    private final INetTaskComponent<AioClientTask> mAioNetTaskFactory;
 
     private final INetTaskComponent<NioClientTask> mNioNetTaskFactory;
 
     private XHttpConnect() {
         mHttpTaskManger = XMultiplexCacheManger.getInstance();
         mNioNetFactory = new NioClientFactory();
-        mAioNetFactory = new AioClientFactory();
         mNioNetFactory.open();
-        mAioNetFactory.open();
 
         mNioNetTaskFactory = mNioNetFactory.getNetTaskComponent();
-        mAioNetTaskFactory = mAioNetFactory.getNetTaskComponent();
     }
 
     private static final class InnerClass {
@@ -52,7 +45,6 @@ public class XHttpConnect {
         synchronized (XHttpConnect.class) {
             if (sHttpConnect != null) {
                 sHttpConnect.mNioNetFactory.close();
-                sHttpConnect.mAioNetFactory.close();
                 XMultiplexCacheManger.getInstance().destroy();
                 sHttpConnect = null;
             }
@@ -115,23 +107,4 @@ public class XHttpConnect {
         return mNioNetTaskFactory.addExecTask(requestTask);
     }
 
-    public boolean submitAioRequest(IXHttpRequestEntity entity, Object callBackTarget) {
-        if (entity == null) {
-            throw new NullPointerException("entity is null ");
-        }
-        XRequest xHttpRequest = crateRequest(entity, callBackTarget);
-        return submitAioRequest(xHttpRequest);
-    }
-
-
-    public boolean submitAioRequest(XRequest request) {
-        if (request == null) {
-            throw new NullPointerException("request is null ");
-        }
-        if (mHttpConfig == null) {
-            mHttpConfig = XHttpConfig.getDefaultConfig();
-        }
-        XAioHttpTask requestTask = mHttpTaskManger.obtainAioTask(mAioNetTaskFactory, mHttpConfig, request);
-        return mAioNetTaskFactory.addExecTask(requestTask);
-    }
 }
