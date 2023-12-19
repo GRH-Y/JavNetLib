@@ -10,8 +10,8 @@ import com.jav.common.cryption.joggle.IEncryptComponent;
 import com.jav.net.security.channel.base.AbsSecurityMeter;
 import com.jav.net.security.channel.base.ChannelStatus;
 import com.jav.net.security.channel.base.ParserCallBackRegistrar;
-import com.jav.net.security.channel.base.SecurityPolicyProcessor;
 import com.jav.net.security.channel.joggle.ChannelEncryption;
+import com.jav.net.security.guard.SecurityPolicyProcessor;
 
 /**
  * ChanelMeter 通道辅助，向外提供服务
@@ -107,32 +107,21 @@ public class SecurityChanelMeter extends AbsSecurityMeter {
     @Override
     protected void onChannelReady(SecuritySender sender, SecurityReceiver receiver) {
         super.onChannelReady(sender, receiver);
+        // 设置协议解析器
+        mRealReceiver.setProtocolParser(mProtocolParser);
 
         //设置加密方式
         ChannelEncryption encryption = mContext.getChannelEncryption();
         EncryptionType encryptionType = encryption.getInitEncryption().getEncryptionType();
         configEncryptionMode(encryptionType, encryption);
-        // 设置协议解析器
-        mRealReceiver.setProtocolParser(mProtocolParser);
-        //重置接收,断线重连接需要恢复状态
-        mRealReceiver.reset();
-        //回调chanel准备就绪
-        onExtChannelReady();
+
+        updateCurStatus(ChannelStatus.READY);
     }
+
 
     @Override
     protected ChannelStatus getCruStatus() {
         return super.getCruStatus();
-    }
-
-    @Override
-    protected void updateCurStatus(ChannelStatus status) {
-        super.updateCurStatus(status);
-    }
-
-    @Override
-    protected void onExtChannelReady() {
-        super.onExtChannelReady();
     }
 
     @Override

@@ -10,13 +10,23 @@ import com.jav.net.base.joggle.ISSLComponent;
  */
 public class FactoryContext {
 
+    private SelectorEventHubs mEventHubs;
+
     private BaseNetEngine mNetEngine;
 
-    private BaseNetWork mNetWork;
+    private NioNetWork mNetWork;
 
     private ISSLComponent mSSLFactory;
 
     private INetTaskComponent mNetTaskComponent;
+
+    public void setSelectorEventHubs(SelectorEventHubs eventHubs) {
+        this.mEventHubs = eventHubs;
+    }
+
+    public SelectorEventHubs getSelectorEventHubs() {
+        return mEventHubs;
+    }
 
     public <T extends BaseNetEngine> T getNetEngine() {
         return (T) mNetEngine;
@@ -30,7 +40,7 @@ public class FactoryContext {
         return (T) mNetWork;
     }
 
-    public void setNetWork(BaseNetWork work) {
+    public void setNetWork(NioNetWork work) {
         this.mNetWork = work;
     }
 

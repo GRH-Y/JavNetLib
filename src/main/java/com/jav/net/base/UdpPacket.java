@@ -1,7 +1,6 @@
 package com.jav.net.base;
 
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 
 /**
  * udp数据包
@@ -10,17 +9,17 @@ import java.nio.ByteBuffer;
  */
 public class UdpPacket {
     /**
-     * 请求端的地址信息
+     * 数据源地址信息
      */
-    private SocketAddress mRequestAdr;
+    private SocketAddress mAddress;
 
     /**
      * 接收到的完整数据
      */
-    private ByteBuffer mFullData;
+    private MultiBuffer mFullData;
 
-    public UdpPacket(SocketAddress reqAdr, ByteBuffer fullData) {
-        mRequestAdr = reqAdr;
+    public UdpPacket(SocketAddress address, MultiBuffer fullData) {
+        mAddress = address;
         mFullData = fullData;
     }
 
@@ -29,7 +28,7 @@ public class UdpPacket {
      *
      * @return
      */
-    public ByteBuffer getFullData() {
+    public MultiBuffer getUdpData() {
         return mFullData;
     }
 
@@ -38,7 +37,7 @@ public class UdpPacket {
      *
      * @return
      */
-    public SocketAddress getRequestAdr() {
-        return mRequestAdr;
+    public SocketAddress getAddress() {
+        return mAddress;
     }
 }

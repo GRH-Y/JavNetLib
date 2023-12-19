@@ -21,9 +21,9 @@ public class TransProtocol extends AbsProxyProtocol {
 
 
     /**
-     * 通道id，区分不同的客户端，由服务端init数据生成返回
+     * 机器id，区分不同的客户
      */
-    private final byte[] mChannelId;
+    private final byte[] mMachineId;
 
 
     /**
@@ -36,7 +36,7 @@ public class TransProtocol extends AbsProxyProtocol {
         if (StringEnvoy.isEmpty(channelId) || StringEnvoy.isEmpty(requestId)) {
             throw new IllegalArgumentException("channelId or requestId can not be null !!!");
         }
-        this.mChannelId = channelId.getBytes();
+        this.mMachineId = channelId.getBytes();
         this.mRequestId = requestId.getBytes();
     }
 
@@ -58,7 +58,7 @@ public class TransProtocol extends AbsProxyProtocol {
 
         srcData.putLong(time());
         srcData.put(activityCode());
-        srcData.put(mChannelId);
+        srcData.put(mMachineId);
         srcData.put(operateCode());
         srcData.put(mRequestId);
         if (sendData != null) {

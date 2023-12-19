@@ -16,7 +16,7 @@ public enum UnusualBehaviorType {
 
     EXP_OPERATE_CODE(0x115, "illegal operate code"),
 
-    EXP_CHANNEL_ID(0x116, "illegal channelId"),
+    EXP_REPEAT_CODE(0x116, "repeat machineId"),
 
     EXP_MACHINE_ID(0x117, "illegal machineId"),
 

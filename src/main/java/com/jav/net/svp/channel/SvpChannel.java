@@ -7,13 +7,14 @@ import com.jav.net.svp.channel.joggle.ICombinedPackCompleteListener;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
+import java.nio.channels.SelectionKey;
 
-public class SvpServer extends NioUdpTask implements ICombinedPackCompleteListener {
+public class SvpChannel extends NioUdpTask implements ICombinedPackCompleteListener {
 
     protected SvpPackDispatch mDispatch;
 
     @Override
-    protected void onBeReadyChannel(DatagramChannel channel) {
+    protected void onBeReadyChannel(SelectionKey selectionKey, DatagramChannel channel) {
         mDispatch = new SvpPackDispatch(this);
         NioUdpReceiver svpReceiver = new NioUdpReceiver();
         svpReceiver.setDataReceiver(mDispatch);
@@ -29,12 +30,15 @@ public class SvpServer extends NioUdpTask implements ICombinedPackCompleteListen
     }
 
     @Override
-    public void onRequestPack(byte[] adr, int port) {
+    public void onRequestPack(ChannelInfo channelInfo) {
 
     }
 
     @Override
-    public void onCombinedCompletePack(ByteBuffer pack) {
+    public void onCombinedCompletePack(ChannelInfo channelInfo, ByteBuffer fullData) {
+        if (channelInfo.isTcp()) {
+            SvpTcpClient svpTcpClient = new SvpTcpClient(channelInfo, fullData);
 
+        }
     }
 }

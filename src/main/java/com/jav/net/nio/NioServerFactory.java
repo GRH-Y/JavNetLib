@@ -3,11 +3,8 @@ package com.jav.net.nio;
 
 import com.jav.net.base.AbsNetFactory;
 import com.jav.net.base.BaseNetEngine;
-import com.jav.net.base.BaseNetWork;
-import com.jav.net.base.joggle.INetFactory;
+import com.jav.net.base.NioNetWork;
 import com.jav.net.base.joggle.INetTaskComponent;
-import com.jav.net.base.joggle.ISSLComponent;
-import com.jav.net.ssl.SSLComponent;
 
 /**
  * nio服务端工厂(单线程管理多个ServerSocket)
@@ -17,34 +14,14 @@ import com.jav.net.ssl.SSLComponent;
  */
 public class NioServerFactory extends AbsNetFactory<NioServerTask> {
 
-    public NioServerFactory() {
-    }
-
-    private static final class InnerClass {
-        public static final NioServerFactory sFactory = new NioServerFactory();
-    }
-
-    public static INetFactory<NioServerTask> getFactory() {
-        return InnerClass.sFactory;
-    }
-
-    public static void destroy() {
-        InnerClass.sFactory.close();
-    }
-
     @Override
     protected BaseNetEngine initNetEngine() {
-        return new NioNetEngine(getFactoryContext());
+        return new NioNetEngine(mFactoryContext.getNetWork());
     }
 
     @Override
-    protected BaseNetWork<NioServerTask> initNetWork() {
+    protected NioNetWork initNetWork() {
         return new NioServerWork(getFactoryContext());
-    }
-
-    @Override
-    protected ISSLComponent initSSLComponent() {
-        return new SSLComponent();
     }
 
     @Override

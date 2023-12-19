@@ -27,14 +27,6 @@ public interface ISecurityPolicyProcessor {
     boolean onCheckMachineId(String checkMid);
 
 
-    /**
-     * 校验channel id
-     *
-     * @param channelId 通道id
-     * @return true 为校验通过
-     */
-    boolean onCheckChannelId(String channelId);
-
 
     /**
      * 异常行为

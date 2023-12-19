@@ -52,4 +52,13 @@ public class SecurityChannelImage {
         }
     }
 
+    /**
+     * 发送心跳包
+     *
+     * @param machineId
+     */
+    public void sendKeepAlive(String machineId) {
+        mSender.sendKeepAlive(machineId);
+    }
+
 }

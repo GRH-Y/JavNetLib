@@ -1,6 +1,7 @@
 package com.jav.net.nio;
 
 import com.jav.net.base.AbsNetReceiver;
+import com.jav.net.base.MultiBuffer;
 import com.jav.net.base.UdpPacket;
 
 import java.net.SocketAddress;
@@ -15,7 +16,9 @@ public class NioUdpReceiver extends AbsNetReceiver<DatagramChannel, UdpPacket> {
         ByteBuffer buffer = ByteBuffer.allocate(NioUdpSender.MAX_PACK_LENGTH);
         SocketAddress address = channel.receive(buffer);
         if (mReceiver != null) {
-            mReceiver.onReceiveFullData(new UdpPacket(address, buffer));
+            buffer.flip();
+            MultiBuffer udpData = new MultiBuffer(buffer);
+            mReceiver.onReceiveFullData(new UdpPacket(address, udpData));
         }
     }
 }

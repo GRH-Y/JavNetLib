@@ -1,10 +1,9 @@
-package com.jav.net.security.channel.base;
+package com.jav.net.security.guard;
 
-import com.jav.net.security.cache.CacheChannelIdMater;
 import com.jav.net.security.cache.CacheExtMachineIdMater;
 import com.jav.net.security.channel.SecurityChannelContext;
+import com.jav.net.security.channel.base.UnusualBehaviorType;
 import com.jav.net.security.channel.joggle.ISecurityPolicyProcessor;
-import com.jav.net.security.guard.IpBlackListManager;
 
 import java.util.List;
 
@@ -60,13 +59,6 @@ public class SecurityPolicyProcessor implements ISecurityPolicyProcessor {
         return checkMid.equalsIgnoreCase(mContext.getMachineId());
     }
 
-    @Override
-    public boolean onCheckChannelId(String channelId) {
-        if (mContext.isServerMode()) {
-            return CacheChannelIdMater.getInstance().checkChannelId(channelId);
-        }
-        return true;
-    }
 
     @Override
     public void onUnusualBehavior(String host, UnusualBehaviorType type) {

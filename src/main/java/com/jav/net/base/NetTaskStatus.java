@@ -37,10 +37,6 @@ public class NetTaskStatus implements IState<AtomicInteger> {
      */
     public static final int RUN = 16;
 
-    /**
-     * 无事件状态
-     */
-    public static final int IDLING = 32;
 
 
     private final AtomicInteger mStatus = new AtomicInteger(NONE);
@@ -69,9 +65,6 @@ public class NetTaskStatus implements IState<AtomicInteger> {
                 break;
             case RUN:
                 name = "RUN";
-                break;
-            case IDLING:
-                name = "IDLING";
                 break;
         }
         return "NetTaskStatus { code = " + mStatus + " name = " + name + " }";

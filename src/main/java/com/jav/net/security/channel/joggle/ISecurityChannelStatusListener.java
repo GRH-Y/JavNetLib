@@ -18,7 +18,7 @@ public interface ISecurityChannelStatusListener<T extends SecurityChannelImage> 
      *
      * @param image 通道镜像
      */
-    void onChannelReady(T image);
+    void onChannelImageReady(T image);
 
 
     /**

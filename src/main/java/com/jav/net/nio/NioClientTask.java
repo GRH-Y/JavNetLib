@@ -1,9 +1,11 @@
 package com.jav.net.nio;
 
 
+import com.jav.common.state.joggle.IControlStateMachine;
+import com.jav.net.base.BaseNetTask;
 import com.jav.net.component.DefaultCacheComponentPicker;
-import com.jav.net.ssl.TLSHandler;
 
+import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
 /**
@@ -12,7 +14,7 @@ import java.nio.channels.SocketChannel;
  * @author yyz
  * @version 1.0
  */
-public class NioClientTask extends NioSelectionTask<SocketChannel> {
+public class NioClientTask extends BaseNetTask<SocketChannel> {
 
     protected NioSender mSender = null;
 
@@ -22,12 +24,11 @@ public class NioClientTask extends NioSelectionTask<SocketChannel> {
     public NioClientTask() {
     }
 
-    public NioClientTask(SocketChannel channel, TLSHandler tlsHandler) {
+    public NioClientTask(SocketChannel channel) {
         if (!channel.isOpen() || !channel.isConnected()) {
             throw new IllegalStateException("SocketChannel is bed !!! ");
         }
         setChannel(channel);
-        this.mTLSHandler = tlsHandler;
     }
 
     //---------------------------- set ---------------------------------------
@@ -52,6 +53,40 @@ public class NioClientTask extends NioSelectionTask<SocketChannel> {
         return (T) mReceiver;
     }
 
+    @Override
+    protected void onBeReadyChannel(SelectionKey selectionKey, SocketChannel channel) {
+        super.onBeReadyChannel(selectionKey, channel);
+    }
+
+    @Override
+    protected SocketChannel getChannel() {
+        return super.getChannel();
+    }
+
+    @Override
+    protected void onConfigChannel(SocketChannel channel) {
+        super.onConfigChannel(channel);
+    }
+
+    @Override
+    protected void setChannel(SocketChannel channel) {
+        super.setChannel(channel);
+    }
+
+    @Override
+    protected SelectionKey getSelectionKey() {
+        return super.getSelectionKey();
+    }
+
+    @Override
+    protected void setSelectionKey(SelectionKey key) {
+        super.setSelectionKey(key);
+    }
+
+    @Override
+    protected IControlStateMachine<Integer> getStatusMachine() {
+        return super.getStatusMachine();
+    }
 
     /**
      * 断开链接后回调
@@ -59,7 +94,6 @@ public class NioClientTask extends NioSelectionTask<SocketChannel> {
     @Override
     protected void onRecovery() {
         super.onRecovery();
-        mTLSHandler = null;
         if (mSender != null) {
             mSender.getCacheComponent().clearCache(new DefaultCacheComponentPicker());
         }

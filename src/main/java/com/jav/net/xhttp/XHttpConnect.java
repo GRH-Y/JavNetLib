@@ -15,8 +15,6 @@ public class XHttpConnect {
 
     private XHttpConfig mHttpConfig;
 
-    private final XMultiplexCacheManger mHttpTaskManger;
-
     private final AbsNetFactory mNioNetFactory;
 
 
@@ -26,7 +24,6 @@ public class XHttpConnect {
     private final INetTaskComponent<NioClientTask> mNioNetTaskFactory;
 
     private XHttpConnect() {
-        mHttpTaskManger = XMultiplexCacheManger.getInstance();
         mNioNetFactory = new NioClientFactory();
         mNioNetFactory.open();
 
@@ -45,13 +42,12 @@ public class XHttpConnect {
         synchronized (XHttpConnect.class) {
             if (sHttpConnect != null) {
                 sHttpConnect.mNioNetFactory.close();
-                XMultiplexCacheManger.getInstance().destroy();
                 sHttpConnect = null;
             }
         }
     }
 
-    public void setHttpConfig(XHttpConfig httpConfig) {
+    public void init(XHttpConfig httpConfig) {
         if (httpConfig == null) {
             httpConfig = XHttpConfig.getDefaultConfig();
         }
@@ -68,10 +64,19 @@ public class XHttpConnect {
         if (request == null) {
             throw new IllegalArgumentException("The entity has no annotations ARequest !!! ");
         }
+        XRequest xHttpRequest = getxRequest(entity, callBackTarget, request);
+        boolean isDisableSysProperty = request.disableSysProperty();
+        if (isDisableSysProperty) {
+            xHttpRequest.disableSysProperty();
+        }
+        return xHttpRequest;
+    }
+
+    private static XRequest getxRequest(IXHttpRequestEntity entity, Object callBackTarget, AXHttpRequest request) {
         XRequest xHttpRequest = new XRequest();
 
-        LinkedHashMap<Object, Object> property = entity.getRequestProperty();
-        xHttpRequest.setRequestProperty(property);
+        LinkedHashMap<Object, Object> property = entity.getUserRequestProperty();
+        xHttpRequest.setUserRequestProperty(property);
         xHttpRequest.setCallBackTarget(callBackTarget);
         xHttpRequest.setSendData(entity.getSendData());
         xHttpRequest.setCallBackSuccessMethod(request.callBackSuccessMethod());
@@ -80,10 +85,6 @@ public class XHttpConnect {
         xHttpRequest.setResultType(request.resultType());
         xHttpRequest.setRequestMode(request.requestMode());
         xHttpRequest.setUrl(request.url());
-        boolean isDisableSysProperty = request.disableSysProperty();
-        if (isDisableSysProperty) {
-            xHttpRequest.disableSysProperty();
-        }
         return xHttpRequest;
     }
 
@@ -103,7 +104,7 @@ public class XHttpConnect {
         if (mHttpConfig == null) {
             mHttpConfig = XHttpConfig.getDefaultConfig();
         }
-        XNioHttpTask requestTask = mHttpTaskManger.obtainNioTask(mNioNetTaskFactory, mHttpConfig, request);
+        XNioHttpTask requestTask = new XNioHttpTask(mNioNetTaskFactory, mHttpConfig, request);
         return mNioNetTaskFactory.addExecTask(requestTask);
     }
 

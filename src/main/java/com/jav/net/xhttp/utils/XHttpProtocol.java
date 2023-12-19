@@ -104,7 +104,7 @@ public class XHttpProtocol {
             }
         }
 
-        Map<Object, Object> userParameter = request.getRequestProperty();
+        Map<Object, Object> userParameter = request.getUserRequestProperty();
         if (userParameter != null && !userParameter.isEmpty()) {
             Set<Map.Entry<Object, Object>> set = userParameter.entrySet();
             for (Map.Entry<Object, Object> entry : set) {

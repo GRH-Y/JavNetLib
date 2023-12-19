@@ -87,6 +87,19 @@ public class XResponseHelper {
         return null;
     }
 
+    public static String getHttpUrl(XResponse response) {
+        if (response == null) {
+            return null;
+        }
+        String content = response.getHeadForKey(XHttpProtocol.XY_FIST_LINE);
+        String[] arrays = content.split(" ");
+        if (arrays.length > 2) {
+            return arrays[1];
+        }
+        return null;
+    }
+
+
     public static boolean isTLS(XResponse response) {
         String content = response.getHeadForKey(XHttpProtocol.XY_FIST_LINE);
         int httpIndex = content.indexOf("://");
@@ -101,11 +114,11 @@ public class XResponseHelper {
         if (response == null) {
             return null;
         }
-        String version = null;
+        String version = "HTTP/1.1";
         String content = response.getHeadForKey(XHttpProtocol.XY_FIST_LINE);
         String[] arrays = content.split(" ");
-        if (arrays.length > 1) {
-            version = arrays[0];
+        if (arrays.length > 2) {
+            version = arrays[2];
         }
         return version;
     }

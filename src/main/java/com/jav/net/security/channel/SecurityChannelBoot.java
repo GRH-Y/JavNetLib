@@ -2,6 +2,7 @@ package com.jav.net.security.channel;
 
 
 import com.jav.common.log.LogDog;
+import com.jav.net.base.joggle.INetFactory;
 import com.jav.net.base.joggle.INetTaskComponent;
 import com.jav.net.nio.NioClientFactory;
 import com.jav.net.nio.NioClientTask;
@@ -10,6 +11,7 @@ import com.jav.net.security.channel.base.AbsSecurityServer;
 import com.jav.net.security.channel.base.ChannelStatus;
 import com.jav.net.security.channel.joggle.IClientChannelStatusListener;
 import com.jav.net.security.channel.joggle.ISecurityChannelChangeListener;
+import com.jav.net.security.guard.ChannelKeepAliveSystem;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +26,7 @@ public class SecurityChannelBoot {
     /**
      * 工作线程数
      */
-    private static final int WORK_COUNT = 2;
+    private static final int WORK_COUNT = 4;
 
     /**
      * 配置信息
@@ -45,7 +47,7 @@ public class SecurityChannelBoot {
     /**
      * socket客户端通信
      */
-    private NioClientFactory mClientFactory;
+    private INetFactory mClientFactory;
 
     /**
      * socket服务端通信
@@ -60,12 +62,7 @@ public class SecurityChannelBoot {
     /**
      * 不可重入锁
      */
-    private final Object mLock = new Object() {
-        @Override
-        public int hashCode() {
-            return (int) System.nanoTime();
-        }
-    };
+    private final Object mLock = new Object();
 
 
     private SecurityChannelBoot() {
@@ -110,15 +107,15 @@ public class SecurityChannelBoot {
         SecurityChannelClient channelClient = mClientChanelList.get(mChannelIndex);
         SecurityClientChanelMeter chanelMeter = channelClient.getChanelMeter();
         if (chanelMeter.getCruStatus() == ChannelStatus.INVALID) {
-            LogDog.w("@@ channel is INVALID , need new channel !!!");
+            LogDog.w("#SC# channel is INVALID , need new channel !!!");
             mClientChanelList.remove(channelClient);
-            mChannelIndex = 0;
             SecurityChannelClient newChannelClient = createChannel();
             if (newChannelClient == null) {
                 return null;
             }
             //如果当前的主通道，配置主通道的监听
             ISecurityChannelChangeListener changeListener = chanelMeter.getChannelChangeListener();
+            chanelMeter.setChannelChangeListener(null);
             chanelMeter = newChannelClient.getChanelMeter();
             chanelMeter.setChannelChangeListener(changeListener);
 
@@ -129,7 +126,7 @@ public class SecurityChannelBoot {
         if (mChannelIndex == mContext.getChannelNumber()) {
             mChannelIndex = 0;
         }
-        LogDog.d("@@ chose channel index = " + mChannelIndex);
+        LogDog.d("#SC# choose channel index = " + mChannelIndex);
         return chanelMeter;
     }
 
@@ -145,7 +142,7 @@ public class SecurityChannelBoot {
         SecurityChannelClient channelClient = new SecurityChannelClient(mContext);
         channelClient.setAddress(mContext.getConnectHost(), mContext.getConnectPort());
         mClientChanelList.add(channelClient);
-        LogDog.d("@@ connect security host = " + mContext.getConnectHost() + ":" + mContext.getConnectPort());
+        LogDog.d("#SC# connect security host = " + mContext.getConnectHost() + ":" + mContext.getConnectPort());
         return channelClient;
     }
 
@@ -157,8 +154,12 @@ public class SecurityChannelBoot {
         if (mClientFactory != null) {
             return;
         }
-        mClientFactory = new NioClientFactory();
+        mClientFactory = new NioClientFactory(WORK_COUNT);
         mClientFactory.open();
+
+        String machineId = mContext.getMachineId();
+        //启动通道保活机制
+        ChannelKeepAliveSystem.getInstance().init(machineId);
 
         for (int count = 0; count < mContext.getChannelNumber(); count++) {
             SecurityChannelClient channelClient = createChannel();
@@ -207,7 +208,7 @@ public class SecurityChannelBoot {
         for (SecurityChannelClient client : mClientChanelList) {
             mClientFactory.getNetTaskComponent().addUnExecTask(client);
         }
-        LogDog.w("@@ resetConnectSecurityServer lowLoadHost:" + host + ":" + port);
+        LogDog.w("#SC# resetConnectSecurityServer lowLoadHost:" + host + ":" + port);
     }
 
 
@@ -234,21 +235,11 @@ public class SecurityChannelBoot {
         }
         synchronized (mLock) {
             try {
-                for (SecurityChannelClient client : mClientChanelList) {
-                    SecurityClientChanelMeter meter = client.getChanelMeter();
-                    if (meter.getCruStatus() == ChannelStatus.INVALID) {
-                        break;
-                    }
-                    SecurityClientChannelImage image = meter.findListenerToImage(listener);
-                    if (image != null) {
-                        return;
-                    }
-                }
                 SecurityClientChanelMeter chanelMeter = pollingChannel();
                 if (chanelMeter != null) {
                     SecurityClientChannelImage image = SecurityClientChannelImage.builderClientChannelImage(listener);
                     chanelMeter.regClientChannelImage(image);
-                    LogDog.w("@@ register Client Channel !!!" + image);
+                    LogDog.w("#SC# register Client Channel !!!" + image);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -270,18 +261,11 @@ public class SecurityChannelBoot {
             for (SecurityChannelClient client : mClientChanelList) {
                 SecurityClientChanelMeter meter = client.getChanelMeter();
                 if (meter.unRegClientChannelImage(image)) {
-                    LogDog.w("@@ unRegister Client Channel !!!" + image);
+                    LogDog.w("#SC# unRegister Client Channel !!!" + image);
                     break;
                 }
             }
         }
-    }
-
-    protected void stopChannel(SecurityChannelClient client) {
-        if (client != null && mClientFactory != null) {
-            mClientFactory.getNetTaskComponent().addUnExecTask(client);
-        }
-        LogDog.w("@@ stop Channel !!!");
     }
 
 
@@ -301,6 +285,7 @@ public class SecurityChannelBoot {
             mChannelIndex = 0;
             mClientChanelList.clear();
         }
+        ChannelKeepAliveSystem.getInstance().destroy();
         mIsInit = false;
     }
 }

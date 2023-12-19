@@ -1,10 +1,13 @@
 package com.jav.net.nio;
 
+import com.jav.common.state.joggle.IControlStateMachine;
+import com.jav.net.base.BaseNetTask;
 import com.jav.net.base.UdpPackLiveTime;
 
 import java.nio.channels.DatagramChannel;
+import java.nio.channels.SelectionKey;
 
-public class NioUdpTask extends NioSelectionTask<DatagramChannel> {
+public class NioUdpTask extends BaseNetTask<DatagramChannel> {
 
     private NioUdpReceiver mReceive;
     private NioUdpSender mSender;
@@ -12,6 +15,17 @@ public class NioUdpTask extends NioSelectionTask<DatagramChannel> {
     private boolean mIsServer = false;
     private boolean mIsBroadcast = false;
     private UdpPackLiveTime mLiveTime = UdpPackLiveTime.EVERYWHERE;
+
+
+    public NioUdpTask() {
+    }
+
+    public NioUdpTask(DatagramChannel channel) {
+        if (!channel.isOpen() || !channel.isConnected()) {
+            throw new IllegalStateException("DatagramChannel is bed !!! ");
+        }
+        setChannel(channel);
+    }
 
 
     public void setLiveTime(UdpPackLiveTime liveTime) {
@@ -60,6 +74,26 @@ public class NioUdpTask extends NioSelectionTask<DatagramChannel> {
 
     public <T extends NioUdpSender> T getSender() {
         return (T) mSender;
+    }
+
+    @Override
+    protected void setChannel(DatagramChannel channel) {
+        super.setChannel(channel);
+    }
+
+    @Override
+    protected void onBeReadyChannel(SelectionKey selectionKey, DatagramChannel channel) {
+        super.onBeReadyChannel(selectionKey, channel);
+    }
+
+    @Override
+    protected void setSelectionKey(SelectionKey key) {
+        super.setSelectionKey(key);
+    }
+
+    @Override
+    protected IControlStateMachine<Integer> getStatusMachine() {
+        return super.getStatusMachine();
     }
 
     /**

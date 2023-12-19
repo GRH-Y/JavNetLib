@@ -26,37 +26,9 @@ public interface INetTaskComponent<T extends BaseNetTask> {
      */
     boolean addUnExecTask(T task);
 
-    /**
-     * 添加任务队列是否为空
-     *
-     * @return
-     */
-    boolean isConnectQueueEmpty();
 
     /**
-     * 移除任务队列是否为空
-     *
-     * @return
+     * 释放资源
      */
-    boolean isDestroyQueueEmpty();
-
-    /**
-     * 获取添加队列的task
-     *
-     * @return
-     */
-    T pollConnectTask();
-
-    /**
-     * 获取移除队列的task
-     *
-     * @return
-     */
-    T pollDestroyTask();
-
-
-    /**
-     * 清除所有的队列数据
-     */
-    void clearAllQueue();
+    void release();
 }

@@ -1,14 +1,13 @@
 package com.jav.net.security.channel;
 
-import com.jav.net.base.MultiBuffer;
+import com.jav.net.base.AbsNetSender;
 import com.jav.net.base.SocketChannelCloseException;
-import com.jav.net.base.joggle.INetSender;
-import com.jav.net.base.joggle.ISenderFeedback;
 import com.jav.net.base.joggle.NetErrorType;
 import com.jav.net.nio.NioClientTask;
 import com.jav.net.nio.NioReceiver;
 import com.jav.net.nio.NioSender;
 
+import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
 /**
@@ -35,7 +34,7 @@ public class SecurityChannelClient extends NioClientTask {
     }
 
     public SecurityChannelClient(SecurityChannelContext context, SocketChannel channel) {
-        super(channel, null);
+        super(channel);
         this.mContext = context;
         mChanelMeter = initSecurityChanelMeter(context);
     }
@@ -54,7 +53,7 @@ public class SecurityChannelClient extends NioClientTask {
     }
 
     protected SecuritySender initSender() {
-        return new SecurityProxySender();
+        return new SecurityProxySender(new NioSender());
     }
 
     /**
@@ -69,36 +68,21 @@ public class SecurityChannelClient extends NioClientTask {
 
 
     @Override
-    protected void onBeReadyChannel(SocketChannel channel) {
-        SecurityReceiver securityReceiver = mChanelMeter.getReceiver();
-        if (securityReceiver == null) {
-            securityReceiver = initReceiver();
-            NioReceiver coreReceiver = securityReceiver.getCoreReceiver();
-            setReceiver(coreReceiver);
-        }
+    protected void onBeReadyChannel(SelectionKey selectionKey, SocketChannel channel) {
+        SecuritySender securitySender = initSender();
+        AbsNetSender coreSender = securitySender.getCoreSender();
+        coreSender.setChannel(selectionKey, channel);
+        setSender((NioSender) coreSender);
 
-        SecuritySender securitySender = mChanelMeter.getSender();
-        if (securitySender == null) {
-            securitySender = initSender();
-            NioSender coreSender = securitySender.getCoreSender();
-            coreSender.setChannel(getSelectionKey(), channel);
-            coreSender.setSenderFeedback(new ISenderFeedback<MultiBuffer>() {
-                @Override
-                public void onSenderFeedBack(INetSender<MultiBuffer> sender, MultiBuffer data, Throwable e) {
-                    if (e != null) {
-                        SecurityChannelBoot.getInstance().stopChannel(SecurityChannelClient.this);
-                    }
-                }
-            });
-            setSender(coreSender);
-        }
+        SecurityReceiver securityReceiver = initReceiver();
+        NioReceiver coreReceiver = securityReceiver.getCoreReceiver();
+        setReceiver(coreReceiver);
 
         mChanelMeter.onChannelReady(securitySender, securityReceiver);
     }
 
     @Override
     protected void onCloseChannel() {
-        super.onCloseChannel();
         mChanelMeter.onChannelInvalid();
     }
 

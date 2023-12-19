@@ -7,6 +7,7 @@ import com.jav.net.security.channel.base.ChannelStatus;
 import com.jav.net.security.channel.base.ParserCallBackRegistrar;
 import com.jav.net.security.channel.base.UnusualBehaviorType;
 import com.jav.net.security.channel.joggle.*;
+import com.jav.net.security.guard.ChannelKeepAliveSystem;
 
 import java.util.*;
 
@@ -27,7 +28,7 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
     /**
      * 延迟通知监听器集合（client mode）
      */
-    private final List<RegEntity> mDelayListener;
+    private final List<SecurityClientChannelImage> mDelayListener;
 
     /**
      * 切换服务监听
@@ -62,28 +63,6 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
         return mChannelChangeListener;
     }
 
-    /**
-     * 注册实体
-     */
-    private class RegEntity {
-
-        private final ISecurityChannelStatusListener mListener;
-        private final SecurityClientChannelImage mImage;
-
-        public RegEntity(ISecurityChannelStatusListener listener, SecurityClientChannelImage image) {
-            mListener = listener;
-            mImage = image;
-        }
-
-        public ISecurityChannelStatusListener getListener() {
-            return mListener;
-        }
-
-        public SecurityClientChannelImage getImage() {
-            return mImage;
-        }
-    }
-
 
     /**
      * 接收分发数据
@@ -96,12 +75,10 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
         }
 
         @Override
-        public void onRespondChannelIdCallBack(String channelId) {
-            SecurityProxySender proxySender = getSender();
-            proxySender.setChannelId(channelId);
+        public void onRespondChannelSuccessCallBack() {
             updateCurStatus(ChannelStatus.READY);
             // 链接服务成功后再通知接口
-            notifyChannelReady();
+            notifyWaitReadyChannel();
         }
 
         @Override
@@ -114,6 +91,7 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
         public void onTransData(String requestId, byte[] data) {
             // 分发中转数据
             notifyTransData(requestId, data);
+            ChannelKeepAliveSystem.getInstance().triggerKeepAlive(SecurityClientChanelMeter.this.toString());
         }
 
         @Override
@@ -121,25 +99,6 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
             notifyChannelError(error, extData);
         }
 
-    }
-
-
-    /**
-     * 根据通道状态监听器查找通道镜像
-     *
-     * @param listener 监听器
-     * @return 通道镜像
-     */
-    protected SecurityClientChannelImage findListenerToImage(ISecurityChannelStatusListener listener) {
-        synchronized (mChannelImageMap) {
-            Collection<SecurityClientChannelImage> collection = mChannelImageMap.values();
-            for (SecurityClientChannelImage image : collection) {
-                if (image.getChannelStatusListener() == listener) {
-                    return image;
-                }
-            }
-        }
-        return null;
     }
 
 
@@ -154,21 +113,15 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
         }
         SecurityProxySender proxySender = getSender();
         image.setProxySender(proxySender);
-        if (getCruStatus() == ChannelStatus.NONE) {
-            ISecurityChannelStatusListener listener = image.getChannelStatusListener();
-            RegEntity regEntity = new RegEntity(listener, image);
-            synchronized (mDelayListener) {
-                mDelayListener.add(regEntity);
+        synchronized (mDelayListener) {
+            if (getCruStatus() == ChannelStatus.NONE) {
+                mDelayListener.add(image);
+                LogDog.w("#SC# Delay registration and wait for the channel to be ready !" + image);
             }
-            LogDog.w("@@ Delay registration and wait for the channel to be ready !" + image);
-        } else if (getCruStatus() == ChannelStatus.READY) {
-            image.updateStatus(getCruStatus());
-            ISecurityChannelStatusListener listener = image.getChannelStatusListener();
-            listener.onChannelReady(image);
-            synchronized (mChannelImageMap) {
-                mChannelImageMap.put(image.getRequestId(), image);
-            }
-            LogDog.w("@@ Register Client Channel success !!!" + image);
+        }
+        if (getCruStatus() == ChannelStatus.READY) {
+            putAndNotifyReadyChannel(image);
+            LogDog.w("#SC# Register Client Channel success !!!" + image);
         }
     }
 
@@ -184,31 +137,27 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
         }
     }
 
-    /**
-     * 清楚所有通道镜像
-     */
-    protected void clearAllChannelImage() {
-        synchronized (mChannelImageMap) {
-            mChannelImageMap.clear();
-        }
-    }
 
     /**
      * 通知通道可用
      */
-    protected void notifyChannelReady() {
+    protected void notifyWaitReadyChannel() {
         synchronized (mDelayListener) {
-            for (RegEntity entity : mDelayListener) {
-                SecurityClientChannelImage image = entity.getImage();
-                image.updateStatus(getCruStatus());
-                entity.getListener().onChannelReady(image);
-                synchronized (mChannelImageMap) {
-                    mChannelImageMap.put(image.getRequestId(), image);
-                }
+            for (SecurityClientChannelImage image : mDelayListener) {
+                putAndNotifyReadyChannel(image);
             }
             mDelayListener.clear();
         }
-        LogDog.i("@@ notifyChannelReady !!!");
+        LogDog.i("#SC# notifyChannelReady !!!");
+    }
+
+    private void putAndNotifyReadyChannel(SecurityClientChannelImage image) {
+        image.updateStatus(getCruStatus());
+        IClientChannelStatusListener listener = image.getChannelStatusListener();
+        listener.onChannelImageReady(image);
+        synchronized (mChannelImageMap) {
+            mChannelImageMap.put(image.getRequestId(), image);
+        }
     }
 
     /**
@@ -225,11 +174,9 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
             SecurityClientChannelImage image = (SecurityClientChannelImage) obj;
             image.updateStatus(getCruStatus());
             ISecurityChannelStatusListener listener = image.getChannelStatusListener();
-            if (listener != null) {
-                listener.onChannelInvalid();
-            }
+            listener.onChannelInvalid();
         }
-        LogDog.i("@@ notifyChannelInvalid !!!");
+        LogDog.i("#SC# notifyChannelInvalid !!!");
     }
 
 
@@ -296,42 +243,46 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
         for (Object obj : images) {
             SecurityClientChannelImage image = (SecurityClientChannelImage) obj;
             ISecurityChannelStatusListener listener = image.getChannelStatusListener();
-            if (listener != null) {
-                listener.onChannelError(error, extData);
-            }
+            listener.onChannelError(error, extData);
         }
-        LogDog.i("@@ notifyChannelError !!!");
+        LogDog.i("#SC# notifyChannelError !!!");
     }
 
     @Override
-    protected void onExtChannelReady() {
-        String machineId = mContext.getMachineId();
-        // 获取加密的方式
-        ChannelEncryption encryption = mContext.getChannelEncryption();
-        byte[] initData = null;
-        // 根据不同加密方式发送不同的数据
-        ChannelEncryption.TransmitEncryption transmitEncryption = encryption.getTransmitEncryption();
-        if (transmitEncryption.getEncryptionType() == EncryptionType.AES) {
-            String desPassword = transmitEncryption.getPassword();
-            initData = desPassword.getBytes();
-        }
-        // 客户端模式下请求init交互验证,完成init交互验证即可正常转发数据
-        SecurityProxySender proxySender = getSender();
-        proxySender.requestInitData(machineId, initData, encryption, channelEncryption -> {
-            // init交互数据发送完成开始切换加密方式
-            ChannelEncryption.TransmitEncryption changeEncryption = channelEncryption.getTransmitEncryption();
-            EncryptionType encryptionType = changeEncryption.getEncryptionType();
-            configEncryptionMode(encryptionType, channelEncryption);
-        });
-    }
+    protected void onChannelChangeStatus(ChannelStatus newStatus) {
+        if (newStatus.getCode() == ChannelStatus.READY.getCode()) {
+            String machineId = mContext.getMachineId();
+            // 获取加密的方式
+            ChannelEncryption encryption = mContext.getChannelEncryption();
+            byte[] initData = null;
+            // 根据不同加密方式发送不同的数据
+            ChannelEncryption.TransmitEncryption transmitEncryption = encryption.getTransmitEncryption();
+            if (transmitEncryption.getEncryptionType() == EncryptionType.AES) {
+                String desPassword = transmitEncryption.getPassword();
+                initData = desPassword.getBytes();
+            }
+            // 客户端模式下请求init交互验证,完成init交互验证即可正常转发数据
+            SecurityProxySender proxySender = getSender();
+            proxySender.setMachineId(machineId);
+            proxySender.requestInitData(initData, encryption, channelEncryption -> {
+                // init交互数据发送完成开始切换加密方式
+                ChannelEncryption.TransmitEncryption changeEncryption = channelEncryption.getTransmitEncryption();
+                EncryptionType encryptionType = changeEncryption.getEncryptionType();
+                configEncryptionMode(encryptionType, channelEncryption);
+            });
 
+            ChannelKeepAliveSystem.getInstance().addMonitorChannel(this.toString(), proxySender);
+        }
+    }
 
     /**
      * 通道失效回调
      */
+    @Override
     protected void onChannelInvalid() {
         super.onChannelInvalid();
         notifyChannelInvalid();
+        ChannelKeepAliveSystem.getInstance().removeMonitorChannel(this.toString());
     }
 
 }

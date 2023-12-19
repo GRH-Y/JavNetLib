@@ -1,11 +1,11 @@
 package com.jav.net.nio;
 
 
+import com.jav.common.log.LogDog;
 import com.jav.net.base.MultiBuffer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
 /**
@@ -13,22 +13,14 @@ import java.nio.channels.SocketChannel;
  *
  * @author yyz
  */
-public class NioSender extends AbsNioCacheNetSender<MultiBuffer> {
+public class NioSender extends AbsNioCacheNetSender<SocketChannel, MultiBuffer> {
 
-    protected SocketChannel mChannel;
-
-    public void setChannel(SelectionKey selectionKey, SocketChannel channel) {
-        if (selectionKey == null || channel == null) {
-            throw new NullPointerException("selectionKey or channel is null !!!");
-        }
-        this.mSelectionKey = selectionKey;
-        this.mChannel = channel;
-    }
 
     @Override
     public void sendData(MultiBuffer data) {
         if (data == null || data.isClear()) {
             // 当前buf没有内容
+            LogDog.w("#NioSender# data is null or data is clear !");
             return;
         }
         super.sendData(data);
@@ -65,5 +57,6 @@ public class NioSender extends AbsNioCacheNetSender<MultiBuffer> {
         }
         return false;
     }
+
 
 }

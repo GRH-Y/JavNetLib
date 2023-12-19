@@ -3,7 +3,9 @@ package com.jav.net.security.channel.base;
 
 import com.jav.net.security.channel.joggle.ISecurityPolicyProcessor;
 import com.jav.net.security.channel.joggle.ISecurityProtocolParser;
+import com.jav.net.security.guard.SecurityMachineIdMonitor;
 
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 /**
@@ -67,57 +69,62 @@ public abstract class AbsSecurityProtocolParser implements ISecurityProtocolPars
     /**
      * 解析校验时间字段
      *
-     * @param remoteHost 远程的目标地址
-     * @param decodeData 要校验的数据
+     * @param remoteAddress 远程的目标地址
+     * @param decodeData    要校验的数据
      */
-    protected void parseCheckTime(String remoteHost, ByteBuffer decodeData) {
+    protected void parseCheckTime(InetSocketAddress remoteAddress, ByteBuffer decodeData) {
         long time = decodeData.getLong();
-        boolean isDeny = mPolicyProcessor.onCheckTime(time);
-        if (!isDeny) {
-            reportPolicyProcessor(remoteHost, UnusualBehaviorType.EXP_TIME);
+        boolean isNotDeny = mPolicyProcessor.onCheckTime(time);
+        if (!isNotDeny) {
+            reportPolicyProcessor(remoteAddress, UnusualBehaviorType.EXP_TIME);
         }
     }
 
     /**
      * 解析校验machine id字段
      *
-     * @param remoteHost 远程的目标地址
-     * @param decodeData 要校验的数据
+     * @param remoteAddress 远程的目标地址
+     * @param decodeData    要校验的数据
      */
-    protected String parseCheckMachineId(String remoteHost, ByteBuffer decodeData) {
+    protected String parseCheckMachineId(InetSocketAddress remoteAddress, ByteBuffer decodeData) {
         byte[] mid = new byte[ConstantCode.MACHINE_LENGTH];
         decodeData.get(mid);
         String machineIdStr = new String(mid);
-        boolean isDeny = mPolicyProcessor.onCheckMachineId(machineIdStr);
-        if (!isDeny) {
-            reportPolicyProcessor(remoteHost, UnusualBehaviorType.EXP_MACHINE_ID);
+        boolean isNotDeny = mPolicyProcessor.onCheckMachineId(machineIdStr);
+        if (!isNotDeny) {
+            reportPolicyProcessor(remoteAddress, UnusualBehaviorType.EXP_MACHINE_ID);
         }
         return machineIdStr;
     }
 
     /**
-     * 解析校验channel id
+     * 解析校验machine id字段是否被多台机器同时使用
      *
-     * @param decodeData 要校验的数据
-     * @return true 校验通过
+     * @param remoteAddress 远程的目标地址
+     * @param decodeData    要校验的数据
      */
-    protected boolean parseCheckChannelId(ByteBuffer decodeData) {
-        byte[] channelIdByte = new byte[ConstantCode.CHANNEL_LENGTH];
-        decodeData.get(channelIdByte);
-        String channelId = new String(channelIdByte);
-        return mPolicyProcessor.onCheckChannelId(channelId);
+    protected String parseCheckRepeatMachineId(InetSocketAddress remoteAddress, ByteBuffer decodeData) {
+        byte[] mid = new byte[ConstantCode.MACHINE_LENGTH];
+        decodeData.get(mid);
+        String machineId = new String(mid);
+        String address = remoteAddress.getHostName();
+        boolean isNotValid = SecurityMachineIdMonitor.getInstance().checkMachineIdForAddress(machineId, address);
+        if (!isNotValid) {
+            reportPolicyProcessor(remoteAddress, UnusualBehaviorType.EXP_REPEAT_CODE);
+        }
+        return machineId;
     }
 
     /**
      * 反馈异常给安全策略处理器
      *
-     * @param remoteHost 远程的目标地址
-     * @param type       异常行为类型
+     * @param remoteAddress 远程的目标地址
+     * @param type          异常行为类型
      */
     @Override
-    public void reportPolicyProcessor(String remoteHost, UnusualBehaviorType type) {
+    public void reportPolicyProcessor(InetSocketAddress remoteAddress, UnusualBehaviorType type) {
         if (mPolicyProcessor != null) {
-            mPolicyProcessor.onUnusualBehavior(remoteHost, type);
+            mPolicyProcessor.onUnusualBehavior(remoteAddress.getHostName(), type);
         }
         throw new IllegalStateException(type.getErrorMsg());
     }

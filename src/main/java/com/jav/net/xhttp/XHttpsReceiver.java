@@ -30,8 +30,8 @@ public class XHttpsReceiver extends NioReceiver {
         MultiBuffer multiBuffer = new MultiBuffer();
         int ret;
         try {
+            cacheData = multiBuffer.rentAllBuf();
             do {
-                cacheData = multiBuffer.rentAllBuf();
                 ret = mTLSHandler.readAndUnwrap(channel, false, cacheData);
                 if (ret == TLSHandler.NOT_ENOUGH_CAPACITY) {
                     // 解码缓存容量不够，则需要多传byteBuffer

@@ -58,7 +58,7 @@ public class SecurityReceiver implements ISecurityReceiver {
     /**
      * 真正的数据接收者
      */
-    private final CoreReceiver mCoreReceiver;
+    private final NioReceiver mCoreReceiver;
     /**
      * 安全协议的解析器
      */
@@ -101,11 +101,6 @@ public class SecurityReceiver implements ISecurityReceiver {
         return mCoreReceiver;
     }
 
-    public void reset() {
-        mState = SRState.LENGTH;
-        mFullData = null;
-    }
-
     /**
      * 检查返回code
      *
@@ -126,7 +121,10 @@ public class SecurityReceiver implements ISecurityReceiver {
      */
     private ByteBuffer decodeData(ByteBuffer encodeData) {
         byte[] data = encodeData.array();
-        byte[] decodeData = mDecryptComponent.onDecrypt(data);
+        byte[] decodeData = data;
+        if (mDecryptComponent != null) {
+            decodeData = mDecryptComponent.onDecrypt(data);
+        }
         return ByteBuffer.wrap(decodeData);
     }
 
@@ -143,8 +141,8 @@ public class SecurityReceiver implements ISecurityReceiver {
                 mLength.flip();
                 int length = mLength.getInt();
                 if (length <= 0 || length > MAX_LENGTH) {
-                    String remoteHost = getRemoteHost(channel);
-                    mProtocolParser.reportPolicyProcessor(remoteHost, UnusualBehaviorType.EXP_LENGTH);
+                    InetSocketAddress address = (InetSocketAddress) channel.getRemoteAddress();
+                    mProtocolParser.reportPolicyProcessor(address, UnusualBehaviorType.EXP_LENGTH);
                 }
                 mFullData = ByteBuffer.allocate(length);
                 mLength.clear();
@@ -168,8 +166,8 @@ public class SecurityReceiver implements ISecurityReceiver {
                 if (mProtocolParser != null) {
                     mFullData.flip();
                     ByteBuffer decodeData = decodeData(mFullData);
-                    String remoteHost = getRemoteHost(channel);
-                    mProtocolParser.parserReceiverData(remoteHost, decodeData);
+                    InetSocketAddress address = (InetSocketAddress) channel.getRemoteAddress();
+                    mProtocolParser.parserReceiverData(address, decodeData);
                 }
                 mFullData = null;
                 mState = SRState.LENGTH;
@@ -177,23 +175,6 @@ public class SecurityReceiver implements ISecurityReceiver {
                 checkReturnCode(retCode);
             }
         }
-    }
-
-    /**
-     * 获取当前链接的远程目标地址
-     *
-     * @param channel 远程通道
-     * @return 远程目标地址
-     */
-    private String getRemoteHost(SocketChannel channel) {
-        String remoteHost = null;
-        try {
-            InetSocketAddress address = (InetSocketAddress) channel.getRemoteAddress();
-            remoteHost = address.getHostString();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return remoteHost;
     }
 
 }

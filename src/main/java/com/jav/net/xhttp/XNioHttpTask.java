@@ -1,6 +1,5 @@
 package com.jav.net.xhttp;
 
-import com.jav.common.log.LogDog;
 import com.jav.common.state.joggle.IControlStateMachine;
 import com.jav.common.util.StringEnvoy;
 import com.jav.net.base.MultiBuffer;
@@ -9,9 +8,9 @@ import com.jav.net.base.joggle.*;
 import com.jav.net.nio.NioClientTask;
 import com.jav.net.nio.NioReceiver;
 import com.jav.net.nio.NioSender;
+import com.jav.net.ssl.SSLComponent;
 import com.jav.net.ssl.TLSHandler;
 import com.jav.net.xhttp.config.XHttpConfig;
-import com.jav.net.xhttp.entity.XHttpCode;
 import com.jav.net.xhttp.entity.XHttpDecoderStatus;
 import com.jav.net.xhttp.entity.XRequest;
 import com.jav.net.xhttp.entity.XResponse;
@@ -19,22 +18,26 @@ import com.jav.net.xhttp.joggle.IXHttpDns;
 import com.jav.net.xhttp.joggle.IXHttpResponseConvert;
 import com.jav.net.xhttp.utils.XHttpDecoderProcessor;
 import com.jav.net.xhttp.utils.XHttpProtocol;
-import com.jav.net.xhttp.utils.XResponseHelper;
 import com.jav.net.xhttp.utils.XUrlMedia;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
 public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INetReceiver<MultiBuffer> {
 
     private XRequest mRequest;
+
     private final XHttpConfig mHttpConfig;
+
     private final INetTaskComponent<NioClientTask> mNetTaskFactory;
+
     private final XHttpProtocol mHttpProtocol;
+
     private XHttpDecoderProcessor mHttpDecoderProcessor;
 
-    private boolean mIsRedirect = false;
+    private TLSHandler mTLSHandler;
 
 
     XNioHttpTask(INetTaskComponent<NioClientTask> taskFactory, XHttpConfig httpConfig, XRequest request) {
@@ -61,8 +64,10 @@ public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INet
             }
         }
         setAddress(host, httpUrlMedia.getPort());
-        setTls(httpUrlMedia.isTSL());
         mHttpDecoderProcessor = new XHttpDecoderProcessor();
+
+        IControlStateMachine stateMachine = getStatusMachine();
+        stateMachine.updateState(NetTaskStatus.INVALID, NetTaskStatus.NONE);
     }
 
     @Override
@@ -84,23 +89,15 @@ public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INet
         }
         if (status == XHttpDecoderStatus.OVER) {
             XResponse response = mHttpDecoderProcessor.getResponse();
-            int code = XResponseHelper.getCode(response);
-            if (code >= XHttpCode.REDIRECT.getCode() && code < XHttpCode.NOT_FOUND.getCode()) {
-                // 重定向
-                LogDog.w("## has redirect !!!");
-                String location = response.getHeadForKey(XHttpProtocol.XY_LOCATION);
-                mRequest.setUrl(location);
-                mIsRedirect = true;
-            } else {
-                IXHttpResponseConvert responseConvert = mHttpConfig.getResponseConvert();
-                if (responseConvert != null) {
-                    responseConvert.handlerEntity(mRequest, response);
-                }
-                IXSessionNotify sessionNotify = mHttpConfig.getSessionNotify();
-                if (sessionNotify != null) {
-                    sessionNotify.notifySuccess(mRequest, response);
-                }
+            IXHttpResponseConvert responseConvert = mHttpConfig.getResponseConvert();
+            if (responseConvert != null) {
+                responseConvert.handlerEntity(mRequest, response);
             }
+            IXSessionNotify sessionNotify = mHttpConfig.getSessionNotify();
+            if (sessionNotify != null) {
+                sessionNotify.notifySuccess(mRequest, response);
+            }
+
             mHttpDecoderProcessor.reset();
             mNetTaskFactory.addUnExecTask(this);
         }
@@ -118,20 +115,19 @@ public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INet
         }
     }
 
-    @Override
-    protected void onCreateSSLContext(ISSLComponent sslFactory) {
-        TLSHandler tlsHandler = TLSHandler.createSSLEngineForClient(sslFactory.getSSLContext(), getHost(), getPort());
+    private void initSSLContext(SocketChannel channel) {
+        SSLComponent sslComponent = new SSLComponent();
+        mTLSHandler = TLSHandler.createSSLEngineForClient(sslComponent.getSSLContext(), getHost(), getPort());
         try {
-            tlsHandler.beginHandshakeForClient();
-            tlsHandler.doHandshake(getChannel());
+            mTLSHandler.beginHandshakeForClient();
+            mTLSHandler.doHandshake(channel);
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }
-        setTLSHandler(tlsHandler);
     }
 
     @Override
-    protected void onBeReadyChannel(SocketChannel channel) {
+    protected void onBeReadyChannel(SelectionKey selectionKey, SocketChannel channel) {
         XUrlMedia httpUrlMedia = mRequest.getUrl();
         IXHttpDns httpDns = mHttpConfig.getXHttpDns();
         if (httpDns != null) {
@@ -146,29 +142,30 @@ public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INet
         NioSender sender = getSender();
 
         if (httpUrlMedia.isTSL()) {
+            initSSLContext(channel);
             if (sender instanceof XHttpsSender) {
                 XHttpsSender httpsSender = (XHttpsSender) sender;
-                httpsSender.setTlsHandler(getTlsHandler());
-                httpsSender.setChannel(mSelectionKey, channel);
+                httpsSender.setTlsHandler(mTLSHandler);
+                httpsSender.setChannel(selectionKey, channel);
             } else {
-                setSender(new XHttpsSender(getTlsHandler(), mSelectionKey, channel));
+                setSender(new XHttpsSender(mTLSHandler, selectionKey, channel));
             }
             if (receiver instanceof XHttpsReceiver) {
                 XHttpsReceiver httpsReceiver = (XHttpsReceiver) receiver;
                 // 说明上次任务也是https，则复用
-                httpsReceiver.setTlsHandler(getTlsHandler());
+                httpsReceiver.setTlsHandler(mTLSHandler);
             } else {
-                receiver = new XHttpsReceiver(getTlsHandler());
+                receiver = new XHttpsReceiver(mTLSHandler);
                 receiver.setDataReceiver(this);
                 setReceiver(receiver);
             }
         } else {
             if (sender == null || sender instanceof XHttpsSender) {
                 sender = new NioSender();
-                sender.setChannel(mSelectionKey, channel);
+                sender.setChannel(selectionKey, channel);
                 setSender(sender);
             } else {
-                sender.setChannel(mSelectionKey, channel);
+                sender.setChannel(selectionKey, channel);
             }
             if (receiver == null || receiver instanceof XHttpsReceiver) {
                 receiver = new NioReceiver();
@@ -191,16 +188,8 @@ public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INet
     @Override
     protected void onRecovery() {
         super.onRecovery();
-        if (mIsRedirect) {
-            // 是不是重定向
-            initTask(mRequest);
-            mNetTaskFactory.addExecTask(this);
-            mIsRedirect = false;
-        } else {
-            // 复用task
-            IControlStateMachine stateMachine = getStatusMachine();
-            stateMachine.updateState(NetTaskStatus.INVALID, NetTaskStatus.NONE);
-            XMultiplexCacheManger.getInstance().lose(this);
+        if (mTLSHandler != null) {
+            mTLSHandler.release();
         }
     }
 }

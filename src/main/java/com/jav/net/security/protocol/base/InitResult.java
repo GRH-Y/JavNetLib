@@ -14,7 +14,7 @@ public enum InitResult {
     /**
      * 返回channel id
      */
-    CHANNEL_ID((byte) 1),
+    OK((byte) 1),
     /**
      * 返回新的服务ip,通常是服务负载过高
      */
@@ -32,8 +32,8 @@ public enum InitResult {
     }
 
     public static InitResult getInstance(byte code) {
-        if (CHANNEL_ID.getCode() == code) {
-            return CHANNEL_ID;
+        if (OK.getCode() == code) {
+            return OK;
         } else if (SERVER_IP.getCode() == code) {
             return SERVER_IP;
         }

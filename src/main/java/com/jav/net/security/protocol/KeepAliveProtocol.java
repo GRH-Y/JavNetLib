@@ -22,14 +22,14 @@ public class KeepAliveProtocol extends AbsProxyProtocol {
     /**
      * 通道id，区分不同的客户端，由服务端init数据生成返回
      */
-    private final byte[] mChannelId;
+    private final byte[] mMachineId;
 
 
-    public KeepAliveProtocol(String channelId) {
-        if (StringEnvoy.isEmpty(channelId)) {
-            throw new IllegalArgumentException("channelId can not be null !!!");
+    public KeepAliveProtocol(String machineId) {
+        if (StringEnvoy.isEmpty(machineId)) {
+            throw new IllegalArgumentException("machineId can not be null !!!");
         }
-        this.mChannelId = channelId.getBytes();
+        this.mMachineId = machineId.getBytes();
     }
 
 
@@ -44,7 +44,7 @@ public class KeepAliveProtocol extends AbsProxyProtocol {
         ByteBuffer srcData = ByteBuffer.allocate(length);
         srcData.putLong(time());
         srcData.put(activityCode());
-        srcData.put(mChannelId);
+        srcData.put(mMachineId);
         return onEncrypt(encryptComponent, srcData);
     }
 }

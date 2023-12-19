@@ -26,8 +26,8 @@ public class SvpRequestProtocol {
      * @return
      */
     public static ByteBuffer getRequestHead(boolean isTcp, int packLength, int dataLength, byte[] passId, long packId,
-                                            byte[] address, short port) {
-        if (port <= 0 || dataLength <= 0) {
+                                            short reqId, byte[] address, short port) {
+        if (port <= 0 || dataLength <= 0 || reqId <= 0) {
             return null;
         }
         if (passId == null || passId.length != ISvpProtocol.PASS_ID_LENGTH) {
@@ -38,7 +38,7 @@ public class SvpRequestProtocol {
         }
 
         //计算出拆包需要多少个分包才能发送完成
-        int dataLimitLenght = dataLength / (packLength - ISvpProtocol.TRANSMIT_HEAD_LENGTH);
+        int packCount = dataLength / (packLength - ISvpProtocol.TRANSMIT_HEAD_LENGTH);
 
         ByteBuffer head = ByteBuffer.allocate(ISvpProtocol.REQUEST_HEAD_LENGTH);
         //time
@@ -49,11 +49,11 @@ public class SvpRequestProtocol {
         //pass_id
         head.put(passId);
         // req_id
-        head.putShort(port);
+        head.putShort(reqId);
         //pack_id
         head.putLong(packId);
         //count
-        head.putShort((short) dataLimitLenght);
+        head.putShort((short) packCount);
         //port
         head.putShort(port);
         //addr

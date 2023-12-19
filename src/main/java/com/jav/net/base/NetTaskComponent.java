@@ -4,9 +4,6 @@ import com.jav.common.log.LogDog;
 import com.jav.common.state.joggle.IControlStateMachine;
 import com.jav.net.base.joggle.INetTaskComponent;
 
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
 /**
  * net task Component,Provide task cache
  *
@@ -15,65 +12,46 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class NetTaskComponent<T extends BaseNetTask> implements INetTaskComponent<T> {
 
-    /**
-     * 等待创建连接队列
-     */
-    protected Queue<T> mConnectCache;
 
-    /**
-     * 销毁任务队列
-     */
-    protected Queue<T> mDestroyCache;
+    private NioDisconnectWork mDisconnectWork;
 
-    protected FactoryContext mCreate;
-    protected FactoryContext mDestroy;
+    private NioConnectWork mConnectWork;
 
 
     public NetTaskComponent(FactoryContext context) {
-        if (context == null) {
-            throw new NullPointerException("FactoryContext can not be null !!!");
-        }
-        mCreate = context;
-        mConnectCache = new ConcurrentLinkedQueue<>();
-        mDestroyCache = new ConcurrentLinkedQueue<>();
-        LogDog.w("------> new NetTaskComponent " + this);
+        mConnectWork = new NioConnectWork(context);
+        mConnectWork.startWork();
+        mDisconnectWork = new NioDisconnectWork(context);
+        mDisconnectWork.startWork();
     }
 
-    public void setDestroyFactoryContext(FactoryContext destroy) {
-        this.mDestroy = destroy;
-    }
 
     @Override
     public boolean addExecTask(T task) {
         if (task == null) {
-            LogDog.e("## addExecTask add task fails, task == null !!!");
+            LogDog.e("#Component# addExecTask add task fails, task == null !!!");
             return false;
         }
         IControlStateMachine<Integer> stateMachine = task.getStatusMachine();
         if (stateMachine.getState() != NetTaskStatus.NONE) {
-            LogDog.e("## addExecTask add task fails, status code = " + stateMachine.getState());
+            LogDog.e("#Component# addExecTask add task fails, status code = " + stateMachine.getState());
             return false;
         }
-        BaseNetEngine netEngine = mCreate.getNetEngine();
-        if (netEngine.isEngineStop()) {
-            LogDog.e("## addExecTask netEngine not running !");
-            return false;
-        }
-        if (mConnectCache.contains(task)) {
-            LogDog.e("## addExecTask connect cache repeat !");
+        if (mConnectWork.isContains(task)) {
+            LogDog.e("#Component# addExecTask connect cache repeat !");
             return false;
         }
         boolean ret = stateMachine.updateState(NetTaskStatus.NONE, NetTaskStatus.LOAD);
         if (!ret) {
             return false;
         }
-        ret = mConnectCache.offer(task);
-        if (ret) {
-            netEngine.resumeEngine();
-//            LogDog.i("## addExecTask  task = " + task + " component = " + this);
-        } else {
-            LogDog.e("## addExecTask offer fails !");
+        ret = mConnectWork.pushConnectTask(task);
+        if (!ret) {
+            LogDog.e("#Component# addExecTask offer fails !");
         }
+//        else {
+//            LogDog.i("#Component# addExecTask  task : " + task);
+//        }
         return ret;
     }
 
@@ -81,27 +59,17 @@ public class NetTaskComponent<T extends BaseNetTask> implements INetTaskComponen
     @Override
     public boolean addUnExecTask(T task) {
         if (task == null) {
-            LogDog.e("## addUnExecTask add task fails, task == null !!!");
+            LogDog.e("#Component# addUnExecTask add task fails, task == null !!!");
             return false;
         }
         IControlStateMachine<Integer> stateMachine = task.getStatusMachine();
         if (stateMachine.getState() < NetTaskStatus.LOAD) {
-            LogDog.e("## addUnExecTask add task fails, status code = " + stateMachine.getState());
-            return false;
-        }
-        BaseNetEngine netEngine;
-        if (mDestroy == null) {
-            netEngine = mCreate.getNetEngine();
-        } else {
-            netEngine = mDestroy.getNetEngine();
-        }
-        if (netEngine.isEngineStop()) {
-            LogDog.e("## addUnExecTask netEngine not running !");
+            LogDog.e("#Component# addUnExecTask add task fails, status code = " + stateMachine.getState());
             return false;
         }
         boolean ret;
-        if (mDestroyCache.contains(task)) {
-            LogDog.e("## addUnExecTask destroy cache repeat , status = " + stateMachine.getState() + " task = " + task);
+        if (mDisconnectWork.isContains(task)) {
+            LogDog.e("#Component# addUnExecTask destroy cache repeat , status = " + stateMachine.getState() + " task = " + task);
             return false;
         }
         // attach FINISHING
@@ -121,38 +89,21 @@ public class NetTaskComponent<T extends BaseNetTask> implements INetTaskComponen
                 }
             }
         }
-        ret = mDestroyCache.offer(task);
-        if (ret) {
-            netEngine.resumeEngine();
-//            LogDog.i("## addUnExecTask  task = " + task + " netEngine = " + netEngine + " component = " + this);
+        ret = mDisconnectWork.pushDisconnectTask(task);
+        if (!ret) {
+            LogDog.e("#Component# addUnExecTask fails : " + task);
         }
+//        else {
+//            LogDog.i("#Component# addUnExecTask  task = " + task);
+//        }
         return ret;
     }
 
-    @Override
-    public boolean isConnectQueueEmpty() {
-        return mConnectCache.isEmpty();
-    }
 
     @Override
-    public boolean isDestroyQueueEmpty() {
-        return mDestroyCache.isEmpty();
-    }
-
-    @Override
-    public T pollConnectTask() {
-        return mConnectCache.poll();
-    }
-
-    @Override
-    public T pollDestroyTask() {
-        return mDestroyCache.poll();
-    }
-
-    @Override
-    public void clearAllQueue() {
-        mConnectCache.clear();
-        mDestroyCache.clear();
+    public void release() {
+        mConnectWork.stopWork();
+        mDisconnectWork.stopWork();
     }
 
 }

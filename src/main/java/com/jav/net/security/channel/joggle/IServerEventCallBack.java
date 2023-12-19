@@ -26,4 +26,12 @@ public interface IServerEventCallBack extends IChannelEventCallBack {
      * @param port      真实目端口
      */
     void onConnectTargetCallBack(String requestId, String realHost, int port);
+
+
+    /**
+     * 保活通道，相应心跳包
+     *
+     * @param machineId
+     */
+    void onKeepAliveCallBack(String machineId);
 }

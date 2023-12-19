@@ -1,11 +1,16 @@
 package com.jav.net.security.channel;
 
+import com.jav.common.cryption.joggle.EncryptionType;
+import com.jav.net.base.AbsNetSender;
 import com.jav.net.base.MultiBuffer;
 import com.jav.net.security.channel.base.ConstantCode;
 import com.jav.net.security.channel.joggle.ChannelEncryption;
 import com.jav.net.security.channel.joggle.IChangeEncryptCallBack;
 import com.jav.net.security.channel.joggle.ISecurityProxySender;
+import com.jav.net.security.guard.SecurityChannelTraffic;
+import com.jav.net.security.guard.SecurityMachineIdMonitor;
 import com.jav.net.security.protocol.InitProtocol;
+import com.jav.net.security.protocol.KeepAliveProtocol;
 import com.jav.net.security.protocol.TransProtocol;
 import com.jav.net.security.protocol.base.EncodeCode;
 import com.jav.net.security.protocol.base.TransOperateCode;
@@ -20,46 +25,43 @@ import java.nio.ByteBuffer;
 public class SecurityProxySender extends SecuritySender implements ISecurityProxySender {
 
     /**
-     * 通道id
+     * machine id
      */
-    private String mChannelId;
+    private String mMachineId;
 
-
-    /**
-     * 设置通道的id
-     *
-     * @param channelId 通道id
-     */
-    public void setChannelId(String channelId) {
-        mChannelId = channelId;
+    public SecurityProxySender(AbsNetSender sender) {
+        super(sender);
     }
 
+
     /**
-     * 返回channelId
+     * 设置机器的id
      *
-     * @return
+     * @param machineId 机器id
      */
-    public String getChannelId() {
-        return mChannelId;
+    protected void setMachineId(String machineId) {
+        mMachineId = machineId;
     }
 
     /**
      * 客户端向服务端发起init协议请求
      *
-     * @param machineId             机器id
      * @param initData              如果是des加密方式即是传密码,不是为null
      * @param changeEncryption      需要切换的加密方式
      * @param changeEncryptCallBack 切换加密方式回调
      */
-    public void requestInitData(String machineId, byte[] initData, ChannelEncryption changeEncryption,
+    public void requestInitData(byte[] initData, ChannelEncryption changeEncryption,
                                 IChangeEncryptCallBack changeEncryptCallBack) {
         // 发送init协议数据
-        InitProtocol initProtocol = new InitProtocol(machineId);
+        InitProtocol initProtocol = new InitProtocol(mMachineId);
         initProtocol.setSendData(initData);
-        initProtocol.setOperateCode(EncodeCode.BASE64.getType());
-        ByteBuffer encode = initProtocol.toData(mEncryptComponent);
+        ChannelEncryption.TransmitEncryption encryption =changeEncryption.getTransmitEncryption();
+        EncryptionType encryptionType = encryption.getEncryptionType();
+        initProtocol.setOperateCode(encryptionType.getCode());
+        ByteBuffer encodeData = initProtocol.toData(mEncryptComponent);
         changeEncryptCallBack.onChange(changeEncryption);
-        mCoreSender.sendData(new MultiBuffer(encode));
+        mCoreSender.sendData(new MultiBuffer(encodeData));
+        SecurityChannelTraffic.getInstance().monitorTraffic(mMachineId, 0, encodeData.limit());
     }
 
     /**
@@ -74,29 +76,10 @@ public class SecurityProxySender extends SecuritySender implements ISecurityProx
         InitProtocol initProtocol = new InitProtocol(machineId);
         initProtocol.setOperateCode(repCode);
         initProtocol.setSendData(initData);
-        ByteBuffer encode = initProtocol.toData(mEncryptComponent);
-        mCoreSender.sendData(new MultiBuffer(encode));
-    }
-
-
-    /**
-     * 响应 connect 请求
-     *
-     * @param requestId
-     * @param status
-     */
-    @Override
-    public void respondToRequest(String requestId, byte status) {
-        if (requestId == null) {
-            return;
-        }
-        TransProtocol connectProtocol = new TransProtocol(mChannelId, requestId);
-        byte operateCode = (byte) (status | TransOperateCode.ADDRESS.getCode());
-        connectProtocol.setOperateCode(operateCode);
-        ByteBuffer encodeData = connectProtocol.toData(mEncryptComponent);
+        ByteBuffer encodeData = initProtocol.toData(mEncryptComponent);
         mCoreSender.sendData(new MultiBuffer(encodeData));
+        SecurityChannelTraffic.getInstance().monitorTraffic(mMachineId, 0, encodeData.limit());
     }
-
 
     /**
      * 请求链接真实目标
@@ -109,11 +92,31 @@ public class SecurityProxySender extends SecuritySender implements ISecurityProx
         if (requestId == null || address == null) {
             return;
         }
-        TransProtocol connectProtocol = new TransProtocol(mChannelId, requestId);
+        TransProtocol connectProtocol = new TransProtocol(mMachineId, requestId);
         connectProtocol.setOperateCode(TransOperateCode.ADDRESS.getCode());
         connectProtocol.setSendData(address);
         ByteBuffer encodeData = connectProtocol.toData(mEncryptComponent);
         mCoreSender.sendData(new MultiBuffer(encodeData));
+        SecurityChannelTraffic.getInstance().monitorTraffic(mMachineId, 0, encodeData.limit());
+    }
+
+    /**
+     * 响应 connect 请求
+     *
+     * @param requestId
+     * @param status
+     */
+    @Override
+    public void respondToRequest(String requestId, byte status) {
+        if (requestId == null) {
+            return;
+        }
+        TransProtocol connectProtocol = new TransProtocol(mMachineId, requestId);
+        byte operateCode = (byte) (status | TransOperateCode.ADDRESS.getCode());
+        connectProtocol.setOperateCode(operateCode);
+        ByteBuffer encodeData = connectProtocol.toData(mEncryptComponent);
+        mCoreSender.sendData(new MultiBuffer(encodeData));
+        SecurityChannelTraffic.getInstance().monitorTraffic(mMachineId, 0, encodeData.limit());
     }
 
     /**
@@ -127,11 +130,12 @@ public class SecurityProxySender extends SecuritySender implements ISecurityProx
         if (requestId == null || data == null) {
             return;
         }
-        TransProtocol transProtocol = new TransProtocol(mChannelId, requestId);
+        TransProtocol transProtocol = new TransProtocol(mMachineId, requestId);
         transProtocol.setOperateCode(TransOperateCode.DATA.getCode());
         transProtocol.setSendData(data);
         ByteBuffer encodeData = transProtocol.toData(mEncryptComponent);
         mCoreSender.sendData(new MultiBuffer(encodeData));
+        SecurityChannelTraffic.getInstance().monitorTraffic(mMachineId, 0, encodeData.limit());
     }
 
     /**
@@ -144,11 +148,21 @@ public class SecurityProxySender extends SecuritySender implements ISecurityProx
      */
     @Override
     public void respondToTrans(String requestId, byte status, byte[] data) {
-        TransProtocol transProtocol = new TransProtocol(mChannelId, requestId);
+        TransProtocol transProtocol = new TransProtocol(mMachineId, requestId);
         byte operateCode = (byte) (status | TransOperateCode.DATA.getCode());
         transProtocol.setOperateCode(operateCode);
         transProtocol.setSendData(data);
         ByteBuffer encodeData = transProtocol.toData(mEncryptComponent);
         mCoreSender.sendData(new MultiBuffer(encodeData));
+        SecurityChannelTraffic.getInstance().monitorTraffic(mMachineId, 0, encodeData.limit());
     }
+
+    @Override
+    public void sendKeepAlive(String machineId) {
+        KeepAliveProtocol keepAliveProtocol = new KeepAliveProtocol(machineId);
+        ByteBuffer encodeData = keepAliveProtocol.toData(mEncryptComponent);
+        mCoreSender.sendData(new MultiBuffer(encodeData));
+        SecurityChannelTraffic.getInstance().monitorTraffic(mMachineId, 0, encodeData.limit());
+    }
+
 }

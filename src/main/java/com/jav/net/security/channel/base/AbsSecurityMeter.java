@@ -57,17 +57,13 @@ public abstract class AbsSecurityMeter {
      */
     protected void updateCurStatus(ChannelStatus status) {
         synchronized (this) {
+            ChannelStatus lastStatus = mCruStatus;
             mCruStatus = status;
+            if (lastStatus.getCode() != mCruStatus.getCode()) {
+                onChannelChangeStatus(mCruStatus);
+            }
         }
     }
-
-
-    /**
-     * 扩展通道就绪回调
-     */
-    protected void onExtChannelReady() {
-    }
-
 
     /**
      * 通道建立链接后回调
@@ -78,6 +74,11 @@ public abstract class AbsSecurityMeter {
     protected void onChannelReady(SecuritySender sender, SecurityReceiver receiver) {
         mRealSender = sender;
         mRealReceiver = receiver;
+    }
+
+
+    protected void onChannelChangeStatus(ChannelStatus newStatus) {
+
     }
 
 

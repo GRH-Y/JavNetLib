@@ -72,6 +72,8 @@ public class MultiBuffer {
         mBufSize = data.limit();
         mOffset = mBufSize;
         mBufList.add(data);
+        mCapacity = mBufSize;
+        mLimit = mBufSize;
     }
 
     public MultiBuffer() {

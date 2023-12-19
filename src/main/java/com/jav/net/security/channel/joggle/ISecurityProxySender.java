@@ -50,4 +50,12 @@ public interface ISecurityProxySender {
      * @param data
      */
     void respondToTrans(String requestId, byte repCode, byte[] data);
+
+
+    /**
+     * 发送心跳包保活通道
+     *
+     * @param machineId
+     */
+    void sendKeepAlive(String machineId);
 }

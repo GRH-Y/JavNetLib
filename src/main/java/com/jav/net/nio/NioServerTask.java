@@ -1,6 +1,10 @@
 package com.jav.net.nio;
 
 
+import com.jav.common.state.joggle.IControlStateMachine;
+import com.jav.net.base.BaseNetTask;
+
+import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
@@ -10,7 +14,7 @@ import java.nio.channels.SocketChannel;
  * @author yyz
  * @version 1.0
  */
-public class NioServerTask extends NioSelectionTask<ServerSocketChannel> {
+public class NioServerTask extends BaseNetTask<ServerSocketChannel> {
 
     private int mMaxConnect = 50;
 
@@ -18,7 +22,7 @@ public class NioServerTask extends NioSelectionTask<ServerSocketChannel> {
     }
 
     public NioServerTask(ServerSocketChannel channel) {
-        mChannel = channel;
+        setChannel(channel);
     }
 
     //---------------------------- set ---------------------------------------
@@ -36,5 +40,30 @@ public class NioServerTask extends NioSelectionTask<ServerSocketChannel> {
     //---------------------------- on ---------------------------------------
 
     protected void onAcceptServerChannel(SocketChannel channel) {
+    }
+
+    @Override
+    protected void onBeReadyChannel(SelectionKey selectionKey, ServerSocketChannel channel) {
+        super.onBeReadyChannel(selectionKey, channel);
+    }
+
+    @Override
+    protected void setSelectionKey(SelectionKey key) {
+        super.setSelectionKey(key);
+    }
+
+    @Override
+    protected void onConfigChannel(ServerSocketChannel channel) {
+        super.onConfigChannel(channel);
+    }
+
+    @Override
+    protected void setChannel(ServerSocketChannel channel) {
+        super.setChannel(channel);
+    }
+
+    @Override
+    protected IControlStateMachine<Integer> getStatusMachine() {
+        return super.getStatusMachine();
     }
 }

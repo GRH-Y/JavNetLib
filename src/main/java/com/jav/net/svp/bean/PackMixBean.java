@@ -1,5 +1,6 @@
 package com.jav.net.svp.bean;
 
+import com.jav.net.svp.channel.ChannelInfo;
 import com.jav.net.svp.protocol.ISvpProtocol;
 
 import java.nio.ByteBuffer;
@@ -8,39 +9,27 @@ import java.util.List;
 
 public class PackMixBean {
 
-    private short mRequestId;
-
-    private long mPackId;
-
-    private short mPackCount;
+    private ChannelInfo mChannelInfo;
 
     private final List<ByteBuffer> mPackDataList;
 
-
-    public PackMixBean(short requestId, long packId, short packCount) {
-        mRequestId = requestId;
-        mPackId = packId;
-        mPackCount = packCount;
-        mPackDataList = new ArrayList<>(mPackCount);
+    public PackMixBean(ChannelInfo channelInfo) {
+        if (mChannelInfo == null) {
+            throw new IllegalArgumentException("channelInfo is null !");
+        }
+        mChannelInfo = channelInfo;
+        mPackDataList = new ArrayList<>(mChannelInfo.getPackCount());
     }
 
     /**
-     * 获取req id
+     * 获取通道信息
      *
      * @return
      */
-    public short getRequestId() {
-        return mRequestId;
+    public ChannelInfo getChannelInfo() {
+        return mChannelInfo;
     }
 
-    /**
-     * 获取pack id
-     *
-     * @return
-     */
-    public long getPackId() {
-        return mPackId;
-    }
 
     /**
      * 拼接数据包，根据索引值存放
@@ -74,7 +63,7 @@ public class PackMixBean {
     public ByteBuffer extractFullPack() {
         ByteBuffer fullData = null;
         if (isComplete()) {
-            int maxSize = ISvpProtocol.DEFAULT_TRANSMIT_DATA_LENGTH * mPackCount;
+            int maxSize = ISvpProtocol.DEFAULT_TRANSMIT_DATA_LENGTH * mChannelInfo.getPackCount();
             fullData = ByteBuffer.allocate(maxSize);
             for (ByteBuffer frame : mPackDataList) {
                 fullData.put(frame);
@@ -89,7 +78,7 @@ public class PackMixBean {
      * @param index
      */
     private void checkIndex(short index) {
-        if (index < 0) {
+        if (index < 0 || index > mChannelInfo.getPackCount()) {
             throw new IllegalArgumentException("splicing Pack index cannot be less than 0");
         }
     }
@@ -111,17 +100,22 @@ public class PackMixBean {
      * @return true表示完整
      */
     public boolean isComplete() {
-        return mPackDataList.size() == mPackCount;
+        return mPackDataList.size() == mChannelInfo.getPackCount();
+    }
+
+    /**
+     * 清除数据
+     */
+    public void clearData() {
+        mPackDataList.clear();
     }
 
     /**
      * 释放资源
      */
     public void release() {
-        mPackDataList.clear();
-        mPackId = -1;
-        mRequestId = -1;
-        mPackCount = -1;
+        clearData();
+        mChannelInfo = null;
     }
 
 }

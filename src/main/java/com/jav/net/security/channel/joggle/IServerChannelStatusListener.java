@@ -36,4 +36,10 @@ public interface IServerChannelStatusListener extends ISecurityChannelStatusList
      */
     boolean onRespondInitData(String machineId);
 
+
+    /**
+     * 发现存在同个machineId在多台设备同时使用
+     */
+    void onRepeatMachine(String machineId);
+
 }

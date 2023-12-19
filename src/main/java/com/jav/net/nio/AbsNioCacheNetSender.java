@@ -14,14 +14,13 @@ import java.nio.channels.SelectionKey;
  *
  * @author yyz
  */
-public abstract class AbsNioCacheNetSender<T> extends AbsNetSender<T> {
+public abstract class AbsNioCacheNetSender<C, T> extends AbsNetSender<C, T> {
 
     /**
      * 缓存组件
      */
     protected ICacheComponent<T> mCacheComponent;
 
-    protected SelectionKey mSelectionKey = null;
 
     public AbsNioCacheNetSender() {
         mCacheComponent = getCacheComponent();
@@ -53,10 +52,13 @@ public abstract class AbsNioCacheNetSender<T> extends AbsNetSender<T> {
         boolean ret = mCacheComponent.addLastData(data);
         if (ret) {
             // 判断当前是否注册写事件监听，如果没有则添加
-            if ((mSelectionKey.interestOps() & SelectionKey.OP_WRITE) != SelectionKey.OP_WRITE) {
-                mSelectionKey.interestOps(SelectionKey.OP_WRITE | SelectionKey.OP_READ);
+            synchronized (mCacheComponent) {
+                if ((mSelectionKey.interestOps() & SelectionKey.OP_WRITE) != SelectionKey.OP_WRITE) {
+                    mSelectionKey.interestOps(SelectionKey.OP_WRITE | SelectionKey.OP_READ);
+                }
+                mSelectionKey.selector().wakeup();
             }
-            mSelectionKey.selector().wakeup();
+//            LogDog.w("#AbsSender# interestOps write and read ,wakeup selector,cache size = " + mCacheComponent.size());
         } else {
             if (mFeedback != null) {
                 mFeedback.onSenderFeedBack(this, data, null);
@@ -80,11 +82,25 @@ public abstract class AbsNioCacheNetSender<T> extends AbsNetSender<T> {
                 // 当前buf没有数据
                 return SEND_COMPLETE;
             }
+//            byte[] byteData = buffer.asByte();
             ByteBuffer[] sendDataBuf = buffer.getFreezeBuf();
             if (sendDataBuf == null) {
                 // sendDataBuf 为null 说明是第一次处理数据，不为null说明上次数据发送不完整
                 sendDataBuf = buffer.getDirtyBuf(true);
             }
+//            StringBuilder dataStr = new StringBuilder();
+//            int dataLength = byteData.length;
+//            if (byteData.length > 80) {
+//                dataLength = 80;
+//            }
+//            for (int index = 0; index < dataLength; index++) {
+//                String hex = Integer.toHexString(byteData[index] & 0xff);
+//                if (hex.length() == 1) {
+//                    hex = "0" + hex;
+//                }
+//                dataStr.append(hex);
+//            }
+//            LogDog.d("#AbsSender# dataStr = " + dataStr);
             ret = sendDataImp(sendDataBuf);
             if (ret == SEND_CHANNEL_BUSY) {
                 // 当前数据没有发送完，则临时记录起来
@@ -125,12 +141,13 @@ public abstract class AbsNioCacheNetSender<T> extends AbsNetSender<T> {
         if (exception != null) {
             throw exception;
         }
-        if (mCacheComponent.size() == 0) {
-            try {
+        synchronized (mCacheComponent) {
+            if (mCacheComponent.size() == 0) {
                 // 当前没有数据可发送则取消写事件监听
-                mSelectionKey.interestOps(SelectionKey.OP_READ);
-            } catch (Exception e) {
-                e.printStackTrace();
+                if ((mSelectionKey.interestOps() & SelectionKey.OP_WRITE) == SelectionKey.OP_WRITE) {
+                    mSelectionKey.interestOps(SelectionKey.OP_READ);
+                }
+//                mSelectionKey.selector().wakeup();
             }
         }
     }

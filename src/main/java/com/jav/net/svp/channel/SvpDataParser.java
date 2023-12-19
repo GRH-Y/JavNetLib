@@ -158,9 +158,9 @@ public class SvpDataParser {
      */
     public static byte[] getAddress(ByteBuffer fullData) {
         fullData.position(INDEX_ADR);
-        byte[] addr = new byte[ISvpProtocol.ADDRESS_LENGTH];
-        fullData.get(addr);
-        return addr;
+        byte[] adr = new byte[ISvpProtocol.ADDRESS_LENGTH];
+        fullData.get(adr);
+        return adr;
     }
 
     /**

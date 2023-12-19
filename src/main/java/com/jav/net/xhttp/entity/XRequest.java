@@ -142,11 +142,11 @@ public class XRequest {
         return exData;
     }
 
-    public void setRequestProperty(LinkedHashMap<Object, Object> property) {
+    public void setUserRequestProperty(LinkedHashMap<Object, Object> property) {
         this.mRequestProperty = property;
     }
 
-    public LinkedHashMap<Object, Object> getRequestProperty() {
+    public LinkedHashMap<Object, Object> getUserRequestProperty() {
         return mRequestProperty;
     }
 

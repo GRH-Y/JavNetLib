@@ -7,9 +7,19 @@ package com.jav.net.security.channel.base;
  */
 public enum ChannelStatus {
     //空闲状态
-    NONE,
+    NONE(0),
     //通道就绪
-    READY,
+    READY(1),
     //通道销毁
-    INVALID
+    INVALID(2);
+
+    private int mCode;
+
+    ChannelStatus(int code) {
+        mCode = code;
+    }
+
+    public int getCode() {
+        return mCode;
+    }
 }

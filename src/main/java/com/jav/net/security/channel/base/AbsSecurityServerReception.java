@@ -20,24 +20,8 @@ public abstract class AbsSecurityServerReception extends SecurityChannelClient i
 
     @Override
     protected SecurityChanelMeter initSecurityChanelMeter(SecurityChannelContext context) {
-        return new SecurityServerChanelMeter(context);
-    }
-
-
-    @Override
-    protected void onBeReadyChannel(SocketChannel channel) {
-        super.onBeReadyChannel(channel);
-        SecurityServerChanelMeter meter = getChanelMeter();
         mServerChannelImage = SecurityServerChannelImage.builderServerChannelImage(this);
-        meter.regServerChannelImage(mServerChannelImage);
-    }
-
-
-    @Override
-    protected void onCloseChannel() {
-        super.onCloseChannel();
-        SecurityServerChanelMeter meter = getChanelMeter();
-        meter.unRegServerChannelImage(mServerChannelImage);
+        return new SecurityServerChanelMeter(context, mServerChannelImage);
     }
 
 }

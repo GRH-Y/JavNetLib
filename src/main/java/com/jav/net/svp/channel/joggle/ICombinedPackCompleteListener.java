@@ -1,6 +1,8 @@
 package com.jav.net.svp.channel.joggle;
 
 
+import com.jav.net.svp.channel.ChannelInfo;
+
 import java.nio.ByteBuffer;
 
 /**
@@ -13,15 +15,14 @@ public interface ICombinedPackCompleteListener {
     /**
      * 接收到request包，收到该包需要创建链接目标通路
      *
-     * @param adr  目标的ip地址
-     * @param port 目标端口号
+     * @param channelInfo 通道的信息
      */
-    void onRequestPack(byte[] adr, int port);
+    void onRequestPack(ChannelInfo channelInfo);
 
     /**
      * 回调完整的数据包
      *
-     * @param pack
+     * @param channelInfo
      */
-    void onCombinedCompletePack(ByteBuffer pack);
+    void onCombinedCompletePack(ChannelInfo channelInfo, ByteBuffer fullData);
 }

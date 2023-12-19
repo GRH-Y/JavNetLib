@@ -2,7 +2,9 @@ package com.jav.net.nio;
 
 import com.jav.net.base.BaseNetEngine;
 import com.jav.net.base.BaseNetWork;
-import com.jav.net.base.FactoryContext;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * nio网络引擎,执行net work
@@ -11,45 +13,42 @@ import com.jav.net.base.FactoryContext;
  */
 public class NioNetEngine extends BaseNetEngine {
 
-    /**
-     * 处理select的事件
-     */
-    public static final byte SELECT = 2;
+    private List<BaseNetEngine> mEngineList;
 
-
-    public NioNetEngine(FactoryContext context) {
-        super(context);
-        mWorkStep = (byte) (CREATE | SELECT | DESTROY);
+    public NioNetEngine(BaseNetWork work) {
+        super(work);
     }
 
 
-    @Override
-    protected void onCreateStepExt() {
-        if ((mWorkStep & SELECT) == SELECT) {
-            // 检查是否有读写任务
-            AbsNioNetWork netWork = mFactoryContext.getNetWork();
-            netWork.onSelectEvent();
+    public NioNetEngine(BaseNetWork work, int workCount) {
+        super(work);
+        if (workCount <= 1) {
+            return;
+        }
+        mEngineList = new ArrayList<>(workCount);
+        for (int count = 1; count < workCount; count++) {
+            BaseNetEngine engine = new BaseNetEngine(work);
+            mEngineList.add(engine);
         }
     }
 
     @Override
-    public void resumeEngine() {
-        super.resumeEngine();
-        if (mFactoryContext != null) {
-            BaseNetWork netWork = mFactoryContext.getNetWork();
-            if (netWork instanceof AbsNioNetWork<?, ?>) {
-                AbsNioNetWork nioNetWork = (AbsNioNetWork) netWork;
-                if (nioNetWork.getSelector() != null) {
-                    nioNetWork.getSelector().wakeup();
-                }
+    public void startEngine() {
+        super.startEngine();
+        if (mEngineList != null) {
+            for (BaseNetEngine engine : mEngineList) {
+                engine.startEngine();
             }
         }
     }
 
-
     @Override
     public void stopEngine() {
         super.stopEngine();
-        resumeEngine();
+        if (mEngineList != null) {
+            for (BaseNetEngine engine : mEngineList) {
+                engine.stopEngine();
+            }
+        }
     }
 }

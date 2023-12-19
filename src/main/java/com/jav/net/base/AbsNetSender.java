@@ -3,13 +3,15 @@ package com.jav.net.base;
 import com.jav.net.base.joggle.INetSender;
 import com.jav.net.base.joggle.ISenderFeedback;
 
+import java.nio.channels.SelectionKey;
+
 /**
  * 基本网络数据发送者
  *
  * @param <T>
  * @author yyz
  */
-public abstract class AbsNetSender<T> implements INetSender<T> {
+public abstract class AbsNetSender<C, T> implements INetSender<T> {
 
     /**
      * 发送完成
@@ -24,10 +26,23 @@ public abstract class AbsNetSender<T> implements INetSender<T> {
      */
     public final static int SEND_CHANNEL_BUSY = -2;
 
+    protected SelectionKey mSelectionKey = null;
+
+    protected C mChannel;
+
     /**
      * 发送回调，每发送完数据包触发一次
      */
     protected ISenderFeedback<T> mFeedback;
+
+    public void setChannel(SelectionKey selectionKey, C channel) {
+        if (selectionKey == null || channel == null) {
+            throw new NullPointerException("selectionKey or channel is null !!!");
+        }
+        this.mSelectionKey = selectionKey;
+        this.mChannel = channel;
+    }
+
 
     @Override
     public void setSenderFeedback(ISenderFeedback<T> feedback) {

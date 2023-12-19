@@ -55,6 +55,7 @@ public class CacheComponent<T> implements ICacheComponent<T> {
         return mDataQueue.size();
     }
 
+
     @Override
     public void clearCache(IClearPolicy<T> picker) {
         if (mDataQueue.isEmpty()) {

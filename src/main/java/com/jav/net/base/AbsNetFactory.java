@@ -2,7 +2,6 @@ package com.jav.net.base;
 
 import com.jav.net.base.joggle.INetFactory;
 import com.jav.net.base.joggle.INetTaskComponent;
-import com.jav.net.base.joggle.ISSLComponent;
 
 /**
  * 复用的工厂
@@ -22,10 +21,13 @@ public abstract class AbsNetFactory<T extends BaseNetTask> implements INetFactor
      * 初始化
      */
     private void init() {
-        ISSLComponent sslFactory = initSSLComponent();
-        mFactoryContext.setSSLFactory(sslFactory);
+        SelectorEventHubs selectorCreator = initSelectorCreator();
+        if (selectorCreator == null) {
+            throw new IllegalStateException("initSelectorCreator() This method returns value can not be null");
+        }
+        mFactoryContext.setSelectorEventHubs(selectorCreator);
 
-        BaseNetWork<T> netWork = initNetWork();
+        NioNetWork netWork = initNetWork();
         if (netWork == null) {
             throw new IllegalStateException("initNetWork() This method returns value can not be null");
         }
@@ -46,6 +48,7 @@ public abstract class AbsNetFactory<T extends BaseNetTask> implements INetFactor
 
     //---------------------------------------- init start ----------------------------------------------
 
+
     /**
      * 初始化网络引擎，用于执行netWork
      *
@@ -58,14 +61,7 @@ public abstract class AbsNetFactory<T extends BaseNetTask> implements INetFactor
      *
      * @return
      */
-    abstract protected BaseNetWork<T> initNetWork();
-
-    /**
-     * 初始化ssl
-     *
-     * @return
-     */
-    abstract protected ISSLComponent initSSLComponent();
+    abstract protected NioNetWork initNetWork();
 
     /**
      * 初始化网络任务组件
@@ -76,18 +72,23 @@ public abstract class AbsNetFactory<T extends BaseNetTask> implements INetFactor
         return new NetTaskComponent<>(mFactoryContext);
     }
 
+
+    protected SelectorEventHubs initSelectorCreator() {
+        return new SelectorEventHubs();
+    }
+
     //------------------------------------------ init end -----------------------------------------------
 
     protected FactoryContext getFactoryContext() {
         return mFactoryContext;
     }
 
-    //-----------------------------------------------------------------------------------------
 
     @Override
     public INetFactory<T> open() {
         init();
-        mFactoryContext.getNetEngine().startEngine();
+        BaseNetEngine engine = mFactoryContext.getNetEngine();
+        engine.startEngine();
         return this;
     }
 
@@ -99,13 +100,17 @@ public abstract class AbsNetFactory<T extends BaseNetTask> implements INetFactor
     @Override
     public void close() {
         BaseNetEngine engine = mFactoryContext.getNetEngine();
-        if (engine != null) {
-            engine.stopEngine();
-        }
+        engine.stopEngine();
+        INetTaskComponent<T> component = mFactoryContext.getNetTaskComponent();
+        component.release();
+
     }
 
     @Override
     public boolean isOpen() {
         return mFactoryContext.getNetEngine().isEngineRunning();
     }
+
+    //-----------------------------------------------------------------------------------------
+
 }

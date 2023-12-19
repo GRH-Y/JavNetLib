@@ -21,7 +21,7 @@ public class SecurityChannelContext {
     /**
      * 最大的通道数
      */
-    public static final int MAX_CHANNEL = 6;
+    public static final int MAX_CHANNEL = 4;
 
     private final Builder mBuilder;
 
@@ -125,7 +125,7 @@ public class SecurityChannelContext {
             return this;
         }
 
-        public Builder configBootSecurityServer(AbsSecurityServer server) {
+        public Builder addSecurityServerStarter(AbsSecurityServer server) {
             if (mServerList == null) {
                 mServerList = new ArrayList<>();
             }

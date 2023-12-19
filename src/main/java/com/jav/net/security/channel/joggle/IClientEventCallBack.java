@@ -16,11 +16,9 @@ public interface IClientEventCallBack extends IChannelEventCallBack {
     void onRespondServerHighLoadCallBack(String lowLoadHost, int lowLoadPort);
 
     /**
-     * 服务响应返回channel id
-     *
-     * @param channelId
+     * 响应建立连接成功
      */
-    void onRespondChannelIdCallBack(String channelId);
+    void onRespondChannelSuccessCallBack();
 
 
     /**
