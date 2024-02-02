@@ -2,6 +2,7 @@ package com.jav.net.security.channel;
 
 import com.jav.common.cryption.joggle.IEncryptComponent;
 import com.jav.net.base.AbsNetSender;
+import com.jav.net.nio.NioSender;
 import com.jav.net.security.channel.joggle.ISecuritySender;
 
 /**
@@ -14,7 +15,7 @@ public class SecuritySender implements ISecuritySender {
     /**
      * 真正数据发送者
      */
-    protected final AbsNetSender mCoreSender;
+    protected final NioSender mCoreSender;
 
     /**
      * 加密组件
@@ -22,7 +23,7 @@ public class SecuritySender implements ISecuritySender {
     protected IEncryptComponent mEncryptComponent;
 
 
-    public SecuritySender(AbsNetSender sender) {
+    public SecuritySender(NioSender sender) {
         mCoreSender = sender;
     }
 
@@ -42,7 +43,7 @@ public class SecuritySender implements ISecuritySender {
      *
      * @return
      */
-    public AbsNetSender getCoreSender() {
+    public NioSender getCoreSender() {
         return mCoreSender;
     }
 

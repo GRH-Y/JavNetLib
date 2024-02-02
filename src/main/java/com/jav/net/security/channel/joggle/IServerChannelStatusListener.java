@@ -2,6 +2,7 @@ package com.jav.net.security.channel.joggle;
 
 
 import com.jav.net.security.channel.SecurityServerChannelImage;
+import com.jav.net.security.channel.base.InitRespondResult;
 
 /**
  * 服务模式通道状态监听器
@@ -34,7 +35,13 @@ public interface IServerChannelStatusListener extends ISecurityChannelStatusList
      * @param machineId 机器id
      * @return true 拦截默认响应
      */
-    boolean onRespondInitData(String machineId);
+    void onRespondInitData(String machineId, InitRespondResult respondResult);
+
+
+    /**
+     * 发现存在同个machineId在多台设备同时使用
+     */
+    void onRepeatMachine(String machineId);
 
 
     /**

@@ -1,18 +1,14 @@
 package com.jav.net.security.channel;
 
-import com.jav.common.cryption.joggle.EncryptionType;
 import com.jav.net.base.AbsNetSender;
 import com.jav.net.base.MultiBuffer;
+import com.jav.net.nio.NioSender;
 import com.jav.net.security.channel.base.ConstantCode;
-import com.jav.net.security.channel.joggle.ChannelEncryption;
-import com.jav.net.security.channel.joggle.IChangeEncryptCallBack;
 import com.jav.net.security.channel.joggle.ISecurityProxySender;
 import com.jav.net.security.guard.SecurityChannelTraffic;
-import com.jav.net.security.guard.SecurityMachineIdMonitor;
 import com.jav.net.security.protocol.InitProtocol;
 import com.jav.net.security.protocol.KeepAliveProtocol;
 import com.jav.net.security.protocol.TransProtocol;
-import com.jav.net.security.protocol.base.EncodeCode;
 import com.jav.net.security.protocol.base.TransOperateCode;
 
 import java.nio.ByteBuffer;
@@ -29,7 +25,7 @@ public class SecurityProxySender extends SecuritySender implements ISecurityProx
      */
     private String mMachineId;
 
-    public SecurityProxySender(AbsNetSender sender) {
+    public SecurityProxySender(NioSender sender) {
         super(sender);
     }
 
@@ -46,20 +42,15 @@ public class SecurityProxySender extends SecuritySender implements ISecurityProx
     /**
      * 客户端向服务端发起init协议请求
      *
-     * @param initData              如果是des加密方式即是传密码,不是为null
-     * @param changeEncryption      需要切换的加密方式
-     * @param changeEncryptCallBack 切换加密方式回调
+     * @param initData       如果是des加密方式即是传密码,不是为null
+     * @param encryptionCode 加密类型的code
      */
-    public void requestInitData(byte[] initData, ChannelEncryption changeEncryption,
-                                IChangeEncryptCallBack changeEncryptCallBack) {
+    public void requestInitData(byte[] initData, byte encryptionCode) {
         // 发送init协议数据
         InitProtocol initProtocol = new InitProtocol(mMachineId);
         initProtocol.setSendData(initData);
-        ChannelEncryption.TransmitEncryption encryption =changeEncryption.getTransmitEncryption();
-        EncryptionType encryptionType = encryption.getEncryptionType();
-        initProtocol.setOperateCode(encryptionType.getCode());
+        initProtocol.setOperateCode(encryptionCode);
         ByteBuffer encodeData = initProtocol.toData(mEncryptComponent);
-        changeEncryptCallBack.onChange(changeEncryption);
         mCoreSender.sendData(new MultiBuffer(encodeData));
         SecurityChannelTraffic.getInstance().monitorTraffic(mMachineId, 0, encodeData.limit());
     }

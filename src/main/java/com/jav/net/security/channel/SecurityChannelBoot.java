@@ -47,7 +47,7 @@ public class SecurityChannelBoot {
     /**
      * socket客户端通信
      */
-    private INetFactory mClientFactory;
+    private INetFactory<NioClientTask> mClientFactory;
 
     /**
      * socket服务端通信

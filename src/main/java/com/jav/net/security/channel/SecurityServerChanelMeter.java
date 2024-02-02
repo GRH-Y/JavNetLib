@@ -3,10 +3,8 @@ package com.jav.net.security.channel;
 
 import com.jav.common.cryption.joggle.EncryptionType;
 import com.jav.common.log.LogDog;
-import com.jav.net.security.channel.base.ChannelStatus;
-import com.jav.net.security.channel.base.ParserCallBackRegistrar;
-import com.jav.net.security.channel.base.UnusualBehaviorType;
-import com.jav.net.security.channel.joggle.ChannelEncryption;
+import com.jav.net.security.channel.base.*;
+import com.jav.net.security.channel.joggle.IInitRespondResultCallBack;
 import com.jav.net.security.channel.joggle.ISecurityChannelStatusListener;
 import com.jav.net.security.channel.joggle.IServerChannelStatusListener;
 import com.jav.net.security.channel.joggle.IServerEventCallBack;
@@ -25,7 +23,7 @@ public class SecurityServerChanelMeter extends SecurityChanelMeter {
     /**
      * server通道镜像
      */
-    private volatile SecurityServerChannelImage mServerImage;
+    private final SecurityServerChannelImage mServerImage;
 
 
     public SecurityServerChanelMeter(SecurityChannelContext context, SecurityServerChannelImage image) {
@@ -47,20 +45,27 @@ public class SecurityServerChanelMeter extends SecurityChanelMeter {
             SecurityProxySender proxySender = getSender();
             proxySender.setMachineId(machineId);
 
-            // 根据客户端,切换加密方式
-            ChannelEncryption channelEncryption = mContext.getChannelEncryption();
-            configEncryptionMode(encryption, channelEncryption);
-
             IServerChannelStatusListener serverListener = mServerImage.getChannelStatusListener();
-            boolean intercept = serverListener.onRespondInitData(machineId);
-            if (intercept) {
-                return;
-            }
-            // 返回成功结果给客户端
-            proxySender.respondToInitRequest(machineId, InitResult.OK.getCode(), null);
+            InitRespondResult initRespondResult = new InitRespondResult(encryption, new IInitRespondResultCallBack() {
+                @Override
+                public void onInitRespondResult(boolean intercept, EncryptionType encryption) {
+                    if (intercept) {
+                        return;
+                    }
+                    // 返回成功结果给客户端
+                    proxySender.respondToInitRequest(machineId, InitResult.OK.getCode(), null);
 
-            SecurityMachineIdMonitor.getInstance().setRepeatMachineListener(machineId, serverListener);
-            LogDog.i("#SC# return ok to client = " + machineId);
+                    // 根据客户端,切换加密方式
+                    ChannelEncryption channelEncryption = mContext.getChannelEncryption();
+                    configEncryptionMode(encryption, channelEncryption);
+
+                    SecurityMachineIdMonitor.getInstance().setRepeatMachineListener(machineId, serverListener);
+                    LogDog.i("#SC# return ok to client = " + machineId);
+                }
+            });
+            serverListener.onRespondInitData(machineId, initRespondResult);
+
+            updateCurStatus(ChannelStatus.READY);
         }
 
         @Override
@@ -101,7 +106,7 @@ public class SecurityServerChanelMeter extends SecurityChanelMeter {
             //更新镜像的状态
             mServerImage.updateStatus(newStatus);
             //通知镜像可用回调
-            ISecurityChannelStatusListener serverListener = mServerImage.getChannelStatusListener();
+            ISecurityChannelStatusListener<SecurityServerChannelImage> serverListener = mServerImage.getChannelStatusListener();
             serverListener.onChannelImageReady(mServerImage);
         }
     }
@@ -113,7 +118,7 @@ public class SecurityServerChanelMeter extends SecurityChanelMeter {
     protected void onChannelInvalid() {
         super.onChannelInvalid();
         mServerImage.updateStatus(getCruStatus());
-        ISecurityChannelStatusListener serverListener = mServerImage.getChannelStatusListener();
+        ISecurityChannelStatusListener<SecurityServerChannelImage> serverListener = mServerImage.getChannelStatusListener();
         serverListener.onChannelInvalid();
     }
 

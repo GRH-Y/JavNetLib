@@ -18,7 +18,7 @@ public interface ISecurityProtocolParser {
     /**
      * 解析接受端的数据
      *
-     * @param remoteHost 请求端的地址
+     * @param remoteAddress 请求端的地址
      * @param decodeData 请求端发的数据
      */
     void parserReceiverData(InetSocketAddress remoteAddress, ByteBuffer decodeData);
@@ -26,7 +26,7 @@ public interface ISecurityProtocolParser {
     /**
      * 反馈异常给安全策略处理器
      *
-     * @param remoteHost 远程的目标地址
+     * @param remoteAddress 远程的目标地址
      * @param type       异常行为类型
      */
     void reportPolicyProcessor(InetSocketAddress remoteAddress, UnusualBehaviorType type);

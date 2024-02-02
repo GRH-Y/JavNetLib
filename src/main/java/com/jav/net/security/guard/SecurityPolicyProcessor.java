@@ -1,5 +1,6 @@
 package com.jav.net.security.guard;
 
+import com.jav.common.log.LogDog;
 import com.jav.net.security.cache.CacheExtMachineIdMater;
 import com.jav.net.security.channel.SecurityChannelContext;
 import com.jav.net.security.channel.base.UnusualBehaviorType;

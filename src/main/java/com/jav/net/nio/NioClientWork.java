@@ -30,7 +30,6 @@ public class NioClientWork extends NioNetWork<NioClientTask, SocketChannel> {
 
     @Override
     protected SocketChannel onCreateChannel(NioClientTask netTask) throws IOException {
-        InetSocketAddress address = new InetSocketAddress(netTask.getHost(), netTask.getPort());
         SocketChannel channel = SocketChannel.open();
         channel.configureBlocking(false);
         channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
@@ -38,8 +37,6 @@ public class NioClientWork extends NioNetWork<NioClientTask, SocketChannel> {
         channel.setOption(StandardSocketOptions.SO_LINGER, 0);
         // 禁用Nagle算法
 //        channel.setOption(StandardSocketOptions.TCP_NODELAY, true);
-        netTask.onConfigChannel(channel);
-        channel.connect(address);
         return channel;
     }
 
@@ -49,20 +46,31 @@ public class NioClientWork extends NioNetWork<NioClientTask, SocketChannel> {
             // 设置为非阻塞
             channel.configureBlocking(false);
         }
+        netTask.onConfigChannel(channel);
+        if(channel.isConnected() || channel.isConnectionPending()){
+            return;
+        }
+        InetSocketAddress address = new InetSocketAddress(netTask.getHost(), netTask.getPort());
+        channel.connect(address);
     }
 
-    protected void registerReadEvent(NioClientTask netTask, SocketChannel channel) throws IOException {
+    protected SelectionKey registerReadEvent(NioClientTask netTask, SocketChannel channel) throws IOException {
         SelectorEventHubs eventHubs = mFactoryContext.getSelectorEventHubs();
-        SelectionKey key = eventHubs.registerReadEvent(channel, netTask);
+        return eventHubs.registerReadEvent(channel, netTask);
+    }
+
+    private void callReadyChannel(NioClientTask netTask, SocketChannel channel, SelectionKey key) {
         netTask.setChannel(channel);
         netTask.setSelectionKey(key);
         netTask.onBeReadyChannel(key, channel);
     }
 
+
     @Override
     protected void onRegisterChannel(NioClientTask netTask, SocketChannel channel) throws IOException {
         if (channel.isConnected()) {
-            registerReadEvent(netTask, channel);
+            SelectionKey key = registerReadEvent(netTask, channel);
+            callReadyChannel(netTask, channel, key);
         } else {
             SelectorEventHubs eventHubs = mFactoryContext.getSelectorEventHubs();
             eventHubs.registerConnectEvent(channel, netTask);
@@ -74,7 +82,8 @@ public class NioClientWork extends NioNetWork<NioClientTask, SocketChannel> {
         try {
             boolean isConnect = channel.finishConnect();
             if (isConnect) {
-                registerReadEvent(netTask, channel);
+                SelectionKey key = registerReadEvent(netTask, channel);
+                callReadyChannel(netTask, channel, key);
             } else {
                 // 连接失败，则结束任务
                 INetTaskComponent<NioClientTask> taskFactory = mFactoryContext.getNetTaskComponent();

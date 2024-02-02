@@ -1,7 +1,7 @@
 package com.jav.net.security.protocol;
 
 import com.jav.common.cryption.joggle.IEncryptComponent;
-import com.jav.net.security.protocol.base.ActivityCode;
+import com.jav.common.log.LogDog;
 
 import java.nio.ByteBuffer;
 
@@ -45,7 +45,6 @@ public abstract class AbsProxyProtocol {
      * 当前协议对应的命令类型
      *
      * @return
-     * @see ActivityCode
      */
     public abstract byte activityCode();
 

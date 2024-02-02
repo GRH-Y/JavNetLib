@@ -6,6 +6,7 @@ import com.jav.net.base.joggle.NetErrorType;
 import com.jav.net.nio.NioClientTask;
 import com.jav.net.nio.NioReceiver;
 import com.jav.net.nio.NioSender;
+import com.jav.net.security.channel.base.ChannelStatus;
 
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -68,17 +69,23 @@ public class SecurityChannelClient extends NioClientTask {
 
 
     @Override
-    protected void onBeReadyChannel(SelectionKey selectionKey, SocketChannel channel) {
+    protected void onConfigChannel(SocketChannel channel) {
         SecuritySender securitySender = initSender();
-        AbsNetSender coreSender = securitySender.getCoreSender();
-        coreSender.setChannel(selectionKey, channel);
-        setSender((NioSender) coreSender);
+        NioSender coreSender = securitySender.getCoreSender();
+        setSender(coreSender);
 
         SecurityReceiver securityReceiver = initReceiver();
         NioReceiver coreReceiver = securityReceiver.getCoreReceiver();
         setReceiver(coreReceiver);
 
-        mChanelMeter.onChannelReady(securitySender, securityReceiver);
+        mChanelMeter.onConfigChannel(securitySender, securityReceiver);
+    }
+
+    @Override
+    protected void onBeReadyChannel(SelectionKey selectionKey, SocketChannel channel) {
+        NioSender sender = getSender();
+        sender.setChannel(selectionKey, channel);
+        mChanelMeter.updateCurStatus(ChannelStatus.INIT);
     }
 
     @Override

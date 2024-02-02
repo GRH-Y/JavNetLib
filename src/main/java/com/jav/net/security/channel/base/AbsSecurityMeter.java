@@ -55,7 +55,7 @@ public abstract class AbsSecurityMeter {
      *
      * @param status 新的状态
      */
-    protected void updateCurStatus(ChannelStatus status) {
+    public void updateCurStatus(ChannelStatus status) {
         synchronized (this) {
             ChannelStatus lastStatus = mCruStatus;
             mCruStatus = status;
@@ -71,7 +71,7 @@ public abstract class AbsSecurityMeter {
      * @param sender   当前通道客户端的数据发送者
      * @param receiver 当前通道客户端的数据接收者
      */
-    protected void onChannelReady(SecuritySender sender, SecurityReceiver receiver) {
+    protected void onConfigChannel(SecuritySender sender, SecurityReceiver receiver) {
         mRealSender = sender;
         mRealReceiver = receiver;
     }

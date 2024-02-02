@@ -3,10 +3,14 @@ package com.jav.net.security.channel;
 
 import com.jav.common.cryption.joggle.EncryptionType;
 import com.jav.common.log.LogDog;
+import com.jav.net.security.channel.base.ChannelEncryption;
 import com.jav.net.security.channel.base.ChannelStatus;
 import com.jav.net.security.channel.base.ParserCallBackRegistrar;
 import com.jav.net.security.channel.base.UnusualBehaviorType;
-import com.jav.net.security.channel.joggle.*;
+import com.jav.net.security.channel.joggle.IClientChannelStatusListener;
+import com.jav.net.security.channel.joggle.IClientEventCallBack;
+import com.jav.net.security.channel.joggle.ISecurityChannelChangeListener;
+import com.jav.net.security.channel.joggle.ISecurityChannelStatusListener;
 import com.jav.net.security.guard.ChannelKeepAliveSystem;
 
 import java.util.*;
@@ -76,8 +80,14 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
 
         @Override
         public void onRespondChannelSuccessCallBack() {
-            updateCurStatus(ChannelStatus.READY);
+            // init交互数据发送完成开始切换加密方式
+            ChannelEncryption encryption = mContext.getChannelEncryption();
+            // 根据不同加密方式发送不同的数据
+            ChannelEncryption.TransmitEncryption transmitEncryption = encryption.getTransmitEncryption();
+            EncryptionType encryptionType = transmitEncryption.getEncryptionType();
+            configEncryptionMode(encryptionType, encryption);
             // 链接服务成功后再通知接口
+            updateCurStatus(ChannelStatus.READY);
             notifyWaitReadyChannel();
         }
 
@@ -173,7 +183,7 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
         for (Object obj : images) {
             SecurityClientChannelImage image = (SecurityClientChannelImage) obj;
             image.updateStatus(getCruStatus());
-            ISecurityChannelStatusListener listener = image.getChannelStatusListener();
+            IClientChannelStatusListener listener = image.getChannelStatusListener();
             listener.onChannelInvalid();
         }
         LogDog.i("#SC# notifyChannelInvalid !!!");
@@ -202,10 +212,9 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
             image = mChannelImageMap.get(requestId);
         }
         if (image != null) {
-            ISecurityChannelStatusListener listener = image.getChannelStatusListener();
-            if (listener instanceof IClientChannelStatusListener) {
-                IClientChannelStatusListener clientListener = (IClientChannelStatusListener) listener;
-                clientListener.onRemoteCreateConnect(status);
+            IClientChannelStatusListener listener = image.getChannelStatusListener();
+            if (listener != null) {
+                listener.onRemoteCreateConnect(status);
             }
         }
     }
@@ -242,7 +251,7 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
         }
         for (Object obj : images) {
             SecurityClientChannelImage image = (SecurityClientChannelImage) obj;
-            ISecurityChannelStatusListener listener = image.getChannelStatusListener();
+            ISecurityChannelStatusListener<SecurityClientChannelImage> listener = image.getChannelStatusListener();
             listener.onChannelError(error, extData);
         }
         LogDog.i("#SC# notifyChannelError !!!");
@@ -250,7 +259,7 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
 
     @Override
     protected void onChannelChangeStatus(ChannelStatus newStatus) {
-        if (newStatus.getCode() == ChannelStatus.READY.getCode()) {
+        if (newStatus.getCode() == ChannelStatus.INIT.getCode()) {
             String machineId = mContext.getMachineId();
             // 获取加密的方式
             ChannelEncryption encryption = mContext.getChannelEncryption();
@@ -264,13 +273,8 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
             // 客户端模式下请求init交互验证,完成init交互验证即可正常转发数据
             SecurityProxySender proxySender = getSender();
             proxySender.setMachineId(machineId);
-            proxySender.requestInitData(initData, encryption, channelEncryption -> {
-                // init交互数据发送完成开始切换加密方式
-                ChannelEncryption.TransmitEncryption changeEncryption = channelEncryption.getTransmitEncryption();
-                EncryptionType encryptionType = changeEncryption.getEncryptionType();
-                configEncryptionMode(encryptionType, channelEncryption);
-            });
-
+            EncryptionType encryptionType = transmitEncryption.getEncryptionType();
+            proxySender.requestInitData(initData, encryptionType.getCode());
             ChannelKeepAliveSystem.getInstance().addMonitorChannel(this.toString(), proxySender);
         }
     }

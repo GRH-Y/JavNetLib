@@ -1,4 +1,4 @@
-package com.jav.net.security.channel.joggle;
+package com.jav.net.security.channel.base;
 
 import com.jav.common.cryption.joggle.EncryptionType;
 
@@ -102,7 +102,7 @@ public class ChannelEncryption {
             check();
             mTransmitEncryption = new TransmitEncryption(EncryptionType.AES, password);
             mTransmitEncryption.mPassword = password;
-            return new com.jav.net.security.channel.joggle.ChannelEncryption(this);
+            return new ChannelEncryption(this);
         }
 
         public ChannelEncryption builderBase64() {

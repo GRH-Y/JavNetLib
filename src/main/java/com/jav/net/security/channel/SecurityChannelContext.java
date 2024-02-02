@@ -1,7 +1,7 @@
 package com.jav.net.security.channel;
 
 import com.jav.net.security.channel.base.AbsSecurityServer;
-import com.jav.net.security.channel.joggle.ChannelEncryption;
+import com.jav.net.security.channel.base.ChannelEncryption;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -58,7 +58,7 @@ public class SecurityClientChannelImage extends SecurityChannelImage {
      * @param host 地址
      * @param port 端口
      */
-    public void sendRequestDataFromClinet(String host, int port) {
+    public void sendRequestDataFromClient(String host, int port) {
         String addressStr = host + ":" + port;
         mSender.sendRequestData(mRequestId, addressStr.getBytes());
     }
@@ -68,7 +68,7 @@ public class SecurityClientChannelImage extends SecurityChannelImage {
      *
      * @param data 数据
      */
-    public void sendTransDataFromClinet(byte[] data) {
+    public void sendTransDataFromClient(byte[] data) {
         mSender.sendTransData(mRequestId, data);
     }
 

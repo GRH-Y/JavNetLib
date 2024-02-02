@@ -8,9 +8,9 @@ import com.jav.common.cryption.joggle.EncryptionType;
 import com.jav.common.cryption.joggle.IDecryptComponent;
 import com.jav.common.cryption.joggle.IEncryptComponent;
 import com.jav.net.security.channel.base.AbsSecurityMeter;
+import com.jav.net.security.channel.base.ChannelEncryption;
 import com.jav.net.security.channel.base.ChannelStatus;
 import com.jav.net.security.channel.base.ParserCallBackRegistrar;
-import com.jav.net.security.channel.joggle.ChannelEncryption;
 import com.jav.net.security.guard.SecurityPolicyProcessor;
 
 /**
@@ -64,7 +64,7 @@ public class SecurityChanelMeter extends AbsSecurityMeter {
      * 配置加密方式
      *
      * @param encryptionType 加密方式
-     * @param encryptionType 加密方式
+     * @param encryption     加密方式
      */
     protected void configEncryptionMode(EncryptionType encryptionType, ChannelEncryption encryption) {
         // 发送完init数据,开始切换加密方式
@@ -105,8 +105,8 @@ public class SecurityChanelMeter extends AbsSecurityMeter {
      * @param receiver 当前通道客户端的数据接收者
      */
     @Override
-    protected void onChannelReady(SecuritySender sender, SecurityReceiver receiver) {
-        super.onChannelReady(sender, receiver);
+    protected void onConfigChannel(SecuritySender sender, SecurityReceiver receiver) {
+        super.onConfigChannel(sender, receiver);
         // 设置协议解析器
         mRealReceiver.setProtocolParser(mProtocolParser);
 
@@ -114,8 +114,6 @@ public class SecurityChanelMeter extends AbsSecurityMeter {
         ChannelEncryption encryption = mContext.getChannelEncryption();
         EncryptionType encryptionType = encryption.getInitEncryption().getEncryptionType();
         configEncryptionMode(encryptionType, encryption);
-
-        updateCurStatus(ChannelStatus.READY);
     }
 
 

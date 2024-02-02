@@ -2,6 +2,7 @@ package com.jav.net.security.channel;
 
 
 import com.jav.common.cryption.joggle.IDecryptComponent;
+import com.jav.common.log.LogDog;
 import com.jav.common.util.IoEnvoy;
 import com.jav.net.nio.NioReceiver;
 import com.jav.net.security.channel.base.UnusualBehaviorType;
@@ -121,10 +122,10 @@ public class SecurityReceiver implements ISecurityReceiver {
      */
     private ByteBuffer decodeData(ByteBuffer encodeData) {
         byte[] data = encodeData.array();
-        byte[] decodeData = data;
-        if (mDecryptComponent != null) {
-            decodeData = mDecryptComponent.onDecrypt(data);
+        if (mDecryptComponent == null) {
+            return encodeData;
         }
+        byte[] decodeData = mDecryptComponent.onDecrypt(data);
         return ByteBuffer.wrap(decodeData);
     }
 

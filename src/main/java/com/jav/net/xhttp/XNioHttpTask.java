@@ -160,14 +160,14 @@ public class XNioHttpTask extends NioClientTask implements ISenderFeedback, INet
                 setReceiver(receiver);
             }
         } else {
-            if (sender == null || sender instanceof XHttpsSender) {
+            if (sender instanceof XHttpsSender) {
+                sender.setChannel(selectionKey, channel);
+            } else {
                 sender = new NioSender();
                 sender.setChannel(selectionKey, channel);
                 setSender(sender);
-            } else {
-                sender.setChannel(selectionKey, channel);
             }
-            if (receiver == null || receiver instanceof XHttpsReceiver) {
+            if (!(receiver instanceof XHttpsReceiver)) {
                 receiver = new NioReceiver();
                 receiver.setDataReceiver(this);
                 setReceiver(receiver);
