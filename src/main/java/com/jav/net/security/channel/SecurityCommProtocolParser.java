@@ -137,7 +137,7 @@ public class SecurityCommProtocolParser extends AbsSecurityProtocolParser {
         // 解析cmd字段
         byte cmd = decodeData.get();
 
-        String machineId = null;
+        String machineId;
         if (cmd == ActivityCode.INIT.getCode()) {
             // 解析校验machine id字段
             machineId = parseCheckMachineId(remoteAddress, decodeData);
@@ -146,6 +146,7 @@ public class SecurityCommProtocolParser extends AbsSecurityProtocolParser {
                 boolean isPass = SecurityMachineIdMonitor.getInstance().binderMachineIdForAddress(machineId);
                 if (!isPass) {
                     reportPolicyProcessor(remoteAddress, UnusualBehaviorType.EXP_REPEAT_CODE);
+                    return;
                 }
             }
         } else if (cmd == ActivityCode.TRANS.getCode() || cmd == ActivityCode.KEEP.getCode()) {
@@ -161,6 +162,7 @@ public class SecurityCommProtocolParser extends AbsSecurityProtocolParser {
             }
         } else {
             reportPolicyProcessor(remoteAddress, UnusualBehaviorType.EXP_ACTIVITY);
+            return;
         }
         byte oCode = decodeData.get();
         parserActivityForData(cmd, oCode, machineId, decodeData);

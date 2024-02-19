@@ -6,6 +6,7 @@ import com.jav.common.cryption.DataSafeManager;
 import com.jav.common.cryption.RSAComponent;
 import com.jav.common.cryption.joggle.EncryptionType;
 import com.jav.common.cryption.joggle.ICipherComponent;
+import com.jav.net.base.MultiBuffer;
 import com.jav.net.security.channel.base.AbsSecurityMeter;
 import com.jav.net.security.channel.base.ChannelEncryption;
 import com.jav.net.security.channel.base.ChannelStatus;
@@ -100,7 +101,7 @@ public class SecurityChanelMeter extends AbsSecurityMeter {
      * @param receiver 当前通道客户端的数据接收者
      */
     @Override
-    protected void onConfigChannel(SecuritySender sender, SecurityReceiver receiver) {
+    protected void onConfigChannel(SecuritySender<MultiBuffer> sender, SecurityReceiver receiver) {
         super.onConfigChannel(sender, receiver);
         // 设置协议解析器
         mRealReceiver.setProtocolParser(mProtocolParser);

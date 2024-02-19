@@ -26,7 +26,7 @@ public class SecurityMachineIdMonitor {
 
     private static class MonitorChannel {
 
-        private String mMachineId;
+        private final String mMachineId;
 
         private int mChannelCount = 0;
         private long mRegChannelTime;
@@ -41,7 +41,6 @@ public class SecurityMachineIdMonitor {
 
         MonitorChannel(String machineId) {
             mMachineId = machineId;
-            mChannelCount++;
             mRegChannelTime = System.currentTimeMillis();
             mListener = new ArrayList<>(SecurityChannelContext.MAX_CHANNEL);
             LogDog.w("#Monitor# create MonitorChannel mid = " + mMachineId);
@@ -81,7 +80,7 @@ public class SecurityMachineIdMonitor {
                 }
                 mListener.clear();
             }
-            mChannelCount = 1;
+            mChannelCount = 0;
 
             if (System.currentTimeMillis() - mRegChannelTime < TWO_MIN) {
                 //2分钟内出现多次抢占注册machineId
@@ -100,6 +99,7 @@ public class SecurityMachineIdMonitor {
             if (listener != null) {
                 synchronized (mListener) {
                     mListener.add(listener);
+                    mChannelCount = mListener.size();
                 }
                 String warring = String.format("#Monitor# add ChannelListener= %s , size= %d", listener, mListener.size());
                 LogDog.w(warring);
@@ -110,6 +110,7 @@ public class SecurityMachineIdMonitor {
             if (listener != null) {
                 synchronized (mListener) {
                     mListener.remove(listener);
+                    mChannelCount = mListener.size();
                 }
                 String warring = String.format("#Monitor# remove ChannelListener= %s , size= %d", listener, mListener.size());
                 LogDog.w(warring);
@@ -164,7 +165,7 @@ public class SecurityMachineIdMonitor {
     }
 
     /**
-     * 设置machineId绑定冲突监听回调
+     * 根据machineId绑定冲突监听回调
      *
      * @param machineId
      * @param listener
@@ -174,6 +175,11 @@ public class SecurityMachineIdMonitor {
         monitorChannel.addRepeatMachineListener(listener);
     }
 
+    /**
+     * 解绑machineId冲突监听回调
+     * @param machineId
+     * @param listener
+     */
     public void removeRepeatMachineListener(String machineId, IServerChannelStatusListener listener) {
         MonitorChannel monitorChannel = mChannelCache.get(machineId);
         monitorChannel.delRepeatMachineListener(listener);

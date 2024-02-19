@@ -3,9 +3,9 @@ package com.jav.net.security.channel;
 
 import com.jav.common.cryption.joggle.EncryptionType;
 import com.jav.common.log.LogDog;
+import com.jav.net.base.MultiBuffer;
 import com.jav.net.security.channel.base.*;
 import com.jav.net.security.channel.joggle.IInitRespondResultCallBack;
-import com.jav.net.security.channel.joggle.ISecurityChannelStatusListener;
 import com.jav.net.security.channel.joggle.IServerChannelStatusListener;
 import com.jav.net.security.channel.joggle.IServerEventCallBack;
 import com.jav.net.security.guard.SecurityMachineIdMonitor;
@@ -103,13 +103,13 @@ public class SecurityServerChanelMeter extends SecurityChanelMeter {
             //更新镜像的状态
             mServerImage.updateStatus(newStatus);
             //通知镜像可用回调
-            ISecurityChannelStatusListener<SecurityServerChannelImage> serverListener = mServerImage.getChannelStatusListener();
+            IServerChannelStatusListener serverListener = mServerImage.getChannelStatusListener();
             serverListener.onChannelImageReady(mServerImage);
         }
     }
 
     @Override
-    protected void onConfigChannel(SecuritySender sender, SecurityReceiver receiver) {
+    protected void onConfigChannel(SecuritySender<MultiBuffer> sender, SecurityReceiver receiver) {
         super.onConfigChannel(sender, receiver);
         //配置代理sender给镜像
         SecurityProxySender proxySender = getSender();
@@ -123,8 +123,11 @@ public class SecurityServerChanelMeter extends SecurityChanelMeter {
     protected void onChannelInvalid() {
         super.onChannelInvalid();
         mServerImage.updateStatus(getCruStatus());
-        ISecurityChannelStatusListener<SecurityServerChannelImage> serverListener = mServerImage.getChannelStatusListener();
+        IServerChannelStatusListener serverListener = mServerImage.getChannelStatusListener();
         serverListener.onChannelInvalid();
+        SecurityProxySender proxySender = getSender();
+        String machineId = proxySender.getMachineId();
+        SecurityMachineIdMonitor.getInstance().removeRepeatMachineListener(machineId, serverListener);
     }
 
 }

@@ -1,6 +1,8 @@
 package com.jav.net.security.channel;
 
+import com.jav.net.base.AbsNetSender;
 import com.jav.net.base.MultiBuffer;
+import com.jav.net.nio.AbsNioCacheNetSender;
 import com.jav.net.nio.NioSender;
 import com.jav.net.security.channel.base.ConstantCode;
 import com.jav.net.security.channel.joggle.ISecurityProxySender;
@@ -11,13 +13,14 @@ import com.jav.net.security.protocol.TransProtocol;
 import com.jav.net.security.protocol.base.TransOperateCode;
 
 import java.nio.ByteBuffer;
+import java.nio.channels.NetworkChannel;
 
 /**
  * 安全协议数据发送者
  *
  * @author yyz
  */
-public class SecurityProxySender extends SecuritySender implements ISecurityProxySender {
+public class SecurityProxySender extends SecuritySender<MultiBuffer> implements ISecurityProxySender {
 
     /**
      * machine id
@@ -25,9 +28,13 @@ public class SecurityProxySender extends SecuritySender implements ISecurityProx
     private String mMachineId;
 
     public SecurityProxySender(NioSender sender) {
-        super(sender);
+        super((AbsNetSender)sender);
     }
 
+
+    protected String getMachineId() {
+        return mMachineId;
+    }
 
     /**
      * 设置机器的id
@@ -57,8 +64,8 @@ public class SecurityProxySender extends SecuritySender implements ISecurityProx
     /**
      * 服务端向客户端响应init协议请求
      *
-     * @param repCode   响应码
-     * @param initData  数据
+     * @param repCode  响应码
+     * @param initData 数据
      */
     @Override
     public void respondToInitRequest(byte repCode, byte[] initData) {

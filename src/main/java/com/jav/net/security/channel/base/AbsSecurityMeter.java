@@ -1,6 +1,7 @@
 package com.jav.net.security.channel.base;
 
 
+import com.jav.net.base.MultiBuffer;
 import com.jav.net.security.channel.SecurityReceiver;
 import com.jav.net.security.channel.SecuritySender;
 
@@ -71,7 +72,7 @@ public abstract class AbsSecurityMeter {
      * @param sender   当前通道客户端的数据发送者
      * @param receiver 当前通道客户端的数据接收者
      */
-    protected void onConfigChannel(SecuritySender sender, SecurityReceiver receiver) {
+    protected void onConfigChannel(SecuritySender<MultiBuffer> sender, SecurityReceiver receiver) {
         mRealSender = sender;
         mRealReceiver = receiver;
     }
