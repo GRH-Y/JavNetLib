@@ -4,10 +4,7 @@ package com.jav.net.security.channel;
 import com.jav.common.cryption.joggle.EncryptionType;
 import com.jav.common.log.LogDog;
 import com.jav.common.util.StringEnvoy;
-import com.jav.net.security.channel.base.AbsSecurityProtocolParser;
-import com.jav.net.security.channel.base.ConstantCode;
-import com.jav.net.security.channel.base.ParserCallBackRegistrar;
-import com.jav.net.security.channel.base.UnusualBehaviorType;
+import com.jav.net.security.channel.base.*;
 import com.jav.net.security.channel.joggle.IChannelEventCallBack;
 import com.jav.net.security.channel.joggle.IClientEventCallBack;
 import com.jav.net.security.channel.joggle.IServerEventCallBack;
@@ -56,18 +53,25 @@ public class SecurityCommProtocolParser extends AbsSecurityProtocolParser {
      */
     private void serverExecInitCmd(byte enType, String machineId, ByteBuffer data) {
         // 根据客户端定义初始化加解密
+        ChannelEncryption localEncryption = mContext.getChannelEncryption();
         EncryptionType encryption = EncryptionType.getInstance(enType);
-        byte[] aesKey = null;
+        ChannelEncryption.Builder builder = new ChannelEncryption.Builder();
+        builder.configInitEncryption(localEncryption.getInitEncryption());
+        ChannelEncryption channelEncryption;
         if (encryption == EncryptionType.AES) {
             // 获取AES对称密钥
-            aesKey = new byte[data.limit() - data.position()];
+            byte[] aesKey = new byte[data.limit() - data.position()];
             data.get(aesKey);
+            channelEncryption = builder.builderAES(aesKey);
+        } else if (encryption == EncryptionType.BASE64) {
+            channelEncryption = builder.builderBase64();
+        } else {
+            throw new RuntimeException(UnusualBehaviorType.EXP_ENCRYPTION.getErrorMsg());
         }
-
         if (mCallBackRegistrar != null) {
             IServerEventCallBack callBack = mCallBackRegistrar.getServerCallBack();
             if (callBack != null) {
-                callBack.onInitForServerCallBack(encryption, aesKey, machineId);
+                callBack.onInitForServerCallBack(channelEncryption, machineId);
             }
         }
     }
@@ -139,19 +143,14 @@ public class SecurityCommProtocolParser extends AbsSecurityProtocolParser {
             machineId = parseCheckMachineId(remoteAddress, decodeData);
             if (mContext.isServerMode()) {
                 // 服务模式下把当前machineId 记录和绑定对应的地址
-                String address = remoteAddress.getHostName();
-                boolean isPass = SecurityMachineIdMonitor.getInstance().binderMachineIdForAddress(machineId, address);
+                boolean isPass = SecurityMachineIdMonitor.getInstance().binderMachineIdForAddress(machineId);
                 if (!isPass) {
                     reportPolicyProcessor(remoteAddress, UnusualBehaviorType.EXP_REPEAT_CODE);
                 }
             }
         } else if (cmd == ActivityCode.TRANS.getCode() || cmd == ActivityCode.KEEP.getCode()) {
             //解析校验machine id字段
-            if (mContext.isServerMode()) {
-                machineId = parseCheckRepeatMachineId(remoteAddress, decodeData);
-            } else {
-                machineId = parseCheckMachineId(remoteAddress, decodeData);
-            }
+            machineId = parseCheckMachineId(remoteAddress, decodeData);
             if (cmd == ActivityCode.KEEP.getCode()) {
                 //心跳协议不需要处理任何数据
                 if (mContext.isServerMode()) {

@@ -38,10 +38,10 @@ public class ChannelEncryption {
 
     public static class TransmitEncryption {
 
-        private String mPassword;
+        private byte[] mPassword;
         private final EncryptionType mEncryptionType;
 
-        private TransmitEncryption(EncryptionType encryptionType, String password) {
+        private TransmitEncryption(EncryptionType encryptionType, byte[] password) {
             mPassword = password;
             mEncryptionType = encryptionType;
         }
@@ -51,7 +51,7 @@ public class ChannelEncryption {
             return mEncryptionType;
         }
 
-        public String getPassword() {
+        public byte[] getPassword() {
             return mPassword;
         }
 
@@ -92,13 +92,18 @@ public class ChannelEncryption {
             return this;
         }
 
+        public Builder configInitEncryption(InitEncryption initEncryption) {
+            mInitEncryption = initEncryption;
+            return this;
+        }
+
         private void check() {
             if (mInitEncryption == null) {
                 throw new IllegalArgumentException("The configInitRSA method was not called !");
             }
         }
 
-        public ChannelEncryption builderAES(String password) {
+        public ChannelEncryption builderAES(byte[] password) {
             check();
             mTransmitEncryption = new TransmitEncryption(EncryptionType.AES, password);
             mTransmitEncryption.mPassword = password;

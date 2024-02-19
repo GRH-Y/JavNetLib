@@ -11,12 +11,12 @@ public class UdpPacket {
     /**
      * 数据源地址信息
      */
-    private SocketAddress mAddress;
+    private final SocketAddress mAddress;
 
     /**
      * 接收到的完整数据
      */
-    private MultiBuffer mFullData;
+    private final MultiBuffer mFullData;
 
     public UdpPacket(SocketAddress address, MultiBuffer fullData) {
         mAddress = address;

@@ -1,6 +1,5 @@
 package com.jav.net.security.channel;
 
-import com.jav.net.base.AbsNetSender;
 import com.jav.net.base.SocketChannelCloseException;
 import com.jav.net.base.joggle.NetErrorType;
 import com.jav.net.nio.NioClientTask;
@@ -71,7 +70,7 @@ public class SecurityChannelClient extends NioClientTask {
     @Override
     protected void onConfigChannel(SocketChannel channel) {
         SecuritySender securitySender = initSender();
-        NioSender coreSender = securitySender.getCoreSender();
+        NioSender coreSender = (NioSender) securitySender.getCoreSender();
         setSender(coreSender);
 
         SecurityReceiver securityReceiver = initReceiver();

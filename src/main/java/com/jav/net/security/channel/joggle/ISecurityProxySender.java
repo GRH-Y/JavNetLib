@@ -14,7 +14,7 @@ public interface ISecurityProxySender {
      * @param repCode
      * @param initData
      */
-    void respondToInitRequest(String machineId, byte repCode, byte[] initData);
+    void respondToInitRequest(byte repCode, byte[] initData);
 
     /**
      * 响应 connect 请求

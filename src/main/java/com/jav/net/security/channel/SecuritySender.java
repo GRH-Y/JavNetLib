@@ -1,29 +1,31 @@
 package com.jav.net.security.channel;
 
-import com.jav.common.cryption.joggle.IEncryptComponent;
+import com.jav.common.cryption.joggle.ICipherComponent;
 import com.jav.net.base.AbsNetSender;
-import com.jav.net.nio.NioSender;
 import com.jav.net.security.channel.joggle.ISecuritySender;
+
+import java.nio.channels.NetworkChannel;
+import java.nio.channels.SocketChannel;
 
 /**
  * 安全协议数据发送者
  *
  * @author yyz
  */
-public class SecuritySender implements ISecuritySender {
+public class SecuritySender<T> implements ISecuritySender {
 
     /**
      * 真正数据发送者
      */
-    protected final NioSender mCoreSender;
+    protected final AbsNetSender<NetworkChannel, T> mCoreSender;
 
     /**
      * 加密组件
      */
-    protected IEncryptComponent mEncryptComponent;
+    protected ICipherComponent mEncryptComponent;
 
 
-    public SecuritySender(NioSender sender) {
+    public SecuritySender(AbsNetSender<NetworkChannel, T> sender) {
         mCoreSender = sender;
     }
 
@@ -34,7 +36,7 @@ public class SecuritySender implements ISecuritySender {
      * @param component
      */
     @Override
-    public void setEncryptComponent(IEncryptComponent component) {
+    public void setEncryptComponent(ICipherComponent component) {
         this.mEncryptComponent = component;
     }
 
@@ -43,7 +45,7 @@ public class SecuritySender implements ISecuritySender {
      *
      * @return
      */
-    public NioSender getCoreSender() {
+    public AbsNetSender<NetworkChannel, T> getCoreSender() {
         return mCoreSender;
     }
 

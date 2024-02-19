@@ -1,6 +1,5 @@
 package com.jav.net.security.channel;
 
-import com.jav.net.base.AbsNetSender;
 import com.jav.net.base.MultiBuffer;
 import com.jav.net.nio.NioSender;
 import com.jav.net.security.channel.base.ConstantCode;
@@ -58,13 +57,12 @@ public class SecurityProxySender extends SecuritySender implements ISecurityProx
     /**
      * 服务端向客户端响应init协议请求
      *
-     * @param machineId 机器id
      * @param repCode   响应码
      * @param initData  数据
      */
     @Override
-    public void respondToInitRequest(String machineId, byte repCode, byte[] initData) {
-        InitProtocol initProtocol = new InitProtocol(machineId);
+    public void respondToInitRequest(byte repCode, byte[] initData) {
+        InitProtocol initProtocol = new InitProtocol(mMachineId);
         initProtocol.setOperateCode(repCode);
         initProtocol.setSendData(initData);
         ByteBuffer encodeData = initProtocol.toData(mEncryptComponent);

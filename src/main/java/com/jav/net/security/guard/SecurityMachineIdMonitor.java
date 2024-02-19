@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class SecurityMachineIdMonitor {
 
@@ -17,17 +18,15 @@ public class SecurityMachineIdMonitor {
 
     private static final int TEN_MIN = 1000 * 60 * 10;
 
-    private static final int REG_TIME = 5000;
-
 
     private static final int MAX_TRY_REG_COUNT = 24;
+
+    private final ReentrantLock mSelectLock;
 
 
     private static class MonitorChannel {
 
         private String mMachineId;
-
-        private String mCurAddress;
 
         private int mChannelCount = 0;
         private long mRegChannelTime;
@@ -40,19 +39,15 @@ public class SecurityMachineIdMonitor {
         private final List<IServerChannelStatusListener> mListener;
 
 
-        MonitorChannel(String machineId, String curAddress) {
+        MonitorChannel(String machineId) {
             mMachineId = machineId;
-            this.mCurAddress = curAddress;
             mChannelCount++;
             mRegChannelTime = System.currentTimeMillis();
             mListener = new ArrayList<>(SecurityChannelContext.MAX_CHANNEL);
             LogDog.w("#Monitor# create MonitorChannel mid = " + mMachineId);
         }
 
-        boolean checkAddress(String address) {
-            if (address == null) {
-                return false;
-            }
+        boolean recordRegChannel() {
             if (mIsLock) {
                 if (System.currentTimeMillis() - mRegChannelTime > TEN_MIN) {
                     //已经锁定machineId 超过10分钟，开始解锁
@@ -66,37 +61,27 @@ public class SecurityMachineIdMonitor {
                     return false;
                 }
             }
-            if (address.equals(mCurAddress)) {
-                //匹配到当前地址
-                if (System.currentTimeMillis() - mRegChannelTime > REG_TIME
-                        || mChannelCount >= SecurityChannelContext.MAX_CHANNEL) {
-                    //超过5秒，判定为新的连接，出现同个machineId是被占用或者新起的连接,需要断开之前的连接
-                    String warring = String.format("#Monitor# curAddress: %s" +
-                            " same machineId: %s is used, need to disconnect !!! ", mCurAddress, mMachineId);
-                    LogDog.w(warring);
-                    reset(address);
-                } else {
-                    mChannelCount++;
-                    LogDog.w("#Monitor# ChannelCount = " + mChannelCount);
-                }
+            if (mChannelCount > SecurityChannelContext.MAX_CHANNEL) {
+                //超过10秒，判定为新的连接，出现同个machineId是被占用或者新起的连接,需要断开之前的连接
+                LogDog.w(String.format("#Monitor# same machineId: %s is used, need to disconnect !!!", mMachineId));
+                reset();
             } else {
-                //出现同个machineId是被占用或者新起的连接，需要断开之前的连接
-                String warring = String.format("#Monitor# dif curAddress: %s newAddress: %s," +
-                        " same machineId: %s is used, need to disconnect !!! ", mCurAddress, address, mMachineId);
-                LogDog.w(warring);
-                reset(address);
+                mChannelCount++;
+                mTryRegChannelCount = 0;
+                LogDog.w("#Monitor# ChannelCount = " + mChannelCount);
             }
             return true;
         }
 
 
-        private void reset(String newAddress) {
-            for (IServerChannelStatusListener listener : mListener) {
-                listener.onRepeatMachine(mMachineId);
+        private void reset() {
+            synchronized (mListener) {
+                for (IServerChannelStatusListener listener : mListener) {
+                    listener.onRepeatMachine(mMachineId);
+                }
+                mListener.clear();
             }
-            mListener.clear();
             mChannelCount = 1;
-            mCurAddress = newAddress;
 
             if (System.currentTimeMillis() - mRegChannelTime < TWO_MIN) {
                 //2分钟内出现多次抢占注册machineId
@@ -113,8 +98,20 @@ public class SecurityMachineIdMonitor {
 
         void addRepeatMachineListener(IServerChannelStatusListener listener) {
             if (listener != null) {
-                mListener.add(listener);
-                String warring = String.format("#Monitor# ChannelListener= %s , size= %d", listener, mListener.size());
+                synchronized (mListener) {
+                    mListener.add(listener);
+                }
+                String warring = String.format("#Monitor# add ChannelListener= %s , size= %d", listener, mListener.size());
+                LogDog.w(warring);
+            }
+        }
+
+        void delRepeatMachineListener(IServerChannelStatusListener listener) {
+            if (listener != null) {
+                synchronized (mListener) {
+                    mListener.remove(listener);
+                }
+                String warring = String.format("#Monitor# remove ChannelListener= %s , size= %d", listener, mListener.size());
                 LogDog.w(warring);
             }
         }
@@ -122,7 +119,6 @@ public class SecurityMachineIdMonitor {
         @Override
         public String toString() {
             return "---------------- MachineId=" + mMachineId + " ----------------\n" +
-                    " CurAddress=" + mCurAddress + " \n" +
                     " ChannelCount=" + mChannelCount + " \n" +
                     " RegChannelTime=" + mRegChannelTime + " \n" +
                     " TryRegChannelCount=" + mTryRegChannelCount + " \n" +
@@ -132,6 +128,7 @@ public class SecurityMachineIdMonitor {
     }
 
     private SecurityMachineIdMonitor() {
+        mSelectLock = new ReentrantLock(true);
     }
 
     private static class InnerCore {
@@ -146,19 +143,24 @@ public class SecurityMachineIdMonitor {
      * 绑定machineId跟地址对应
      *
      * @param machineId
-     * @param address
      * @return
      */
-    public boolean binderMachineIdForAddress(String machineId, String address) {
-        synchronized (mChannelCache) {
+    public boolean binderMachineIdForAddress(String machineId) {
+        mSelectLock.lock();
+        try {
             MonitorChannel monitorChannel = mChannelCache.get(machineId);
             if (monitorChannel == null) {
-                monitorChannel = new MonitorChannel(machineId, address);
+                monitorChannel = new MonitorChannel(machineId);
                 mChannelCache.put(machineId, monitorChannel);
                 return true;
             }
-            return monitorChannel.checkAddress(address);
+            return monitorChannel.recordRegChannel();
+        } catch (Throwable e) {
+            e.printStackTrace();
+        } finally {
+            mSelectLock.unlock();
         }
+        return false;
     }
 
     /**
@@ -167,25 +169,15 @@ public class SecurityMachineIdMonitor {
      * @param machineId
      * @param listener
      */
-    public void setRepeatMachineListener(String machineId, IServerChannelStatusListener listener) {
+    public void addRepeatMachineListener(String machineId, IServerChannelStatusListener listener) {
         MonitorChannel monitorChannel = mChannelCache.get(machineId);
         monitorChannel.addRepeatMachineListener(listener);
     }
 
-
-    /**
-     * 校验 machineId 跟记录绑定的地址是否一致
-     *
-     * @param machineId machineId
-     * @param address   客户端地址
-     * @return
-     */
-    public boolean checkMachineIdForAddress(String machineId, String address) {
-        if (machineId == null || address == null) {
-            return false;
-        }
+    public void removeRepeatMachineListener(String machineId, IServerChannelStatusListener listener) {
         MonitorChannel monitorChannel = mChannelCache.get(machineId);
-        return monitorChannel != null && monitorChannel.mCurAddress.equals(address);
+        monitorChannel.delRepeatMachineListener(listener);
     }
+
 
 }

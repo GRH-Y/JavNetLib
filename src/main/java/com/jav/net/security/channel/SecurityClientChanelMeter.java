@@ -121,8 +121,6 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
         if (getCruStatus() == ChannelStatus.INVALID || mContext.isServerMode()) {
             return;
         }
-        SecurityProxySender proxySender = getSender();
-        image.setProxySender(proxySender);
         synchronized (mDelayListener) {
             if (getCruStatus() == ChannelStatus.NONE) {
                 mDelayListener.add(image);
@@ -158,17 +156,20 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
             }
             mDelayListener.clear();
         }
-        LogDog.i("#SC# notifyChannelReady !!!");
+//        LogDog.i("#SC# notifyChannelReady !!!");
     }
 
     private void putAndNotifyReadyChannel(SecurityClientChannelImage image) {
-        image.updateStatus(getCruStatus());
-        IClientChannelStatusListener listener = image.getChannelStatusListener();
-        listener.onChannelImageReady(image);
+        SecurityProxySender proxySender = getSender();
+        image.setProxySender(proxySender);
         synchronized (mChannelImageMap) {
             mChannelImageMap.put(image.getRequestId(), image);
         }
+        image.updateStatus(getCruStatus());
+        IClientChannelStatusListener listener = image.getChannelStatusListener();
+        listener.onChannelImageReady(image);
     }
+
 
     /**
      * 通知通道正在失效
@@ -267,8 +268,7 @@ public class SecurityClientChanelMeter extends SecurityChanelMeter {
             // 根据不同加密方式发送不同的数据
             ChannelEncryption.TransmitEncryption transmitEncryption = encryption.getTransmitEncryption();
             if (transmitEncryption.getEncryptionType() == EncryptionType.AES) {
-                String desPassword = transmitEncryption.getPassword();
-                initData = desPassword.getBytes();
+                initData = transmitEncryption.getPassword();
             }
             // 客户端模式下请求init交互验证,完成init交互验证即可正常转发数据
             SecurityProxySender proxySender = getSender();

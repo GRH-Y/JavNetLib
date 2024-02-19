@@ -13,9 +13,9 @@ import com.jav.net.base.joggle.INetTaskComponent;
 public class NetTaskComponent<T extends BaseNetTask> implements INetTaskComponent<T> {
 
 
-    private NioDisconnectWork mDisconnectWork;
+    private final NioDisconnectWork mDisconnectWork;
 
-    private NioConnectWork mConnectWork;
+    private final NioConnectWork mConnectWork;
 
 
     public NetTaskComponent(FactoryContext context) {
@@ -43,6 +43,7 @@ public class NetTaskComponent<T extends BaseNetTask> implements INetTaskComponen
         }
         boolean ret = stateMachine.updateState(NetTaskStatus.NONE, NetTaskStatus.LOAD);
         if (!ret) {
+            LogDog.e("#Component# change net task status none to load fails !");
             return false;
         }
         ret = mConnectWork.pushConnectTask(task);

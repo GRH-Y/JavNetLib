@@ -1,7 +1,7 @@
 package com.jav.net.security.channel.joggle;
 
 
-import com.jav.common.cryption.joggle.IDecryptComponent;
+import com.jav.common.cryption.joggle.ICipherComponent;
 
 /**
  * 安全协议的接收者
@@ -23,5 +23,5 @@ public interface ISecurityReceiver {
      *
      * @param decryptComponent 解密组件对象
      */
-    void setDecryptComponent(IDecryptComponent decryptComponent);
+    void setDecryptComponent(ICipherComponent decryptComponent);
 }

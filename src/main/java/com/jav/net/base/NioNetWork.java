@@ -15,7 +15,7 @@ import java.nio.channels.SelectionKey;
  * @param <C>
  * @author yyz
  */
-public abstract class NioNetWork<T extends BaseNetTask, C extends NetworkChannel> extends BaseNetWork {
+public abstract class NioNetWork<T extends BaseNetTask<?>, C extends NetworkChannel> extends BaseNetWork {
 
 
     public NioNetWork(FactoryContext context) {
@@ -64,7 +64,7 @@ public abstract class NioNetWork<T extends BaseNetTask, C extends NetworkChannel
      *
      * @param netTask 网络请求任务
      */
-    public void onConnect(BaseNetTask netTask) {
+    public void onConnect(BaseNetTask<?> netTask) {
         C channel = (C) netTask.getChannel();
         try {
             if (channel == null) {
@@ -84,16 +84,16 @@ public abstract class NioNetWork<T extends BaseNetTask, C extends NetworkChannel
 
     //------------------------------------------------------------------------------------------------------------------
 
-    protected void callChannelError(BaseNetTask netTask, NetErrorType errorType, Throwable e) {
+    protected void callChannelError(BaseNetTask<?> netTask, NetErrorType errorType, Throwable e) {
         IControlStateMachine<Integer> stateMachine = netTask.getStatusMachine();
         if (!stateMachine.isAttachState(NetTaskStatus.FINISHING) && stateMachine.getState() != NetTaskStatus.INVALID) {
             try {
                 netTask.onErrorChannel(errorType, e);
             } catch (Throwable e1) {
-                e.printStackTrace();
+                e1.printStackTrace();
             }
             // 有异常，结束任务
-            INetTaskComponent<BaseNetTask> taskFactory = mFactoryContext.getNetTaskComponent();
+            INetTaskComponent<BaseNetTask<?>> taskFactory = mFactoryContext.getNetTaskComponent();
             taskFactory.addUnExecTask(netTask);
         }
     }

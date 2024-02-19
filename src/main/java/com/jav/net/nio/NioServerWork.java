@@ -29,16 +29,20 @@ public class NioServerWork extends NioNetWork<NioServerTask, ServerSocketChannel
         ServerSocketChannel channel = ServerSocketChannel.open();
         channel.configureBlocking(false);
         channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-        netTask.onConfigChannel(channel);
-        channel.bind(new InetSocketAddress(netTask.getHost(), netTask.getPort()), netTask.getMaxConnect());
-        netTask.setChannel(channel);
         return channel;
     }
 
     @Override
     protected void onInitChannel(NioServerTask netTask, ServerSocketChannel channel) throws IOException {
+        if (channel.isBlocking()) {
+            // 设置为非阻塞
+            channel.configureBlocking(false);
+        }
         // 回调channel准备就绪
-        netTask.onBeReadyChannel(null, channel);
+        netTask.onConfigChannel(channel);
+        if (channel.getLocalAddress() == null) {
+            channel.bind(new InetSocketAddress(netTask.getHost(), netTask.getPort()), netTask.getMaxConnect());
+        }
     }
 
     @Override
@@ -47,6 +51,8 @@ public class NioServerWork extends NioNetWork<NioServerTask, ServerSocketChannel
         SelectorEventHubs eventHubs = mFactoryContext.getSelectorEventHubs();
         SelectionKey key = eventHubs.registerAcceptEvent(channel, netTask);
         netTask.setSelectionKey(key);
+        netTask.setChannel(channel);
+        netTask.onBeReadyChannel(key, channel);
     }
 
     @Override

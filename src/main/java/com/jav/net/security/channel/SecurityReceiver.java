@@ -1,8 +1,7 @@
 package com.jav.net.security.channel;
 
 
-import com.jav.common.cryption.joggle.IDecryptComponent;
-import com.jav.common.log.LogDog;
+import com.jav.common.cryption.joggle.ICipherComponent;
 import com.jav.common.util.IoEnvoy;
 import com.jav.net.nio.NioReceiver;
 import com.jav.net.security.channel.base.UnusualBehaviorType;
@@ -68,7 +67,7 @@ public class SecurityReceiver implements ISecurityReceiver {
     /**
      * 解密组件
      */
-    private IDecryptComponent mDecryptComponent;
+    private ICipherComponent mDecryptComponent;
 
 
     private class CoreReceiver extends NioReceiver {
@@ -89,7 +88,7 @@ public class SecurityReceiver implements ISecurityReceiver {
     }
 
     @Override
-    public void setDecryptComponent(IDecryptComponent decryptComponent) {
+    public void setDecryptComponent(ICipherComponent decryptComponent) {
         this.mDecryptComponent = decryptComponent;
     }
 

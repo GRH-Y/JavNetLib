@@ -1,7 +1,7 @@
 package com.jav.net.security.protocol;
 
 
-import com.jav.common.cryption.joggle.IEncryptComponent;
+import com.jav.common.cryption.joggle.ICipherComponent;
 import com.jav.common.util.StringEnvoy;
 import com.jav.net.security.protocol.base.ActivityCode;
 
@@ -39,7 +39,7 @@ public class KeepAliveProtocol extends AbsProxyProtocol {
     }
 
     @Override
-    public ByteBuffer toData(IEncryptComponent encryptComponent) {
+    public ByteBuffer toData(ICipherComponent encryptComponent) {
         int length = HEAD_LENGTH;
         ByteBuffer srcData = ByteBuffer.allocate(length);
         srcData.putLong(time());

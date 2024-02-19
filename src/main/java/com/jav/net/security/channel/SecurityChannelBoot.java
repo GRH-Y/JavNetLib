@@ -150,11 +150,14 @@ public class SecurityChannelBoot {
     /**
      * 连接安全服务端
      */
-    public void startConnectSecurityServer() {
+    public void startConnectSecurityServer(int workCount) {
         if (mClientFactory != null) {
             return;
         }
-        mClientFactory = new NioClientFactory(WORK_COUNT);
+        if (workCount <= 0) {
+            workCount = WORK_COUNT;
+        }
+        mClientFactory = new NioClientFactory(workCount);
         mClientFactory.open();
 
         String machineId = mContext.getMachineId();

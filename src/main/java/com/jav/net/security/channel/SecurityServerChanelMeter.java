@@ -40,7 +40,7 @@ public class SecurityServerChanelMeter extends SecurityChanelMeter {
     private class ReceiveProxy implements IServerEventCallBack {
 
         @Override
-        public void onInitForServerCallBack(EncryptionType encryption, byte[] aesKey, String machineId) {
+        public void onInitForServerCallBack(ChannelEncryption encryption, String machineId) {
             //设置machineId
             SecurityProxySender proxySender = getSender();
             proxySender.setMachineId(machineId);
@@ -48,24 +48,24 @@ public class SecurityServerChanelMeter extends SecurityChanelMeter {
             IServerChannelStatusListener serverListener = mServerImage.getChannelStatusListener();
             InitRespondResult initRespondResult = new InitRespondResult(encryption, new IInitRespondResultCallBack() {
                 @Override
-                public void onInitRespondResult(boolean intercept, EncryptionType encryption) {
+                public void onInitRespondResult(boolean intercept, ChannelEncryption encryption) {
                     if (intercept) {
                         return;
                     }
                     // 返回成功结果给客户端
-                    proxySender.respondToInitRequest(machineId, InitResult.OK.getCode(), null);
+                    proxySender.respondToInitRequest(InitResult.OK.getCode(), null);
 
                     // 根据客户端,切换加密方式
-                    ChannelEncryption channelEncryption = mContext.getChannelEncryption();
-                    configEncryptionMode(encryption, channelEncryption);
+                    EncryptionType encryptionType = encryption.getTransmitEncryption().getEncryptionType();
+                    configEncryptionMode(encryptionType, encryption);
 
-                    SecurityMachineIdMonitor.getInstance().setRepeatMachineListener(machineId, serverListener);
+                    SecurityMachineIdMonitor.getInstance().addRepeatMachineListener(machineId, serverListener);
                     LogDog.i("#SC# return ok to client = " + machineId);
+
+                    updateCurStatus(ChannelStatus.READY);
                 }
             });
             serverListener.onRespondInitData(machineId, initRespondResult);
-
-            updateCurStatus(ChannelStatus.READY);
         }
 
         @Override
@@ -100,15 +100,20 @@ public class SecurityServerChanelMeter extends SecurityChanelMeter {
     @Override
     protected void onChannelChangeStatus(ChannelStatus newStatus) {
         if (newStatus.getCode() == ChannelStatus.READY.getCode()) {
-            //配置代理sender给镜像
-            SecurityProxySender proxySender = getSender();
-            mServerImage.setProxySender(proxySender);
             //更新镜像的状态
             mServerImage.updateStatus(newStatus);
             //通知镜像可用回调
             ISecurityChannelStatusListener<SecurityServerChannelImage> serverListener = mServerImage.getChannelStatusListener();
             serverListener.onChannelImageReady(mServerImage);
         }
+    }
+
+    @Override
+    protected void onConfigChannel(SecuritySender sender, SecurityReceiver receiver) {
+        super.onConfigChannel(sender, receiver);
+        //配置代理sender给镜像
+        SecurityProxySender proxySender = getSender();
+        mServerImage.setProxySender(proxySender);
     }
 
     /**

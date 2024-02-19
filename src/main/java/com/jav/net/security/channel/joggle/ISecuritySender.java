@@ -1,6 +1,6 @@
 package com.jav.net.security.channel.joggle;
 
-import com.jav.common.cryption.joggle.IEncryptComponent;
+import com.jav.common.cryption.joggle.ICipherComponent;
 
 /**
  * 安全协议的发送者
@@ -14,6 +14,6 @@ public interface ISecuritySender {
      *
      * @param component
      */
-    void setEncryptComponent(IEncryptComponent component);
+    void setEncryptComponent(ICipherComponent component);
 
 }

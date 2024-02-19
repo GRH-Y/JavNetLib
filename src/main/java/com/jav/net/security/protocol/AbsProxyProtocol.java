@@ -1,7 +1,7 @@
 package com.jav.net.security.protocol;
 
-import com.jav.common.cryption.joggle.IEncryptComponent;
-import com.jav.common.log.LogDog;
+
+import com.jav.common.cryption.joggle.ICipherComponent;
 
 import java.nio.ByteBuffer;
 
@@ -64,12 +64,12 @@ public abstract class AbsProxyProtocol {
         this.mSendData = sendData;
     }
 
-    public ByteBuffer toData(IEncryptComponent encryptComponent) {
+    public ByteBuffer toData(ICipherComponent encryptComponent) {
         return null;
     }
 
 
-    protected ByteBuffer onEncrypt(IEncryptComponent component, ByteBuffer srcData) {
+    protected ByteBuffer onEncrypt(ICipherComponent component, ByteBuffer srcData) {
         byte[] data = srcData.array();
         byte[] encodeData = data;
         if (component != null) {

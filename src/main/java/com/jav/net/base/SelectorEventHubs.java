@@ -1,34 +1,28 @@
 package com.jav.net.base;
 
-import com.jav.common.log.LogDog;
 import com.jav.net.base.joggle.IRegisterSelectorEvent;
 
 import java.io.IOException;
-import java.nio.channels.SelectableChannel;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
+import java.net.SocketAddress;
+import java.nio.channels.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class SelectorEventHubs implements IRegisterSelectorEvent {
 
-    private final Map<SelectableChannel, ChannelEventDepot> mChannelEventCache;
+    private final Map<String, ChannelEventDepot> mChannelEventMap;
+
+    private final LinkedList<ChannelEventDepot> mEventDepotList;
 
     private final ReentrantLock mSelectLock;
 
     private Selector mSelector;
 
-    private final AtomicInteger mHasEventCount;
-
-    private int mIndex = 0;
-
 
     public SelectorEventHubs() {
-        mHasEventCount = new AtomicInteger(0);
-        mChannelEventCache = new ConcurrentHashMap<>();
-        mSelectLock = new ReentrantLock(false);
+        mEventDepotList = new LinkedList<>();
+        mChannelEventMap = new HashMap<>();
+        mSelectLock = new ReentrantLock(true);
         try {
             mSelector = Selector.open();
         } catch (IOException e) {
@@ -36,21 +30,54 @@ public class SelectorEventHubs implements IRegisterSelectorEvent {
         }
     }
 
-
-    private void pushClassificationEventQueue(SelectionKey newEvent) {
-        SelectableChannel channel = newEvent.channel();
-        synchronized (mHasEventCount) {
-            ChannelEventDepot eventEntity = mChannelEventCache.get(channel);
-            if (eventEntity == null) {
-                eventEntity = new ChannelEventDepot();
-                eventEntity.offerEvent(newEvent);
-                mChannelEventCache.put(channel, eventEntity);
-            } else {
-                eventEntity.offerEvent(newEvent);
+    private String getChannelUniqueId(SelectionKey newEvent) {
+        SelectableChannel selectableChannel = newEvent.channel();
+        NetworkChannel networkChannel = (NetworkChannel) selectableChannel;
+        String key = null;
+        try {
+            SocketAddress localAddress = networkChannel.getLocalAddress();
+            if (localAddress != null) {
+                key = localAddress.toString();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (selectableChannel instanceof SocketChannel) {
+            SocketChannel socketChannel = (SocketChannel) selectableChannel;
+            try {
+                SocketAddress socketAddress = socketChannel.getRemoteAddress();
+                if (socketAddress != null) {
+                    key += socketAddress.toString();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
-//        String[] className = toString().split("\\.");
-//        LogDog.w("#pushClassificationEventQueue# newEvent = " + newEvent.readyOps() + " this = " + className[className.length - 1]);
+        return key;
+    }
+
+
+    private ChannelEventDepot pushEventQueue(SelectionKey newEvent) {
+        String key = getChannelUniqueId(newEvent);
+        if (key == null) {
+            newEvent.cancel();
+            return null;
+        }
+        ChannelEventDepot eventDepot;
+        synchronized (mChannelEventMap) {
+            eventDepot = mChannelEventMap.get(key);
+            if (eventDepot == null) {
+                eventDepot = new ChannelEventDepot();
+                mChannelEventMap.put(key, eventDepot);
+            }
+            eventDepot.offerEvent(newEvent);
+            synchronized (mEventDepotList) {
+                mEventDepotList.offerFirst(eventDepot);
+            }
+//            LogDog.i("==> pushEventQueue newEvent = " + newEvent + " eventDepot = " + eventDepot + " key = " + key
+//                    + " thread = " + Thread.currentThread().getName());
+        }
+        return eventDepot;
     }
 
     /**
@@ -58,117 +85,88 @@ public class SelectorEventHubs implements IRegisterSelectorEvent {
      *
      * @return true 表示存在
      */
-    private boolean checkIdleDepot() {
-        Collection<ChannelEventDepot> collection = mChannelEventCache.values();
-        Iterator<ChannelEventDepot> iterator = collection.iterator();
-        while (iterator.hasNext()) {
-            ChannelEventDepot depot = iterator.next();
-            if (!depot.isLockStatus()) {
-                return true;
+    private ChannelEventDepot getIdleDepot() {
+        synchronized (mEventDepotList) {
+            for (int index = 0; index < mEventDepotList.size(); index++) {
+                ChannelEventDepot eventDepot = mEventDepotList.get(index);
+                if (eventDepot == null) {
+                    continue;
+                }
+                if (!eventDepot.hasEvent() && !eventDepot.isLockStatus()) {
+//                LogDog.w("## getAvailableEvent has null event Depot ! work = " + Thread.currentThread().getName());
+                    continue;
+                }
+                if (eventDepot.lockDepot()) {
+                    return eventDepot;
+                }
             }
         }
-        return false;
+        return null;
     }
 
 
-    private ChannelEventDepot getAvailableEvent() {
-        if (!mSelector.isOpen() || mChannelEventCache.isEmpty()) {
-            return null;
+    private ChannelEventDepot selectEvent() {
+        ChannelEventDepot selectEventDepot = getIdleDepot();
+        if (selectEventDepot != null) {
+//            LogDog.i("==> has idle Depot, selectEventDepot = " + selectEventDepot + " thread = " + Thread.currentThread().getName());
+            return selectEventDepot;
         }
-        Collection<ChannelEventDepot> collection = mChannelEventCache.values();
-        synchronized (this) {
-            ChannelEventDepot[] values = new ChannelEventDepot[collection.size()];
-            values = collection.toArray(values);
-            if (values.length == 0) {
-                return null;
-            }
-            if (mIndex >= values.length) {
-                mIndex = 0;
-            }
-//            LogDog.i("==> getAvailableEvent start ... , work = " + Thread.currentThread().getName());
-            ChannelEventDepot eventDepot = values[mIndex];
-            if (eventDepot == null) {
-                return null;
-            }
-            if (!eventDepot.hasEvent() && !eventDepot.isLockStatus()) {
-                //该通道事件处理完毕,清除出队列
-                collection.remove(eventDepot);
-                mHasEventCount.decrementAndGet();
-                LogDog.e("## getAvailableEvent has null event Depot !!!");
-                return null;
-            }
-            if (eventDepot.isLockStatus() || !eventDepot.lockDepot()) {
-//                LogDog.i("==> getAvailableEvent not event end ... , work = " + Thread.currentThread().getName());
-                mIndex++;
-                return null;
-            }
-//            LogDog.i("==> choose channel = " + eventDepot);
-//            LogDog.i("==> getAvailableEvent has event end ... , work = " + java.lang.Thread.currentThread().getName() + " mIndex = " + mIndex);
-            mIndex++;
-            return eventDepot;
-        }
-    }
-
-    private void selectEvent() {
-        if (mHasEventCount.get() > 0 && checkIdleDepot() && !mSelectLock.tryLock()) {
-            //当前状态是事件队列非空，有空闲的depot 并且已经有线程正在处理selector，则跳出处理事件队列事件
-//            LogDog.i("==> selectEvent has eventCount = " + mHasEventCount.get());
-            return;
-        } else {
-//            LogDog.i("==>  lock selectEvent , thread = " + Thread.currentThread().getName());
-            mSelectLock.lock();
-        }
+        mSelectLock.lock();
+//        LogDog.i("==========================> lock selectEvent , thread = " + Thread.currentThread().getName());
         try {
             if (mSelector.isOpen()) {
-//                LogDog.i("==> start selectEvent ...");
-                int eventCount;
-                if (checkIdleDepot()) {
-                    //有空闲的depot不能阻塞
-                    eventCount = mSelector.selectNow();
-                } else {
-                    eventCount = mSelector.select();
+                selectEventDepot = getIdleDepot();
+                if (selectEventDepot != null) {
+//                    LogDog.i("==> enter lock has idle Depot, selectEventDepot " + selectEventDepot
+//                            + " thread = " + Thread.currentThread().getName());
+                    return selectEventDepot;
                 }
-                if (eventCount > 0) {
-                    for (Iterator<SelectionKey> iterator = mSelector.selectedKeys().iterator();
-                         iterator.hasNext() && mSelector.isOpen(); iterator.remove()) {
-                        SelectionKey selectionKey = iterator.next();
-                        pushClassificationEventQueue(selectionKey);
+                int eventCount = mSelector.select();
+                if (eventCount <= 0) {
+                    return null;
+                }
+                for (Iterator<SelectionKey> iterator = mSelector.selectedKeys().iterator();
+                     iterator.hasNext() && mSelector.isOpen(); iterator.remove()) {
+                    SelectionKey selectionKey = iterator.next();
+                    ChannelEventDepot eventDepot = pushEventQueue(selectionKey);
+                    if (selectEventDepot == null && eventDepot.lockDepot()) {
+                        selectEventDepot = eventDepot;
                     }
-                    mHasEventCount.set(mChannelEventCache.size());
                 }
-//                LogDog.i("==> selectEvent eventCount = " + eventCount);
+//                LogDog.i("==> selectEvent over eventCount = " + eventCount + " selectEventDepot = " + selectEventDepot
+//                        + " ChannelEventMap size = " + mChannelEventMap.size() + " thread = " + Thread.currentThread().getName());
             }
         } catch (Throwable e) {
             e.printStackTrace();
         } finally {
-//            LogDog.i("==>  unlock selectEvent , thread = " + Thread.currentThread().getName());
+//            LogDog.i("=================> unlock selectEvent , thread = " + Thread.currentThread().getName());
             mSelectLock.unlock();
         }
+        return selectEventDepot;
     }
 
     public void doneChannelEvent(ChannelEventDepot eventDepot) {
-//        eventDepot.depleteEvent();
-        synchronized (mHasEventCount) {
+        synchronized (mChannelEventMap) {
             if (!eventDepot.hasEvent()) {
                 //该通道事件处理完毕,清除出队列
-                SelectionKey selectionKey = eventDepot.pollEvent();
-                if (selectionKey != null) {
-                    SelectableChannel key = selectionKey.channel();
-                    mChannelEventCache.remove(key);
-                    mHasEventCount.decrementAndGet();
-////                    LogDog.i("==> doneChannelEvent has eventCount = " + mHasEventCount.get());
+                Collection<ChannelEventDepot> collection = mChannelEventMap.values();
+                collection.remove(eventDepot);
+                synchronized (mEventDepotList) {
+                    mEventDepotList.remove(eventDepot);
                 }
+//                LogDog.i("clear eventDepot :" + eventDepot + " mChannelEventMap size = " + mChannelEventMap.size()
+//                        + " thread :" + Thread.currentThread().getName());
             }
         }
         eventDepot.unLockDepot();
+//        LogDog.i("doneChannelEvent " + eventDepot);
     }
 
 
     public ChannelEventDepot getReadyChannelEvent(boolean isBlock) {
         ChannelEventDepot newEvent;
         do {
-            selectEvent();
-            newEvent = getAvailableEvent();
+            newEvent = selectEvent();
         } while (newEvent == null && isBlock && mSelector.isOpen());
         return newEvent;
     }
@@ -224,16 +222,14 @@ public class SelectorEventHubs implements IRegisterSelectorEvent {
 
     public void destroy() {
         if (mSelector != null) {
-            mSelector.wakeup();
-            mSelectLock.lock();
             try {
                 mSelector.close();
             } catch (IOException e) {
                 e.printStackTrace();
-            } finally {
-                mSelectLock.unlock();
             }
         }
-        mChannelEventCache.clear();
+        synchronized (mChannelEventMap) {
+            mChannelEventMap.clear();
+        }
     }
 }

@@ -1,6 +1,5 @@
 package com.jav.net.security.channel.base;
 
-import com.jav.common.cryption.joggle.EncryptionType;
 import com.jav.net.security.channel.joggle.IInitRespondResultCallBack;
 
 /**
@@ -8,11 +7,11 @@ import com.jav.net.security.channel.joggle.IInitRespondResultCallBack;
  */
 public class InitRespondResult {
 
-    private final EncryptionType mEncryption;
+    private final ChannelEncryption mEncryption;
 
     private final IInitRespondResultCallBack mCallback;
 
-    public InitRespondResult(EncryptionType encryption, IInitRespondResultCallBack callBack) {
+    public InitRespondResult(ChannelEncryption encryption, IInitRespondResultCallBack callBack) {
         mEncryption = encryption;
         mCallback = callBack;
     }

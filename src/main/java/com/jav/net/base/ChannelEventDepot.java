@@ -20,7 +20,6 @@ public class ChannelEventDepot {
 
     private final AtomicInteger mReadCount;
 
-//    private final AtomicInteger mWriteCount;
 
     private final AtomicBoolean mWriteTrigger;
 
@@ -29,19 +28,15 @@ public class ChannelEventDepot {
         mAcceptCount = new AtomicInteger(0);
         mConnectCount = new AtomicInteger(0);
         mReadCount = new AtomicInteger(0);
-//        mWriteCount = new AtomicInteger(0);
         mWriteTrigger = new AtomicBoolean(false);
     }
 
     //---------------------------------------------------------------------------
 
     void offerEvent(SelectionKey newEvent) {
-        if (newEvent == null) {
-            return;
-        }
+        mNewEvent = newEvent;
         try {
             int ops = newEvent.readyOps();
-            mNewEvent = newEvent;
             if ((ops & SelectionKey.OP_ACCEPT) != 0) {
                 if (mAcceptCount.get() == 0) {
                     mAcceptCount.incrementAndGet();
@@ -56,60 +51,52 @@ public class ChannelEventDepot {
                 mReadCount.incrementAndGet();
             }
             if ((ops & SelectionKey.OP_WRITE) != 0) {
-//                mWriteCount.incrementAndGet();
                 mWriteTrigger.compareAndSet(false, true);
             }
         } catch (Exception e) {
         }
-
-//        LogDog.v("#ChannelEventEntity# offerEvent newEvent ops = " + newEvent.interestOps()
-//                + " readCount = " + mReadCount.get()
-//                + " hasWrite = " + mWriteTrigger.get()
-//                + " entity = " + this + " thread = " + Thread.currentThread().getName());
     }
 
     SelectionKey pollEvent() {
-//        LogDog.v("#ChannelEventEntity# pollEvent newEvent ops = " + mNewEvent.interestOps() + " entity = " + this + " thread = " + Thread.currentThread().getName());
         return mNewEvent;
     }
 
-    BaseNetTask attachment() {
-        if (mNewEvent != null) {
-            Object object = mNewEvent.attachment();
-            if (object == null || !(object instanceof BaseNetTask<?>)) {
-                LogDog.e("## ChannelEventDepot attachment netTask is null !");
-                mNewEvent.cancel();
-                return null;
-            }
-            return (BaseNetTask) object;
+    BaseNetTask<?> attachment() {
+        if (mNewEvent == null) {
+            return null;
         }
-        return null;
+        Object object = mNewEvent.attachment();
+        if (!(object instanceof BaseNetTask<?>)) {
+            LogDog.e("## ChannelEventDepot attachment netTask is null !");
+            mNewEvent.cancel();
+            return null;
+        }
+//        LogDog.i("## ChannelEventDepot attachment netTask = " + object);
+        return (BaseNetTask<?>) object;
     }
 
     int readyOps() {
         int ops = 0;
-        if (mNewEvent != null) {
-            if (mAcceptCount.get() > 0) {
-                ops += SelectionKey.OP_ACCEPT;
-            }
-            if (mConnectCount.get() > 0) {
-                ops += SelectionKey.OP_CONNECT;
-            }
-            if (mReadCount.get() > 0) {
-                ops += SelectionKey.OP_READ;
-            }
-            if (mWriteTrigger.get()) {
-                ops += SelectionKey.OP_WRITE;
-            }
+        if (mAcceptCount.get() > 0) {
+            ops += SelectionKey.OP_ACCEPT;
+        }
+        if (mConnectCount.get() > 0) {
+            ops += SelectionKey.OP_CONNECT;
+        }
+        if (mReadCount.get() > 0) {
+            ops += SelectionKey.OP_READ;
+        }
+        if (mWriteTrigger.get()) {
+            ops += SelectionKey.OP_WRITE;
         }
         return ops;
     }
 
     SelectableChannel channel() {
-        if (mNewEvent != null) {
-            return mNewEvent.channel();
+        if (mNewEvent == null) {
+            return null;
         }
-        return null;
+        return mNewEvent.channel();
     }
 
     void depleteEvent(int ops) {
@@ -123,25 +110,22 @@ public class ChannelEventDepot {
             mReadCount.decrementAndGet();
         }
         if ((ops & SelectionKey.OP_WRITE) != 0) {
-//                mWriteCount.decrementAndGet();
             mWriteTrigger.set(false);
         }
-//        LogDog.v("#ChannelEventEntity# doneEvent "
-//                + " readCount = " + mReadCount.get()
-//                + " hasWrite = " + mWriteTrigger.get());
     }
 
     boolean hasEvent() {
         if (mNewEvent == null || !mNewEvent.isValid()) {
             return false;
         }
-        BaseNetTask netTask = attachment();
-        if (netTask != null) {
-            IControlStateMachine<Integer> stateMachine = netTask.getStatusMachine();
-            if (stateMachine.isAttachState(NetTaskStatus.FINISHING) || stateMachine.getState() == NetTaskStatus.INVALID) {
-                mNewEvent.cancel();
-                return false;
-            }
+        BaseNetTask<?> netTask = attachment();
+        if (netTask == null) {
+            return false;
+        }
+        IControlStateMachine<Integer> stateMachine = netTask.getStatusMachine();
+        if (stateMachine.isAttachState(NetTaskStatus.FINISHING) || stateMachine.getState() == NetTaskStatus.INVALID) {
+            mNewEvent.cancel();
+            return false;
         }
         return mAcceptCount.get() > 0 || mConnectCount.get() > 0 || mReadCount.get() > 0 || mWriteTrigger.get();
     }

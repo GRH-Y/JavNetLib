@@ -3,7 +3,6 @@ package com.jav.net.security.channel.base;
 
 import com.jav.net.security.channel.joggle.ISecurityPolicyProcessor;
 import com.jav.net.security.channel.joggle.ISecurityProtocolParser;
-import com.jav.net.security.guard.SecurityMachineIdMonitor;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -97,23 +96,6 @@ public abstract class AbsSecurityProtocolParser implements ISecurityProtocolPars
         return machineIdStr;
     }
 
-    /**
-     * 解析校验machine id字段是否被多台机器同时使用
-     *
-     * @param remoteAddress 远程的目标地址
-     * @param decodeData    要校验的数据
-     */
-    protected String parseCheckRepeatMachineId(InetSocketAddress remoteAddress, ByteBuffer decodeData) {
-        byte[] mid = new byte[ConstantCode.MACHINE_LENGTH];
-        decodeData.get(mid);
-        String machineId = new String(mid);
-        String address = remoteAddress.getHostName();
-        boolean isNotValid = SecurityMachineIdMonitor.getInstance().checkMachineIdForAddress(machineId, address);
-        if (!isNotValid) {
-            reportPolicyProcessor(remoteAddress, UnusualBehaviorType.EXP_REPEAT_CODE);
-        }
-        return machineId;
-    }
 
     /**
      * 反馈异常给安全策略处理器

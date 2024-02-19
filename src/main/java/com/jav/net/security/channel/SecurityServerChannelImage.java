@@ -23,12 +23,11 @@ public class SecurityServerChannelImage extends SecurityChannelImage {
     /**
      * 响应init请求
      *
-     * @param machineId
      * @param repCode
      * @param initData
      */
-    public void respondInitData(String machineId, byte repCode, byte[] initData) {
-        mSender.respondToInitRequest(machineId, repCode, initData);
+    public void respondInitData(byte repCode, byte[] initData) {
+        mSender.respondToInitRequest(repCode, initData);
     }
 
     /**

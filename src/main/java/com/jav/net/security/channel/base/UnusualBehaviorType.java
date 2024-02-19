@@ -22,7 +22,9 @@ public enum UnusualBehaviorType {
 
     EXP_ACTIVITY(0x118, "illegal activity"),
 
-    EXP_INIT_DATA(0x119, "illegal init data");
+    EXP_INIT_DATA(0x119, "illegal init data"),
+
+    EXP_ENCRYPTION(0x200, "illegal channel encryption");
 
 
     private final String mErrorMsg;

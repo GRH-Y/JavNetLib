@@ -1,12 +1,11 @@
 package com.jav.net.security.channel;
 
 
-import com.jav.common.cryption.AESDataEnvoy;
+import com.jav.common.cryption.AESComponent;
 import com.jav.common.cryption.DataSafeManager;
-import com.jav.common.cryption.RSADataEnvoy;
+import com.jav.common.cryption.RSAComponent;
 import com.jav.common.cryption.joggle.EncryptionType;
-import com.jav.common.cryption.joggle.IDecryptComponent;
-import com.jav.common.cryption.joggle.IEncryptComponent;
+import com.jav.common.cryption.joggle.ICipherComponent;
 import com.jav.net.security.channel.base.AbsSecurityMeter;
 import com.jav.net.security.channel.base.ChannelEncryption;
 import com.jav.net.security.channel.base.ChannelStatus;
@@ -69,32 +68,28 @@ public class SecurityChanelMeter extends AbsSecurityMeter {
     protected void configEncryptionMode(EncryptionType encryptionType, ChannelEncryption encryption) {
         // 发送完init数据,开始切换加密方式
         mDataSafeManager.init(encryptionType);
-        IDecryptComponent decryptComponent = mDataSafeManager.getDecrypt();
-        IEncryptComponent encryptComponent = mDataSafeManager.getEncrypt();
         if (encryptionType == EncryptionType.AES) {
             // 获取AES对称密钥
             ChannelEncryption.TransmitEncryption transmitEncryption = encryption.getTransmitEncryption();
-            String desPassword = transmitEncryption.getPassword();
-            byte[] aesKey = desPassword.getBytes();
-            AESDataEnvoy encryptEnvoy = encryptComponent.getComponent();
-            encryptEnvoy.initKey(aesKey);
+            byte[] aesKey = transmitEncryption.getPassword();
+            AESComponent aesComponent = mDataSafeManager.getCipherComponent();
+            aesComponent.initKey(aesKey, null);
         } else if (encryptionType == EncryptionType.RSA) {
             ChannelEncryption.InitEncryption initEncryption = encryption.getInitEncryption();
             String publicFile = initEncryption.getPublicFile();
             String privateFile = initEncryption.getPrivateFile();
             try {
-                RSADataEnvoy decode = decryptComponent.getComponent();
-                RSADataEnvoy encode = encryptComponent.getComponent();
-                decode.init(publicFile, privateFile);
-                encode.init(publicFile, privateFile);
+                RSAComponent rsaComponent = mDataSafeManager.getCipherComponent();
+                rsaComponent.init(publicFile, privateFile);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
 
         // 设置加密方式
-        mRealSender.setEncryptComponent(encryptComponent);
-        mRealReceiver.setDecryptComponent(decryptComponent);
+        ICipherComponent cipherComponent = mDataSafeManager.getCipherComponent();
+        mRealSender.setEncryptComponent(cipherComponent);
+        mRealReceiver.setDecryptComponent(cipherComponent);
     }
 
 
