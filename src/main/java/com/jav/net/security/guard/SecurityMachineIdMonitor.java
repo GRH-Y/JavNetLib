@@ -172,17 +172,22 @@ public class SecurityMachineIdMonitor {
      */
     public void addRepeatMachineListener(String machineId, IServerChannelStatusListener listener) {
         MonitorChannel monitorChannel = mChannelCache.get(machineId);
-        monitorChannel.addRepeatMachineListener(listener);
+        if (monitorChannel != null) {
+            monitorChannel.addRepeatMachineListener(listener);
+        }
     }
 
     /**
      * 解绑machineId冲突监听回调
+     *
      * @param machineId
      * @param listener
      */
     public void removeRepeatMachineListener(String machineId, IServerChannelStatusListener listener) {
         MonitorChannel monitorChannel = mChannelCache.get(machineId);
-        monitorChannel.delRepeatMachineListener(listener);
+        if (monitorChannel != null) {
+            monitorChannel.delRepeatMachineListener(listener);
+        }
     }
 
 

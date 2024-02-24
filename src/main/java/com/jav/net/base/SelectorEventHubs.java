@@ -129,6 +129,9 @@ public class SelectorEventHubs implements IRegisterSelectorEvent {
                      iterator.hasNext() && mSelector.isOpen(); iterator.remove()) {
                     SelectionKey selectionKey = iterator.next();
                     ChannelEventDepot eventDepot = pushEventQueue(selectionKey);
+                    if (eventDepot == null) {
+                        continue;
+                    }
                     if (selectEventDepot == null && eventDepot.lockDepot()) {
                         selectEventDepot = eventDepot;
                     }

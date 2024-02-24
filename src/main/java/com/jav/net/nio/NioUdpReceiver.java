@@ -17,6 +17,9 @@ public class NioUdpReceiver extends AbsNetReceiver<DatagramChannel, UdpPacket> {
         SocketAddress address = channel.receive(buffer);
         if (mReceiver != null) {
             buffer.flip();
+            if (buffer.limit() == 0) {
+                return;
+            }
             MultiBuffer udpData = new MultiBuffer(buffer);
             mReceiver.onReceiveFullData(new UdpPacket(address, udpData));
         }
